@@ -36,6 +36,7 @@
     "Isolated syntax: menu",
     "Isolated syntax: gerente",
     "Isolated syntax: calculadora",
+    "Isolated syntax: relogio",
     "Manifest references",
     "Single checker and settings owner",
     "Module dependency graph, contracts and complete tool coverage",
@@ -49,7 +50,14 @@
     "Gemini uses compatible ListModels and header authentication",
     "Gemini rejects access failure without guessed models",
     "Checker discards responses arriving out of order",
-    "Background rejects unlisted hosts"
+    "Background rejects unlisted hosts",
+    "Clock status, duration, invalid date and backward time handling",
+    "Saved/off-screen positions and windows larger than viewport",
+    "Immediate clock refresh, one interval and refresh after returning to tab",
+    "Status color has priority over shared theme without periodic overwrite",
+    "Interactive header controls and right mouse button do not start drag",
+    "Drag uses bounding rectangle, movement threshold, own listeners and cleanup",
+    "Initialization guards unsupported notifications and shortcut handles Shift+1"
   ],
   "sourceCommit": "e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b",
   "liveGenesysTest": false,

@@ -190,7 +190,8 @@
     "id": "pausas",
     "file": "src/tools/pausas.js",
     "after": [
-      "compatibility"
+      "compatibility",
+      "relogio"
     ],
     "shared": [
       "ajaStorage"
@@ -290,5 +291,11 @@
       "ajaStorage",
       "safeFetch"
     ]
+  },
+  {
+    "id": "relogio",
+    "file": "src/tools/relogio.js",
+    "after": [],
+    "shared": []
   }
 ]

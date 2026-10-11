@@ -2,6 +2,12 @@
 
 Versão independente das ferramentas Brisanet do AjaExtension. Origem: commit `e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b` de `kingoffjoss/AjaExtension`, preservado sem alterações.
 
+## Relógio flutuante — versão 1.1.1
+
+Correções de arraste com eventos próprios, proteção dos controles do cabeçalho, reposicionamento ao abrir/redimensionar, atualização imediata e cores por status. A lógica visual do relógio fica em `src/tools/relogio.js`; os botões e agendamentos continuam em `src/tools/pausas.js`.
+
+Para testar, recarregue a aba e utilize o favorito atualizado ou a extensão 1.1.1. Verifique arrastar, minimizar/expandir, abrir configurações, redimensionar a janela e retornar de uma aba em segundo plano. Ctrl+Shift+1 funciona fora dos campos de edição. O relógio mostra a hora do computador; a duração do status aparece no painel expandido. Os testes automáticos passaram; o funcionamento no Genesys real aguarda teste pelo usuário.
+
 ## Usar
 
 Acesse https://kingoffjoss.github.io/AjaModular/ e crie um novo favorito usando `bookmarklet.txt`. Este favorito carrega exclusivamente `AjaModular/Loader.js`. O favorito antigo continua apontando ao AjaExtension.
