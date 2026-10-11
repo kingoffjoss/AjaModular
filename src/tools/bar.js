@@ -1,123 +1,16 @@
 // Shared dependencies: ajaStorage, safeFetch
-window.AjaModular.register("bar", ["compatibility"], function(ctx) {
+window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ctx) {
     /* --- MÓDULO ANEXADO: BAR.JS --- */
     try {
         (function () {
-            // --- 0. BANCO DE DADOS DE COMANDOS (ORIGINAL V19.0) ---
-            window.commandDatabase = [
-                {
-                    "title": "Rede (Diagnóstico e Atalhos)",
-                    "commands": [
-                        { "id": "cmd-ncpa", "label": "Conexões de Rede (Painel de Controle)", "desc": "Abre a pasta \"Conexões de Rede\" (Painel de Controle)", "os": { "win": "ncpa.cpl" } },
-                        { "id": "cmd-firewall", "label": "Firewall do Windows", "desc": "Abre o Firewall com Segurança Avançada", "os": { "win": "wf.msc" } },
-                        { "id": "cmd-inetcpl", "label": "Propriedades de Internet", "desc": "Abre as Propriedades de Internet (Cache, Segurança, etc)", "os": { "win": "inetcpl.cpl" } },
-                        { "id": "cmd-mac-net", "label": "Definições de Rede (GUI)", "desc": "Abre as Preferências de Rede do Sistema", "os": { "mac": "open /System/Library/PreferencePanes/Network.prefPane" } },
-                        { "id": "cmd-lin-nm", "label": "Editor de Conexão (GUI)", "desc": "Abre o editor de conexões do NetworkManager", "os": { "linux": "nm-connection-editor" } },
-                        { "id": "cmd-getmac", "label": "Ver Endereços MAC", "desc": "Mostra os endereços físicos (MAC) de todas as placas", "os": { "win": "getmac /v", "mac": "ifconfig | grep ether", "linux": "ip link show | grep ether" } },
-                        { "id": "cmd-firewall-status", "label": "Verificar Status do Firewall (Terminal)", "desc": "Verifica se o firewall está ativo", "os": { "win": "netsh advfirewall show allprofiles state", "mac": "sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate", "linux": "sudo ufw status" } }
-                    ]
-                },
-                {
-                    "title": "Rede (Configuração e Admin)",
-                    "commands": [
-                        { "id": "cmd-flushdns", "label": "Limpar Cache DNS (Admin)", "desc": "Força a limpeza do cache de resolução de DNS", "os": { "win": "ipconfig /flushdns", "mac": "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder", "linux": "sudo systemd-resolve --flush-caches" } },
-                        { "id": "cmd-releaseip", "label": "Libertar IP (Admin)", "desc": "Liberta o endereço IP atual do DHCP", "os": { "win": "ipconfig /release", "mac": "sudo ipconfig set en0 BOOTP && sudo ipconfig set en0 DHCP", "linux": "sudo dhclient -r" } },
-                        { "id": "cmd-renewip", "label": "Renovar IP (Admin)", "desc": "Pede um novo endereço IP ao DHCP", "os": { "win": "ipconfig /renew", "mac": "sudo ipconfig set en0 BOOTP && sudo ipconfig set en0 DHCP", "linux": "sudo dhclient" } },
-                        { "id": "cmd-netsh-show-wifi", "label": "Ver Perfis Wi-Fi Guardados (Admin)", "desc": "Mostra todas as redes Wi-Fi que o Windows guardou", "os": { "win": "netsh wlan show profiles" } },
-                        { "id": "cmd-netsh-show-wifikey", "label": "Ver Chave Wi-Fi Específica (Admin)", "desc": "Substitua NOME_DA_REDE pelo nome do Wi-Fi", "os": { "win": "netsh wlan show profile name=\"NOME_DA_REDE\" key=clear" } },
-                        { "id": "cmd-netsh-reset", "label": "Resetar Catálogo Winsock (Admin)", "desc": "Repara problemas de conectividade de software", "os": { "win": "netsh winsock reset" } },
-                        { "id": "cmd-netsh-reset-ip", "label": "Resetar Stack TCP/IP (Admin)", "desc": "Repara problemas de conectividade de IP", "os": { "win": "netsh int ip reset" } },
-                        { "id": "cmd-wifi-off", "label": "Desativar Wi-Fi (Admin)", "desc": "Nome \"Wi-Fi\" (Win) ou \"wlan0\" (Lin) pode variar", "os": { "win": "powershell -Command \"Disable-NetAdapter -Name 'Wi-Fi' -Confirm:$false\"", "mac": "sudo networksetup -setnetworkserviceenabled Wi-Fi off", "linux": "sudo ip link set wlan0 down" } },
-                        { "id": "cmd-wifi-on", "label": "Ativar Wi-Fi (Admin)", "desc": "Nome \"Wi-Fi\" (Win) ou \"wlan0\" (Lin) pode variar", "os": { "win": "powershell -Command \"Enable-NetAdapter -Name 'Wi-Fi'\"", "mac": "sudo networksetup -setnetworkserviceenabled Wi-Fi on", "linux": "sudo ip link set wlan0 up" } },
-                        { "id": "cmd-mac-airport", "label": "Scan Wi-Fi (Terminal)", "desc": "Mostra todas as redes Wi-Fi visíveis e a sua força", "os": { "mac": "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -s" } },
-                        { "id": "cmd-lin-iwlist", "label": "Scan Wi-Fi (Terminal)", "desc": "Mostra todas as redes Wi-Fi visíveis", "os": { "linux": "sudo iwlist wlan0 scan" } }
-                    ]
-                },
-                {
-                    "title": "Sistema (Info e Desempenho)",
-                    "commands": [
-                        { "id": "cmd-taskmgr", "label": "Gestor de Tarefas", "desc": null, "os": { "win": "taskmgr" } },
-                        { "id": "cmd-services", "label": "Serviços do Windows", "desc": null, "os": { "win": "services.msc" } },
-                        { "id": "cmd-msinfo", "label": "Informação do Sistema", "desc": null, "os": { "win": "msinfo32" } },
-                        { "id": "cmd-devmgmt", "label": "Gestor de Dispositivos", "desc": "Ver drivers e hardware", "os": { "win": "devmgmt.msc" } },
-                        { "id": "cmd-msconfig", "label": "Configuração do Sistema", "desc": "Ver programas de arranque e serviços", "os": { "win": "msconfig" } },
-                        { "id": "cmd-dxdiag", "label": "Diagnóstico do DirectX", "desc": "Verificar drivers de vídeo e áudio", "os": { "win": "dxdiag" } },
-                        { "id": "cmd-resmon", "label": "Monitor de Recursos", "desc": "Ver uso de CPU, disco, rede e memória em detalhe", "os": { "win": "resmon" } },
-                        { "id": "cmd-perfmon", "label": "Monitor de Desempenho", "desc": "Analisar performance e gerar relatórios", "os": { "win": "perfmon" } },
-                        { "id": "cmd-powercfg", "label": "Opções de Energia (Avançado)", "desc": "Gerar relatório de saúde da bateria", "os": { "win": "powercfg /batteryreport" } },
-                        { "id": "cmd-wmic-cpu", "label": "Info CPU (Terminal)", "desc": null, "os": { "win": "wmic cpu get name, MaxClockSpeed, L3CacheSize", "mac": "sysctl -n machdep.cpu.brand_string", "linux": "lscpu | grep 'Model name'" } },
-                        { "id": "cmd-wmic-mem", "label": "Info Memória (Terminal)", "desc": "Lista os módulos de RAM instalados", "os": { "win": "wmic memorychip get Capacity, Speed, Manufacturer", "mac": "sysctl hw.memsize", "linux": "free -h" } },
-                        { "id": "cmd-wmic-os", "label": "Info Sistema Operacional (Terminal)", "desc": null, "os": { "win": "wmic os get Caption, Version, OSArchitecture", "mac": "sw_vers", "linux": "lsb_release -a" } },
-                        { "id": "cmd-mac-activity", "label": "Monitor de Atividade (GUI)", "desc": "Equivalente ao Gestor de Tarefas", "os": { "mac": "open /System/Applications/Utilities/Activity\\ Monitor.app" } },
-                        { "id": "cmd-mac-sysinfo", "label": "Informação do Sistema (GUI)", "desc": null, "os": { "mac": "open /System/Applications/Utilities/System\\ Information.app" } },
-                        { "id": "cmd-mac-console", "label": "Logs do Sistema (GUI)", "desc": "Equivalente ao Visualizador de Eventos", "os": { "mac": "open /System/Applications/Utilities/Console.app" } },
-                        { "id": "cmd-lin-monitor", "label": "Monitor de Sistema (Terminal)", "desc": "(Requer htop: sudo apt install htop)", "os": { "linux": "htop" } },
-                        { "id": "cmd-lin-lshw", "label": "Listar Hardware (Terminal)", "desc": "Lista detalhada de todo o hardware", "os": { "linux": "sudo lshw -short" } },
-                        { "id": "cmd-lin-df", "label": "Ver Uso de Disco (Terminal)", "desc": "Mostra espaço livre em disco", "os": { "mac": "df -h", "linux": "df -h" } },
-                        { "id": "cmd-lin-du", "label": "Ver Tamanho de Pastas (Terminal)", "desc": "Mostra o tamanho das pastas no diretório atual", "os": { "mac": "du -sh *", "linux": "du -sh *" } },
-                        { "id": "cmd-lin-lspci", "label": "Listar Dispositivos PCI (Terminal)", "desc": "Ver placas (vídeo, rede, etc) ligadas", "os": { "linux": "lspci" } },
-                        { "id": "cmd-uname", "label": "Ver Info do Sistema (Terminal)", "desc": "Mostra a versão do Kernel e SO", "os": { "mac": "uname -a", "linux": "uname -a" } },
-                        { "id": "cmd-whoami", "label": "Ver Username (Terminal)", "desc": "Mostra o utilizador atual", "os": { "win": "whoami", "mac": "whoami", "linux": "whoami" } },
-                        { "id": "cmd-uptime", "label": "Tempo de Atividade (Terminal)", "desc": "Há quanto tempo o sistema está ligado", "os": { "win": "systeminfo | find \"Tempo de Arranque\"", "mac": "uptime", "linux": "uptime" } }
-                    ]
-                },
-                {
-                    "title": "Gestão de Processos e Serviços",
-                    "commands": [
-                        { "id": "cmd-tasklist", "label": "Listar Processos (Terminal)", "desc": "Mostra todos os processos a correr", "os": { "win": "tasklist", "mac": "ps aux", "linux": "ps aux" } },
-                        { "id": "cmd-taskkill", "label": "Matar Processo por PID (Admin)", "desc": "Substitua [PID] pelo número do processo", "os": { "win": "taskkill /PID [PID] /F", "mac": "sudo kill -9 [PID]", "linux": "sudo kill -9 [PID]" } },
-                        { "id": "cmd-taskkill-name", "label": "Matar Processo por Nome (Admin)", "desc": "Substitua [NOME]", "os": { "win": "taskkill /IM [NOME.EXE] /F", "mac": "sudo killall [NOME]", "linux": "sudo killall [NOME]" } },
-                        { "id": "cmd-net-start", "label": "Ver Serviços a Correr (Terminal)", "desc": null, "os": { "win": "net start", "mac": "sudo launchctl list", "linux": "sudo systemctl list-units --type=service --state=running" } },
-                        { "id": "cmd-net-stop", "label": "Parar Serviço (Admin)", "desc": "Substitua \"NOME_SERVICO\"", "os": { "win": "net stop \"NOME_SERVICO\"", "mac": "sudo launchctl stop [NOME_SERVICO]", "linux": "sudo systemctl stop [NOME_SERVICO]" } },
-                        { "id": "cmd-net-start-srv", "label": "Iniciar Serviço (Admin)", "desc": "Substitua \"NOME_SERVICO\"", "os": { "win": "net start \"NOME_SERVICO\"", "mac": "sudo launchctl start [NOME_SERVICO]", "linux": "sudo systemctl start [NOME_SERVICO]" } }
-                    ]
-                },
-                {
-                    "title": "Sistema (Reparação e Admin)",
-                    "commands": [
-                        { "id": "cmd-sfc", "label": "Verificar Ficheiros de Sistema (Admin)", "desc": "Repara ficheiros corrompidos do Windows", "os": { "win": "sfc /scannow" } },
-                        { "id": "cmd-dism", "label": "Verificar Imagem do Windows (Admin)", "desc": "Repara a imagem do Windows", "os": { "win": "Dism /Online /Cleanup-Image /RestoreHealth" } },
-                        { "id": "cmd-chkdsk", "label": "Verificar Disco (Admin)", "desc": "Verifica o disco C: (agenda para reiniciar)", "os": { "win": "chkdsk C: /f" } },
-                        { "id": "cmd-cleanmgr", "label": "Limpeza de Disco (GUI)", "desc": "Abre a ferramenta de limpeza de disco", "os": { "win": "cleanmgr" } },
-                        { "id": "cmd-control", "label": "Painel de Controle (GUI)", "desc": null, "os": { "win": "control" } },
-                        { "id": "cmd-eventvwr", "label": "Visualizador de Eventos (GUI)", "desc": "Ver logs de erro do Windows", "os": { "win": "eventvwr.msc" } },
-                        { "id": "cmd-gpedit", "label": "Editor de Política de Grupo (GUI)", "desc": "(Apenas Windows Pro/Enterprise)", "os": { "win": "gpedit.msc" } },
-                        { "id": "cmd-regedit", "label": "Editor de Registo (GUI)", "desc": null, "os": { "win": "regedit" } },
-                        { "id": "cmd-gpupdate", "label": "Forçar Atualização de Política (Admin)", "desc": "Aplica novas políticas de grupo imediatamente", "os": { "win": "gpupdate /force" } },
-                        { "id": "cmd-shutdown-r", "label": "Reiniciar o PC (Terminal)", "desc": "Força o reinício em 1 minuto", "os": { "win": "shutdown /r /t 60", "mac": "sudo shutdown -r now", "linux": "sudo shutdown -r now" } },
-                        { "id": "cmd-shutdown-s", "label": "Desligar o PC (Terminal)", "desc": "Força o desligamento em 1 minuto", "os": { "win": "shutdown /s /t 60", "mac": "sudo shutdown -h now", "linux": "sudo shutdown -h now" } },
-                        { "id": "cmd-mac-diskutil", "label": "Verificar Disco (Terminal)", "desc": "Verifica a integridade do disco principal", "os": { "mac": "diskutil verifyVolume /" } },
-                        { "id": "cmd-mac-repairperm", "label": "Reparar Permissões (Terminal)", "desc": "Repara permissões no disco de utilizador", "os": { "mac": "diskutil resetUserPermissions / `id -u`" } },
-                        { "id": "cmd-mac-firstaid", "label": "Primeiros Socorros no Disco (Terminal)", "desc": "Tenta reparar o volume principal", "os": { "mac": "diskutil repairVolume /" } },
-                        { "id": "cmd-lin-fsck", "label": "Verificar Disco (Terminal)", "desc": "Verifica /dev/sda1 (substituir)", "os": { "linux": "sudo fsck /dev/sda1" } },
-                        { "id": "cmd-lin-logs", "label": "Ver Logs do Sistema (Terminal)", "desc": "Mostra os logs em tempo real", "os": { "linux": "journalctl -f" } },
-                        { "id": "cmd-lin-dmesg", "label": "Ver Logs de Hardware (Terminal)", "desc": "Mostra mensagens do kernel (drivers, hardware)", "os": { "linux": "dmesg -H" } }
-                    ]
-                },
-                {
-                    "title": "Gestão de Pacotes e Software",
-                    "commands": [
-                        { "id": "cmd-appwiz", "label": "Adicionar/Remover Programas (GUI)", "desc": null, "os": { "win": "appwiz.cpl" } },
-                        { "id": "cmd-winget-list", "label": "Listar Programas (Winget)", "desc": "Mostra todos os pacotes instalados via Winget", "os": { "win": "winget list" } },
-                        { "id": "cmd-brew-list", "label": "Listar Programas (Brew)", "desc": "Mostra todos os pacotes instalados via Homebrew", "os": { "mac": "brew list" } },
-                        { "id": "cmd-apt-list", "label": "Listar Programas (Apt)", "desc": "Mostra todos os pacotes instalados via Apt", "os": { "linux": "apt list --installed" } },
-                        { "id": "cmd-snap-list", "label": "Listar Programas (Snap)", "desc": "Mostra todos os pacotes instalados via Snap", "os": { "linux": "snap list" } }
-                    ]
-                },
-                {
-                    "title": "Gestão de Ficheiros (Terminal)",
-                    "commands": [
-                        { "id": "cmd-dir", "label": "Listar Ficheiros", "desc": null, "os": { "win": "dir", "mac": "ls -la", "linux": "ls -la" } },
-                        { "id": "cmd-cd", "label": "Mudar de Pasta", "desc": "Substitua 'NOME_DA_PASTA'", "os": { "win": "cd NOME_DA_PASTA", "mac": "cd NOME_DA_PASTA", "linux": "cd NOME_DA_PASTA" } },
-                        { "id": "cmd-mkdir", "label": "Criar Pasta", "desc": "Substitua 'NOME_DA_PASTA'", "os": { "win": "mkdir NOME_DA_PASTA", "mac": "mkdir NOME_DA_PASTA", "linux": "mkdir NOME_DA_PASTA" } },
-                        { "id": "cmd-del", "label": "Apagar Ficheiro", "desc": "Substitua 'NOME_DO_FICHEIRO'", "os": { "win": "del NOME_DO_FICHEIRO", "mac": "rm NOME_DO_FICHEIRO", "linux": "rm NOME_DO_FICHEIRO" } },
-                        { "id": "cmd-rmdir", "label": "Apagar Pasta (Vazia)", "desc": "Substitua 'NOME_DA_PASTA'", "os": { "win": "rmdir NOME_DA_PASTA", "mac": "rmdir NOME_DA_PASTA", "linux": "rmdir NOME_DA_PASTA" } },
-                        { "id": "cmd-del-force", "label": "Forçar Apagar Pasta (Admin)", "desc": "Apaga a pasta e tudo o que está dentro. CUIDADO!", "os": { "win": "rmdir /s /q NOME_DA_PASTA", "mac": "sudo rm -rf NOME_DA_PASTA", "linux": "sudo rm -rf NOME_DA_PASTA" } },
-                        { "id": "cmd-find", "label": "Procurar Ficheiro (Terminal)", "desc": "Substitua [nome]", "os": { "win": "dir [nome] /s", "mac": "find . -name [nome]", "linux": "find . -name [nome]" } },
-                        { "id": "cmd-chmod", "label": "Alterar Permissões (Admin)", "desc": "Exemplo: dar permissão de execução a um script", "os": { "mac": "chmod +x [script.sh]", "linux": "chmod +x [script.sh]" } }
-                    ]
-                }
-            ];
+            // Catálogos independentes incorporados durante o build.
+            const catalog = window.AjaModular.get('bau-catalogo');
+            window.commandDatabase = catalog.defaults();
+            const savedCatalog = ctx.ajaStorage.getItem('bau_commandDatabase_v1');
+            if (savedCatalog) {
+                try { window.commandDatabase = catalog.validate(JSON.parse(savedCatalog)); }
+                catch (error) { console.warn('[Baú] Catálogo salvo inválido; usando o padrão.', error); }
+            }
 
             // --- 1. A LÓGICA DO "BAÚ" ---
             let currentOS = 'auto'; // 'auto', 'win', 'mac', 'linux'
@@ -308,6 +201,12 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
 
             // --- 2. O ESTILO (CSS) V20.1 (ORIGINAL) ---
             const styles = `
+                #bau-command-search, #bau-command-category { box-sizing:border-box; width:100%; margin:8px 0; padding:10px; border:1px solid #6485a5; border-radius:6px; background:var(--cor-fundo-secundario, #173859); color:inherit; }
+                #bau-command-count { font-weight:600; }
+                #bau-command-results .command-block { border:1px solid #6485a5; border-radius:8px; padding:12px; margin:12px 0; overflow-wrap:anywhere; }
+                .bau-command-text { box-sizing:border-box; width:100%; max-width:100%; resize:vertical; font-family:Consolas,monospace; padding:8px; }
+                .bau-command-impact { border-left:3px solid #ff9900; padding-left:8px; }
+
         :root {
             --raio-borda: 4px;
             --transicao-padrao: all 0.2s ease-in-out;
@@ -629,13 +528,21 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
             function createButton(id, text, className) { const b = document.createElement('button'); b.id = id; b.textContent = text; if (className) b.className = className; return b; }
             function createTextarea(id, placeholder, className = 'registro-box') { const t = document.createElement('textarea'); t.id = id; t.className = className; t.placeholder = placeholder; return t; }
             function createPre(id, text) { const p = document.createElement('pre'); p.id = id; p.className = 'teste-interno-output'; if (text) p.textContent = text; return p; }
-            function createCommandEntry(os, label, desc, cmd, id) {
+            function createCommandEntry(os, label, desc, cmd, id, metadata = {}) {
                 const div = document.createElement('div');
                 div.className = 'command-block os-commands-block os-' + os;
                 div.appendChild(createLabel(label));
                 if (desc) div.appendChild(createP(desc));
                 const inputId = `${os}-${id}`;
-                div.appendChild(createInput(inputId, cmd, true));
+                div.appendChild(createP('Terminal: ' + (metadata.shell || 'Consulte a documentação do comando.')));
+                div.appendChild(createP('Resultado esperado: ' + (metadata.result || 'Consulte a documentação do comando.')));
+                if (metadata.requires) div.appendChild(createP('Requisitos: ' + metadata.requires));
+                if (metadata.impact) { const impact = createP('Efeito: ' + metadata.impact); impact.className = 'bau-command-impact'; div.appendChild(impact); }
+                const commandField = createTextarea(inputId, '', 'bau-command-text');
+                commandField.readOnly = true; commandField.value = cmd;
+                commandField.setAttribute('aria-label', 'Comando: ' + label);
+                commandField.rows = Math.min(5, Math.max(2, Math.ceil(cmd.length / 68)));
+                div.appendChild(commandField);
                 const btn = createButton('copy-' + id, 'Copiar Comando', 'bau-copy-btn');
                 btn.setAttribute('data-input-id', inputId);
                 div.appendChild(btn);
@@ -655,7 +562,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
                 const box = document.createElement('div'); box.className = 'bau-warning-box';
                 const h4 = document.createElement('h4'); h4.textContent = 'Avançado: Forçar Velocidade (Risco)'; box.appendChild(h4);
                 box.appendChild(createP('AVISO: Só use isto se souber o que está a fazer. Se forçar 1.0 Gbps e o seu cabo/router não suportar, a sua rede VAI FALHAR. Use o comando "Voltar ao Automático" para reverter.'));
-                box.appendChild(createP('No Mac, o "Nome da Placa" é o "Service Name" (ex: "Ethernet"). Encontre-o com: networksetup -listallnetworkservices'));
+                box.appendChild(createP('No Windows, execute no PowerShell como administrador. Consulte Get-NetAdapterAdvancedProperty -Name ADAPTADOR | Format-List DisplayName,RegistryKeyword,ValidDisplayValues,ValidRegistryValues e substitua os valores conforme o driver. A alteração pode reiniciar a interface e interromper o acesso remoto. No Mac, o "Nome da Placa" é o "Service Name" (ex: "Ethernet"). Encontre-o com: networksetup -listallnetworkservices'));
                 box.appendChild(createLabel('1. Nome da Placa (visto no teste acima):'));
                 box.appendChild(createInput('placa-nome-input', '', false));
                 box.appendChild(createLabel('2. Comando (Admin) para Forçar 1 Gbps Full:'));
@@ -865,7 +772,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
             const winUpdates1 = document.createElement('div');
             winUpdates1.id = 'win-updates1-cmd';
             winUpdates1.className = 'os-commands-block os-win';
-            winUpdates1.appendChild(createLabel('Comando 1 (Windows Update + Drivers):'));
+            winUpdates1.appendChild(createLabel('Abrir configurações do Windows Update (PowerShell):'));
             winUpdates1.appendChild(createInput('win-update-cmd', '', true));
             const btnWinUp = createButton('copy-win-update-cmd', 'Copiar Comando', 'bau-copy-btn');
             btnWinUp.setAttribute('data-input-id', 'win-update-cmd');
@@ -893,7 +800,24 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
 
             // Aba Comandos (Container Vazio)
             const tabComandos = createTabContent('tab-comandos', 'Comandos de Acesso Rápido');
-            tabComandos.appendChild(createP('Atalhos úteis para ferramentas de sistema (a maioria é para o "Executar" do Windows - Win+R).'));
+            tabComandos.appendChild(createP('Escolha Win, Mac ou Lin. Copie no terminal indicado e substitua os campos em MAIÚSCULAS. Resultado esperado não é uma execução real.'));
+            const commandSearch = createInput('bau-command-search', '');
+            commandSearch.type = 'search'; commandSearch.placeholder = 'Pesquisar comando, finalidade ou resultado...';
+            commandSearch.setAttribute('aria-label', 'Pesquisar comandos');
+            const commandCategory = document.createElement('select'); commandCategory.id = 'bau-command-category';
+            commandCategory.setAttribute('aria-label', 'Categoria dos comandos');
+            const commandCount = createP(''); commandCount.id = 'bau-command-count'; commandCount.setAttribute('aria-live', 'polite');
+            const commandResults = document.createElement('div'); commandResults.id = 'bau-command-results';
+            const restoreCommands = createButton('bau-command-restore', 'Restaurar catálogo padrão');
+            restoreCommands.onclick = () => {
+                if (restoreCommands.dataset.confirm !== 'yes') { restoreCommands.dataset.confirm = 'yes'; restoreCommands.textContent = 'Confirmar restauração do catálogo'; return; }
+                delete restoreCommands.dataset.confirm; restoreCommands.textContent = 'Restaurar catálogo padrão';
+                ctx.ajaStorage.removeItem('bau_commandDatabase_v1'); window.commandDatabase = catalog.defaults();
+                commandSearch.value = ''; commandCategory.value = ''; populateCommandsTab();
+            };
+            tabComandos.append(commandSearch, commandCategory, commandCount, restoreCommands, commandResults);
+            commandSearch.addEventListener('input', populateCommandsTab);
+            commandCategory.addEventListener('change', populateCommandsTab);
             contentArea.appendChild(tabComandos);
 
 
@@ -1048,8 +972,8 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
                 const os = getActiveOS();
                 const adapterName = placaNomeInput.value || 'NOME_DA_PLACA';
                 if (os === 'win') {
-                    placaForce1gCmd.value = `powershell -ExecutionPolicy Bypass -Command "Set-NetAdapter -Name '${adapterName}' -SpeedDuplex '1.0 Gbps Full Duplex'"`;
-                    placaForceAutoCmd.value = `powershell -ExecutionPolicy Bypass -Command "Set-NetAdapter -Name '${adapterName}' -SpeedDuplex 'AutoNegotiation'"`;
+                    placaForce1gCmd.value = `Set-NetAdapterAdvancedProperty -Name '${adapterName.replace(/'/g, "''")}' -RegistryKeyword '*SpeedDuplex' -RegistryValue 'VALOR_1G_DO_DRIVER'`;
+                    placaForceAutoCmd.value = `Set-NetAdapterAdvancedProperty -Name '${adapterName.replace(/'/g, "''")}' -RegistryKeyword '*SpeedDuplex' -RegistryValue 'VALOR_AUTO_DO_DRIVER'`;
                 } else if (os === 'mac') {
                     placaForce1gCmd.value = `sudo networksetup -setmedia '${adapterName}' 1000baseT`;
                     placaForceAutoCmd.value = `sudo networksetup -setmedia '${adapterName}' autoselect`;
@@ -1178,7 +1102,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
                     winUp1.style.display = 'block';
                     winUp2.style.display = 'block';
                     nixUp.style.display = 'none';
-                    document.getElementById('win-update-cmd').value = "UsoClient.exe StartScan";
+                    document.getElementById('win-update-cmd').value = "Start-Process 'ms-settings:windowsupdate'";
                     document.getElementById('win-pkg-cmd').value = "winget upgrade --all";
                 } else {
                     winUp1.style.display = 'none';
@@ -1187,29 +1111,28 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
                     if (os === 'mac') {
                         nixUpCmd.value = "brew update && brew upgrade";
                     } else { // linux
-                        nixUpCmd.value = "sudo apt update && sudo apt upgrade -y";
+                        nixUpCmd.value = "sudo apt update && sudo apt upgrade";
                     }
                 }
             }
 
             // Lógica para a aba Comandos
-            const tabComandosContainer = document.getElementById('tab-comandos');
             function populateCommandsTab() {
                 const os = getActiveOS();
-                while (tabComandosContainer.children.length > 2) { // Limpa mantendo o Título e P
-                    tabComandosContainer.removeChild(tabComandosContainer.lastChild);
-                }
-
-                window.commandDatabase.forEach(category => {
-                    const commandsForOS = category.commands.filter(cmd => cmd.os[os]);
-                    if (commandsForOS.length > 0) {
-                        tabComandosContainer.appendChild(createH4(category.title));
-                        commandsForOS.forEach(cmd => {
-                            tabComandosContainer.appendChild(
-                                createCommandEntry(os, cmd.label, cmd.desc, cmd.os[os], cmd.id)
-                            );
-                        });
-                    }
+                const titles = window.commandDatabase.filter(group => group.commands.some(cmd => cmd.os[os])).map(group => group.title);
+                const selected = titles.includes(commandCategory.value) ? commandCategory.value : '';
+                commandCategory.replaceChildren();
+                for (const title of ['', ...new Set(titles)]) { const option = document.createElement('option'); option.value = title; option.textContent = title || 'Todas as categorias'; commandCategory.appendChild(option); }
+                commandCategory.value = selected;
+                const found = catalog.search(window.commandDatabase, os, commandSearch.value, selected);
+                const total = window.commandDatabase.reduce((count,group) => count + group.commands.filter(cmd => cmd.os[os]).length,0);
+                const visible = found.reduce((count,group) => count + group.commands.length,0);
+                commandCount.textContent = `${visible} de ${total} comandos — ${ {win:'Windows',mac:'macOS',linux:'Linux'}[os] || 'selecione um sistema' }`;
+                commandResults.replaceChildren();
+                if (!visible) commandResults.appendChild(createP('Nenhum comando encontrado. Ajuste a pesquisa ou escolha outro sistema.'));
+                found.forEach(category => {
+                    commandResults.appendChild(createH4(category.title));
+                    category.commands.forEach(cmd => commandResults.appendChild(createCommandEntry(os, cmd.label, cmd.desc, cmd.os[os], cmd.id, cmd)));
                 });
             }
 
@@ -1300,8 +1223,11 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
                     try {
                         const newDB = JSON.parse(area.value);
                         if (Array.isArray(newDB)) {
-                            window.commandDatabase = newDB;
-                            alert('Sucesso! Banco de dados de comandos importado.');
+                            area.setCustomValidity('');
+                            const validated = catalog.validate(newDB);
+                            ctx.ajaStorage.setItem('bau_commandDatabase_v1', JSON.stringify(validated));
+                            window.commandDatabase = validated;
+                            window.AjaModularNotice?.('Catálogo validado e salvo neste navegador.');
                             area.value = '';
                             area.style.display = 'none';
                             btn.textContent = 'Importar JSON';
@@ -1312,7 +1238,8 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
                             throw new Error('O JSON não é um array.');
                         }
                     } catch (e) {
-                        alert('Erro na importação: O JSON é inválido. ' + e.message);
+                        window.AjaModularNotice?.('Erro na importação: ' + e.message);
+                        area.setCustomValidity(e.message); area.reportValidity();
                     }
                 }
             };
