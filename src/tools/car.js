@@ -91,7 +91,11 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 .info-box { display: none; background: var(--box-bg); border: 1px solid var(--box-border); color: var(--box-text); padding: 12px; border-radius: 8px; font-size: 12px; margin-bottom: 5px; animation: fadeIn 0.3s; flex-shrink: 0; }
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         
-                .car-inputs { display: flex; gap: 8px; flex-shrink: 0; }
+                #car-panel, #car-panel * { box-sizing: border-box; }
+                #car-panel { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+                .car-inputs { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; min-width: 0; }
+                #car-panel .car-input { width: 100%; min-width: 0; flex: none; }
+                #car-panel #car-new-val { min-height: 76px; max-height: 220px; resize: vertical; white-space: pre-wrap; overflow-wrap: anywhere; }
                 .car-input { background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text-main); padding: 10px; border-radius: 8px; font-size: 13px; outline: none; flex: 1; transition: 0.2s; }
                 .car-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
                 .input-key { flex: 0 0 30%; font-weight: bold; }
@@ -175,7 +179,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
         
                         <div class="car-inputs">
                             <input id="car-new-key" class="car-input input-key" type="text" placeholder="Atalho">
-                            <input id="car-new-val" class="car-input" type="text" placeholder="Texto da mensagem...">
+                            <textarea id="car-new-val" class="car-input" rows="3" placeholder="Texto da mensagem..."></textarea>
                         </div>
                         <button id="car-btn-add" class="btn-save">💾 Salvar Comando</button>
         

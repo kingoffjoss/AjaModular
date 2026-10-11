@@ -36,7 +36,6 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                 const DEBUG_MODE = true;
                 const log = (...args) => { if (DEBUG_MODE) console.log(`[Protocolos v${SCRIPT_VERSION}]`, ...args); };
 
-                const PROTOCOLOS_JSON_URL = 'https://kingoffjoss.github.io/AjaModular/protocolos_brisanet_v1_9.json';
 
                 const ICONS = {
                     GEAR: `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
@@ -45,7 +44,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                     TRASH: `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
                 };
 
-                const initialProtocolos = [];
+                const initialProtocolos = /* bundled-defaults:protocolos */ [];
                 const requiredTagsMap = {};
                 const categoryDisplayMap = { 'recent': '⏱️ Recentes', 'favorites': '⭐ Favoritos', 'all': 'Todos', 'AGENDAMENTO': 'Agendamento', 'ATIVO': 'Ativo', 'BRISATV': 'BrisaTV', 'CABO': 'Cabo', 'CANCELAMENTO': 'Cancelamento', 'DIALOGO': 'Diálogo', 'EQUIPAMENTO': 'Equipamento', 'FINANCEIRO': 'Financeiro', 'FWA': 'FWA', 'ID': 'ID (Dados)', 'INFO': 'Info', 'INSTABILIDADE': 'Instabilidade', 'INSTALACAO': 'Instalação', 'JOGOS': 'Jogos', 'LENTIDAO': 'Lentidão', 'LIGACAO': 'Ligação', 'PARTICULAR': 'Particular', 'QUEDAS': 'Quedas', 'ROTEADOR': 'Roteador', 'SEM_ACESSO': 'Sem Acesso', 'SEM_GERENCIA': 'Sem Gerência', 'SINAL': 'Sinal', 'SVA': 'SVA', 'TELEFONIA': 'Telefonia', 'VELOCIDADE': 'Velocidade', 'VISITA': 'Visita (Custo)', 'WIFI': 'Wi-Fi', };
                 const sidebarCategoryOrder = ['recent', 'favorites', 'all', 'SEM_ACESSO', 'LENTIDAO', 'QUEDAS', 'INSTABILIDADE', 'SINAL', 'SEM_GERENCIA', 'CABO', 'WIFI', 'EQUIPAMENTO', 'ROTEADOR', 'FWA', 'BRISATV', 'TELEFONIA', 'JOGOS', 'PARTICULAR', 'FINANCEIRO', 'ID', 'VISITA', 'AGENDAMENTO', 'INSTALACAO', 'CANCELAMENTO', 'SVA', 'ATIVO', 'LIGACAO', 'DIALOGO', 'INFO'];
@@ -210,16 +209,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                     } catch (e) { ctx.ajaStorage.removeItem('pr_protocolos'); }
 
                     if (!protocolsLoaded) {
-                        try {
-                            const response = await ctx.safeFetch(PROTOCOLOS_JSON_URL + '?v=' + Date.now());
-                            if (!response.ok) throw new Error('Network error');
-                            const data = await response.json();
-                            let newProtocolos = (Array.isArray(data)) ? data : (data && Array.isArray(data.protocols) ? data.protocols : null);
-                            if (newProtocolos) {
-                                CONFIG.PROTOCOLOS = newProtocolos;
-                                try { ctx.ajaStorage.setItem('pr_protocolos', JSON.stringify(newProtocolos)); } catch (e) { }
-                            }
-                        } catch (fetchErr) { CONFIG.PROTOCOLOS = initialProtocolos; }
+                        CONFIG.PROTOCOLOS = JSON.parse(JSON.stringify(initialProtocolos));
                     }
 
                     try {
@@ -397,7 +387,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                         const previewTextArea = popup.querySelector('#pr-editor-preview');
                         const copyPreviewBtn = popup.querySelector('#pr-editor-copy-preview-btn');
 
-                        let currentCategory = 'favorites'; let currentSearchTerm = ''; let activeTagFilter = null; let activeQuickFilters = [];
+                        let currentCategory = 'all'; let currentSearchTerm = ''; let activeTagFilter = null; let activeQuickFilters = [];
 
                         const getReplyDataTags = (title) => { const r = CONFIG.PROTOCOLOS.find(p => p.title === title); return r?.requiredData || []; };
                         const highlightText = (text, keywords) => { if (!keywords || keywords.length === 0 || !text) { return text; } const regexKeywords = keywords.map(kw => escapeRegExp(kw)).join('|'); const regex = new RegExp(`(${regexKeywords})`, 'gi'); return text.replace(regex, '<span class="pr-highlight">$1</span>'); };
@@ -588,7 +578,8 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                                 const text = item.querySelector('.pr-reply-text').value.trim();
                                 const isFavorite = item.querySelector('.pr-favorite-toggle').checked;
                                 if (title && text) {
-                                    let reqData = requiredTagsMap[title] || [];
+                                    const original = CONFIG.PROTOCOLOS[Number(item.dataset.originalIndex)];
+                                    let reqData = original?.requiredData || requiredTagsMap[title] || [];
                                     newPs.push({ title, text, isFavorite, requiredData: reqData });
                                 }
                             });
@@ -609,6 +600,26 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                 `;
                             list.prepend(item);
                             item.querySelector('.pr-remove-reply-btn').onclick = (e) => { if (confirm('Remover protocolo?')) e.target.closest('.pr-reply-item').remove(); };
+                        };
+                        panel.querySelector('#pr-restore-replies-btn').onclick = () => {
+                            if (!confirm('Restaurar os protocolos padrão? As alterações desta lista serão substituídas ao salvar.')) return;
+                            CONFIG.PROTOCOLOS = JSON.parse(JSON.stringify(initialProtocolos)); renderSettings();
+                        };
+                        panel.querySelector('#pr-export-json-btn').onclick = () => {
+                            const blob = new Blob([JSON.stringify(CONFIG.PROTOCOLOS, null, 2)], {type:'application/json'});
+                            const url = URL.createObjectURL(blob); const link = document.createElement('a');
+                            link.href = url; link.download = 'protocolos-backup.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        };
+                        const importInput = document.createElement('input'); importInput.type = 'file'; importInput.accept = '.json'; importInput.hidden = true; panel.appendChild(importInput);
+                        panel.querySelector('#pr-import-json-btn').onclick = () => importInput.click();
+                        importInput.onchange = async () => {
+                            const file = importInput.files[0]; if (!file) return;
+                            try {
+                                const data = JSON.parse(await file.text()); const items = Array.isArray(data) ? data : data.protocols;
+                                if (!Array.isArray(items) || items.some(item => typeof item.title !== 'string' || typeof item.text !== 'string')) throw new Error('Arquivo de protocolos inválido.');
+                                if (confirm('Importar esta lista? Revise antes de Salvar e Fechar.')) { CONFIG.PROTOCOLOS = items; renderSettings(); }
+                            } catch (error) { UI.createNotification(error.message, 'error'); }
+                            finally { importInput.value = ''; }
                         };
                         renderSettings();
                     },

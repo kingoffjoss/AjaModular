@@ -26,7 +26,6 @@ let publicApi;
             const log = (...args) => { if (DEBUG_MODE) console.log(`[QR Script v${SCRIPT_VERSION}]`, ...args); };
 
             // --- NOVO (V2.4.9): URL para o ficheiro JSON de RESPOSTAS no GitHub Pages ---
-            const RESPOSTAS_JSON_URL = 'https://kingoffjoss.github.io/AjaModular/respostas_COMPLETAS.json';
 
 
             // --- CORES PADRÃO CYBERPUNK ELEGANTE ---
@@ -38,7 +37,7 @@ let publicApi;
             };
 
             // --- Respostas e Tags (Vazios) ---
-            const initialQuickReplies = [];
+            const initialQuickReplies = /* bundled-defaults:respostas */ [];
             const requiredTagsMap = {};
 
             // --- ÍCONES SVG ---
@@ -186,37 +185,8 @@ let publicApi;
                     ctx.ajaStorage.removeItem('qr_quickReplies');
                 }
 
-                // 2. Se o LocalStorage estiver vazio, buscar do GitHub
-                if (!repliesLoaded) {
-                    log(`LocalStorage de Respostas Rápidas vazio. Puxando de: ${RESPOSTAS_JSON_URL}`);
-                    try {
-                        const response = await ctx.safeFetch(RESPOSTAS_JSON_URL + '?v=' + Date.now());
-                        if (!response.ok) {
-                            throw new Error(`Falha ao buscar: ${response.statusText} (status ${response.status})`);
-                        }
-                        const data = await response.json();
-
-                        if (Array.isArray(data)) {
-                            CONFIG.QUICK_REPLIES = data;
-                            log(`Respostas Rápidas (${data.length}) puxadas com sucesso do GitHub.`);
-                            // Salvar no LocalStorage para a próxima vez
-                            try {
-                                ctx.ajaStorage.setItem('qr_quickReplies', JSON.stringify(data)); // Prefixo 'qr_'
-                                log("Respostas Rápidas do GitHub salvas no LocalStorage.");
-                            } catch (saveErr) {
-                                log("Erro ao salvar Respostas Rápidas no LocalStorage:", saveErr);
-                                UI.createNotification("Respostas carregadas, mas falha ao salvar localmente.", 'warn', 4000);
-                            }
-                        } else {
-                            throw new Error("Formato do JSON de Respostas Rápidas é inválido (esperado um Array []).");
-                        }
-
-                    } catch (fetchErr) {
-                        log("ERRO CRÍTICO ao puxar Respostas Rápidas do GitHub:", fetchErr);
-                        CONFIG.QUICK_REPLIES = initialQuickReplies;
-                        try { UI.createNotification("Falha ao carregar Respostas Rápidas do GitHub.", 'error', 5000); } catch (e) { }
-                    }
-                }
+                // Defaults are included in this module at build time; no network is required.
+                if (!repliesLoaded) CONFIG.QUICK_REPLIES = JSON.parse(JSON.stringify(initialQuickReplies));
 
                 // 3. Carregar o resto das configurações (não-respostas)
                 try {
