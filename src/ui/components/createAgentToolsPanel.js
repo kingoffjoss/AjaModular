@@ -1,6 +1,6 @@
 window.AjaModular.register('ui-createAgentToolsPanel', [], function(ctx) {
     ctx.UI.createAgentToolsPanel = function() {
-        if (!ctx.CONFIG.TOOLS_VISIBLE) { document.getElementById('purecloud-script-tools-panel')?.remove(); return; }
+        if (!ctx.CONFIG.TOOLS_VISIBLE) { return window.AjaModular.get('ferramentas')?.close(); }
         return window.AjaModular.open('ferramentas');
     };
 });
