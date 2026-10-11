@@ -691,29 +691,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         });
     }
 
-    function recolorInlineElements() {
-        const inlineTargets = [
-            ['current-status', '#FF8200'],
-            ['top-bar-time', '#FF8200'],
-            ['pausa-script-header-clock', '#FF8200']
-        ];
-
-        inlineTargets.forEach(([id, color]) => {
-            const element = document.getElementById(id);
-            if (!element) return;
-            element.style.color = color;
-            element.style.textShadow = '0 0 5px rgba(255, 130, 0, 0.5)';
-        });
-    }
-
     function applyPatch() {
         ensureStyle();
         syncThemeDefaults();
-        recolorInlineElements();
     }
 
     applyPatch();
-    setInterval(recolorInlineElements, 1000);
 
     let patchScheduled = false;
     const observer = new MutationObserver(() => {
