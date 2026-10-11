@@ -1,0 +1,1779 @@
+[
+  {
+    "title": "Rede (Diagnóstico e Atalhos) — revisados",
+    "commands": [
+      {
+        "id": "cmd-ncpa-win",
+        "label": "Conexões de Rede (Painel de Controle)",
+        "desc": "Abre a pasta \"Conexões de Rede\" (Painel de Controle)",
+        "os": {
+          "win": "control.exe ncpa.cpl"
+        },
+        "result": "Janela com os adaptadores e conexões de rede.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-firewall-win",
+        "label": "Firewall do Windows",
+        "desc": "Abre o Firewall com Segurança Avançada",
+        "os": {
+          "win": "mmc.exe wf.msc"
+        },
+        "result": "Console do Firewall com Segurança Avançada.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-inetcpl-win",
+        "label": "Propriedades de Internet",
+        "desc": "Abre as Propriedades de Internet (Cache, Segurança, etc)",
+        "os": {
+          "win": "control.exe inetcpl.cpl"
+        },
+        "result": "Janela Propriedades da Internet.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-net-mac",
+        "label": "Abrir Ajustes do Sistema",
+        "desc": "Abre os ajustes no macOS 13 ou superior; selecione Rede.",
+        "os": {
+          "mac": "open -a \"System Settings\""
+        },
+        "result": "Aplicativo Ajustes do Sistema; navegue até Rede.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-nm-linux",
+        "label": "Editor de Conexão (GUI)",
+        "desc": "Abre o editor de conexões do NetworkManager",
+        "os": {
+          "linux": "nm-connection-editor"
+        },
+        "result": "Editor gráfico de conexões NetworkManager.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. NetworkManager, editor e sessão gráfica disponíveis.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-getmac-win",
+        "label": "Ver Endereços MAC",
+        "desc": "Mostra os endereços físicos (MAC) de todas as placas",
+        "os": {
+          "win": "getmac /v"
+        },
+        "result": "Endereços MAC e identificação das interfaces.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-getmac-mac",
+        "label": "Ver Endereços MAC",
+        "desc": "Mostra os endereços físicos (MAC) de todas as placas",
+        "os": {
+          "mac": "ifconfig | grep ether"
+        },
+        "result": "Endereços MAC e identificação das interfaces.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-getmac-linux",
+        "label": "Ver Endereços MAC",
+        "desc": "Mostra os endereços físicos (MAC) de todas as placas",
+        "os": {
+          "linux": "ip link show | grep ether"
+        },
+        "result": "Endereços MAC e identificação das interfaces.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-firewall-status-win",
+        "label": "Verificar Status do Firewall (Terminal)",
+        "desc": "Verifica se o firewall está ativo",
+        "os": {
+          "win": "netsh advfirewall show allprofiles state"
+        },
+        "result": "Estado do firewall; o Linux precisa ter UFW instalado.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-firewall-status-mac",
+        "label": "Verificar Status do Firewall (Terminal)",
+        "desc": "Verifica se o firewall está ativo",
+        "os": {
+          "mac": "sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate"
+        },
+        "result": "Estado do firewall; o Linux precisa ter UFW instalado.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-firewall-status-linux",
+        "label": "Verificar Status do Firewall (Terminal)",
+        "desc": "Verifica se o firewall está ativo",
+        "os": {
+          "linux": "sudo ufw status"
+        },
+        "result": "Estado do firewall; o Linux precisa ter UFW instalado.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. UFW instalado.",
+        "impact": "",
+        "added": false
+      }
+    ]
+  },
+  {
+    "title": "Rede (Configuração e Admin) — revisados",
+    "commands": [
+      {
+        "id": "cmd-flushdns-win",
+        "label": "Limpar Cache DNS (Admin)",
+        "desc": "Força a limpeza do cache de resolução de DNS",
+        "os": {
+          "win": "ipconfig /flushdns"
+        },
+        "result": "Cache DNS limpo; no macOS pode não haver mensagem.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera o cache DNS.",
+        "added": false
+      },
+      {
+        "id": "cmd-flushdns-mac",
+        "label": "Limpar Cache DNS (Admin)",
+        "desc": "Força a limpeza do cache de resolução de DNS",
+        "os": {
+          "mac": "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
+        },
+        "result": "Cache DNS limpo; no macOS pode não haver mensagem.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera o cache DNS.",
+        "added": false
+      },
+      {
+        "id": "cmd-flushdns-linux",
+        "label": "Limpar cache DNS systemd-resolved",
+        "desc": "Limpa o cache do systemd-resolved, se estiver ativo.",
+        "os": {
+          "linux": "sudo resolvectl flush-caches"
+        },
+        "result": "Cache DNS limpo; no macOS pode não haver mensagem.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. systemd-resolved ativo.",
+        "impact": "Altera o cache DNS.",
+        "added": false
+      },
+      {
+        "id": "cmd-releaseip-win",
+        "label": "Libertar IP (Admin)",
+        "desc": "Liberta o endereço IP atual do DHCP",
+        "os": {
+          "win": "ipconfig /release"
+        },
+        "result": "Concessão DHCP liberada; a interface pode perder o IP.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Pode interromper o acesso remoto ao liberar o IP.",
+        "added": false
+      },
+      {
+        "id": "cmd-releaseip-linux",
+        "label": "Libertar IP (Admin)",
+        "desc": "Liberta o endereço IP atual do DHCP",
+        "os": {
+          "linux": "sudo dhclient -r"
+        },
+        "result": "Concessão DHCP liberada; a interface pode perder o IP.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Cliente dhclient instalado; pode não existir em distribuições recentes.",
+        "impact": "Pode interromper o acesso remoto ao liberar o IP.",
+        "added": false
+      },
+      {
+        "id": "cmd-renewip-win",
+        "label": "Renovar IP (Admin)",
+        "desc": "Pede um novo endereço IP ao DHCP",
+        "os": {
+          "win": "ipconfig /renew"
+        },
+        "result": "Nova solicitação DHCP; o endereço pode permanecer igual.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Reconfiguração DHCP pode interromper o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-renewip-mac",
+        "label": "Solicitar DHCP na interface",
+        "desc": "Substitua INTERFACE pelo dispositivo identificado com networksetup -listallhardwareports.",
+        "os": {
+          "mac": "sudo ipconfig set INTERFACE DHCP"
+        },
+        "result": "Nova solicitação DHCP; o endereço pode permanecer igual.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Reconfiguração DHCP pode interromper o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-renewip-linux",
+        "label": "Renovar IP (Admin)",
+        "desc": "Pede um novo endereço IP ao DHCP",
+        "os": {
+          "linux": "sudo dhclient"
+        },
+        "result": "Nova solicitação DHCP; o endereço pode permanecer igual.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Cliente dhclient instalado; pode não existir em distribuições recentes.",
+        "impact": "Reconfiguração DHCP pode interromper o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-netsh-show-wifi-win",
+        "label": "Ver Perfis Wi-Fi Guardados (Admin)",
+        "desc": "Mostra todas as redes Wi-Fi que o Windows guardou",
+        "os": {
+          "win": "netsh wlan show profiles"
+        },
+        "result": "Perfis Wi-Fi salvos, sem mostrar senhas.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-netsh-show-wifikey-win",
+        "label": "Ver Chave Wi-Fi Específica (Admin)",
+        "desc": "Substitua NOME_DA_REDE pelo nome do Wi-Fi",
+        "os": {
+          "win": "netsh wlan show profile name=\"NOME_DA_REDE\" key=clear"
+        },
+        "result": "Detalhes do perfil e chave, quando disponível e permitido.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Consulta de credencial local do perfil selecionado; a saída pode conter senha.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-netsh-reset-win",
+        "label": "Resetar Catálogo Winsock (Admin)",
+        "desc": "Repara problemas de conectividade de software",
+        "os": {
+          "win": "netsh winsock reset"
+        },
+        "result": "Confirmação da redefinição do Winsock; pode exigir reinício.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera a rede e pode exigir reinício.",
+        "added": false
+      },
+      {
+        "id": "cmd-netsh-reset-ip-win",
+        "label": "Resetar Stack TCP/IP (Admin)",
+        "desc": "Repara problemas de conectividade de IP",
+        "os": {
+          "win": "netsh int ip reset"
+        },
+        "result": "Resultado da redefinição TCP/IP; pode exigir reinício.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera a rede e pode exigir reinício.",
+        "added": false
+      },
+      {
+        "id": "cmd-wifi-off-win",
+        "label": "Desativar adaptador",
+        "desc": "Substitua ADAPTADOR pelo nome em Get-NetAdapter; execute no PowerShell.",
+        "os": {
+          "win": "Disable-NetAdapter -Name 'ADAPTADOR'"
+        },
+        "result": "Interface ou serviço desabilitado.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Desativa a interface e pode interromper o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-wifi-off-mac",
+        "label": "Desativar Wi-Fi (Admin)",
+        "desc": "Nome \"Wi-Fi\" (Win) ou \"wlan0\" (Lin) pode variar",
+        "os": {
+          "mac": "sudo networksetup -setnetworkserviceenabled Wi-Fi off"
+        },
+        "result": "Interface ou serviço desabilitado.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Desativa a interface e pode interromper o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-wifi-off-linux",
+        "label": "Desativar interface",
+        "desc": "Substitua INTERFACE pelo nome em ip -br link.",
+        "os": {
+          "linux": "sudo ip link set INTERFACE down"
+        },
+        "result": "Interface ou serviço desabilitado.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Desativa a interface e pode interromper o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-wifi-on-win",
+        "label": "Ativar adaptador",
+        "desc": "Substitua ADAPTADOR pelo nome em Get-NetAdapter; execute no PowerShell.",
+        "os": {
+          "win": "Enable-NetAdapter -Name 'ADAPTADOR'"
+        },
+        "result": "Interface ou serviço habilitado; conectar depende da rede.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera o estado da interface.",
+        "added": false
+      },
+      {
+        "id": "cmd-wifi-on-mac",
+        "label": "Ativar Wi-Fi (Admin)",
+        "desc": "Nome \"Wi-Fi\" (Win) ou \"wlan0\" (Lin) pode variar",
+        "os": {
+          "mac": "sudo networksetup -setnetworkserviceenabled Wi-Fi on"
+        },
+        "result": "Interface ou serviço habilitado; conectar depende da rede.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera o estado da interface.",
+        "added": false
+      },
+      {
+        "id": "cmd-wifi-on-linux",
+        "label": "Ativar interface",
+        "desc": "Substitua INTERFACE pelo nome em ip -br link; associação Wi-Fi depende do gerenciador.",
+        "os": {
+          "linux": "sudo ip link set INTERFACE up"
+        },
+        "result": "Interface ou serviço habilitado; conectar depende da rede.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera o estado da interface.",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-airport-mac",
+        "label": "Diagnóstico Sem Fio (GUI)",
+        "desc": "Abre a ferramenta do macOS em vez do binário privado airport.",
+        "os": {
+          "mac": "open -a \"Wireless Diagnostics\""
+        },
+        "result": "Diagnóstico Sem Fio aberto; use o menu Janela para ferramentas de varredura.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-iwlist-linux",
+        "label": "Varrer redes Wi-Fi",
+        "desc": "Substitua INTERFACE pelo dispositivo listado em iw dev; requer pacote iw.",
+        "os": {
+          "linux": "sudo iw dev INTERFACE scan"
+        },
+        "result": "Redes visíveis, frequências e sinal.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "",
+        "added": false
+      }
+    ]
+  },
+  {
+    "title": "Sistema (Info e Desempenho) — revisados",
+    "commands": [
+      {
+        "id": "cmd-taskmgr-win",
+        "label": "Gestor de Tarefas",
+        "desc": "Consulta ou abre gestor de tarefas.",
+        "os": {
+          "win": "taskmgr"
+        },
+        "result": "Gerenciador de Tarefas aberto.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-services-win",
+        "label": "Serviços do Windows",
+        "desc": "Consulta ou abre serviços do windows.",
+        "os": {
+          "win": "mmc.exe services.msc"
+        },
+        "result": "Console com estados dos serviços.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-msinfo-win",
+        "label": "Informação do Sistema",
+        "desc": "Consulta ou abre informação do sistema.",
+        "os": {
+          "win": "msinfo32"
+        },
+        "result": "Resumo e categorias de informações do sistema.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-devmgmt-win",
+        "label": "Gestor de Dispositivos",
+        "desc": "Ver drivers e hardware",
+        "os": {
+          "win": "mmc.exe devmgmt.msc"
+        },
+        "result": "Árvore de dispositivos e estado dos drivers.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-msconfig-win",
+        "label": "Configuração do Sistema",
+        "desc": "Inspeciona opções de boot e serviços; inicialização de aplicativos fica no Gerenciador de Tarefas.",
+        "os": {
+          "win": "msconfig"
+        },
+        "result": "Configuração de boot e serviços; inicialização de aplicativos é gerida pelo Gerenciador de Tarefas.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-dxdiag-win",
+        "label": "Diagnóstico do DirectX",
+        "desc": "Verificar drivers de vídeo e áudio",
+        "os": {
+          "win": "dxdiag"
+        },
+        "result": "Informações e diagnósticos DirectX, vídeo e áudio.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-resmon-win",
+        "label": "Monitor de Recursos",
+        "desc": "Ver uso de CPU, disco, rede e memória em detalhe",
+        "os": {
+          "win": "resmon"
+        },
+        "result": "Painéis de CPU, memória, disco e rede.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-perfmon-win",
+        "label": "Monitor de Desempenho",
+        "desc": "Analisar performance e gerar relatórios",
+        "os": {
+          "win": "perfmon"
+        },
+        "result": "Console de contadores e conjuntos de coleta.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-powercfg-win",
+        "label": "Opções de Energia (Avançado)",
+        "desc": "Gerar relatório de saúde da bateria",
+        "os": {
+          "win": "powercfg /batteryreport"
+        },
+        "result": "Caminho do relatório HTML da bateria; equipamento sem bateria pode ter poucos dados.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Cria relatório HTML na pasta atual.",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-cpu-win",
+        "label": "Informações da CPU",
+        "desc": "Consulta CPU pelo CIM, substituindo o WMIC.",
+        "os": {
+          "win": "Get-CimInstance Win32_Processor | Select-Object Name,MaxClockSpeed,L3CacheSize"
+        },
+        "result": "Identificação e características da CPU.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-cpu-mac",
+        "label": "Informações do hardware",
+        "desc": "Consulta hardware, incluindo identificação da CPU em Macs Intel e Apple Silicon.",
+        "os": {
+          "mac": "system_profiler SPHardwareDataType"
+        },
+        "result": "Identificação e características da CPU.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-cpu-linux",
+        "label": "Modelo da CPU",
+        "desc": "Consulta modelo da CPU com rótulo em inglês, independente do idioma da sessão.",
+        "os": {
+          "linux": "LC_ALL=C lscpu | grep \"Model name\""
+        },
+        "result": "Identificação e características da CPU.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-mem-win",
+        "label": "Módulos de RAM",
+        "desc": "Consulta módulos via CIM; capacidade em bytes.",
+        "os": {
+          "win": "Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity,Speed,Manufacturer"
+        },
+        "result": "Capacidade da memória; detalhes dependem do sistema.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-mem-mac",
+        "label": "Info Memória (Terminal)",
+        "desc": "Consulta capacidade total de memória física em bytes; não lista módulos.",
+        "os": {
+          "mac": "sysctl hw.memsize"
+        },
+        "result": "Capacidade da memória; detalhes dependem do sistema.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-mem-linux",
+        "label": "Uso da memória",
+        "desc": "Mostra memória e swap usados/disponíveis; não lista módulos físicos.",
+        "os": {
+          "linux": "free -h"
+        },
+        "result": "Capacidade da memória; detalhes dependem do sistema.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-os-win",
+        "label": "Sistema operacional",
+        "desc": "Consulta versão e arquitetura via CIM.",
+        "os": {
+          "win": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,OSArchitecture"
+        },
+        "result": "Nome, versão e arquitetura do sistema.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-os-mac",
+        "label": "Info Sistema Operacional (Terminal)",
+        "desc": "Consulta ou abre info sistema operacional (terminal).",
+        "os": {
+          "mac": "sw_vers"
+        },
+        "result": "Nome, versão e arquitetura do sistema.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-wmic-os-linux",
+        "label": "Distribuição Linux",
+        "desc": "Consulta identificação da distribuição, sem depender de lsb_release.",
+        "os": {
+          "linux": "cat /etc/os-release"
+        },
+        "result": "Nome, versão e arquitetura do sistema.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-activity-mac",
+        "label": "Monitor de Atividade (GUI)",
+        "desc": "Equivalente ao Gestor de Tarefas",
+        "os": {
+          "mac": "open /System/Applications/Utilities/Activity\\ Monitor.app"
+        },
+        "result": "Monitor de Atividade aberto.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-sysinfo-mac",
+        "label": "Informação do Sistema (GUI)",
+        "desc": "Consulta ou abre informação do sistema (gui).",
+        "os": {
+          "mac": "open /System/Applications/Utilities/System\\ Information.app"
+        },
+        "result": "Informações do Sistema aberto.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-console-mac",
+        "label": "Logs do Sistema (GUI)",
+        "desc": "Equivalente ao Visualizador de Eventos",
+        "os": {
+          "mac": "open /System/Applications/Utilities/Console.app"
+        },
+        "result": "Console de logs aberto.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-monitor-linux",
+        "label": "Monitor de Sistema (Terminal)",
+        "desc": "(Requer htop: sudo apt install htop)",
+        "os": {
+          "linux": "htop"
+        },
+        "result": "Monitor interativo de processos; saia com F10 ou q.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Pacote htop instalado.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-lshw-linux",
+        "label": "Listar Hardware (Terminal)",
+        "desc": "Lista detalhada de todo o hardware",
+        "os": {
+          "linux": "sudo lshw -short"
+        },
+        "result": "Resumo de hardware detectado.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Pacote lshw instalado.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-df-mac",
+        "label": "Ver Uso de Disco (Terminal)",
+        "desc": "Mostra espaço livre em disco",
+        "os": {
+          "mac": "df -h"
+        },
+        "result": "Uso, espaço livre e montagem dos volumes.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-df-linux",
+        "label": "Ver Uso de Disco (Terminal)",
+        "desc": "Mostra espaço livre em disco",
+        "os": {
+          "linux": "df -h"
+        },
+        "result": "Uso, espaço livre e montagem dos volumes.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-du-mac",
+        "label": "Ver Tamanho de Pastas (Terminal)",
+        "desc": "Mostra o tamanho das pastas no diretório atual",
+        "os": {
+          "mac": "du -sh *"
+        },
+        "result": "Tamanhos das entradas visíveis da pasta atual; não inclui arquivos ocultos.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-du-linux",
+        "label": "Ver Tamanho de Pastas (Terminal)",
+        "desc": "Mostra o tamanho das pastas no diretório atual",
+        "os": {
+          "linux": "du -sh *"
+        },
+        "result": "Tamanhos das entradas visíveis da pasta atual; não inclui arquivos ocultos.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-lspci-linux",
+        "label": "Listar Dispositivos PCI (Terminal)",
+        "desc": "Ver placas (vídeo, rede, etc) ligadas",
+        "os": {
+          "linux": "lspci"
+        },
+        "result": "Dispositivos PCI reconhecidos.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Pacote pciutils instalado.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-uname-mac",
+        "label": "Ver Info do Sistema (Terminal)",
+        "desc": "Mostra a versão do Kernel e SO",
+        "os": {
+          "mac": "uname -a"
+        },
+        "result": "Identificação do kernel e arquitetura.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-uname-linux",
+        "label": "Ver Info do Sistema (Terminal)",
+        "desc": "Mostra a versão do Kernel e SO",
+        "os": {
+          "linux": "uname -a"
+        },
+        "result": "Identificação do kernel e arquitetura.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-whoami-win",
+        "label": "Ver Username (Terminal)",
+        "desc": "Mostra o utilizador atual",
+        "os": {
+          "win": "whoami"
+        },
+        "result": "Nome do usuário da sessão.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-whoami-mac",
+        "label": "Ver Username (Terminal)",
+        "desc": "Mostra o utilizador atual",
+        "os": {
+          "mac": "whoami"
+        },
+        "result": "Nome do usuário da sessão.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-whoami-linux",
+        "label": "Ver Username (Terminal)",
+        "desc": "Mostra o utilizador atual",
+        "os": {
+          "linux": "whoami"
+        },
+        "result": "Nome do usuário da sessão.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-uptime-win",
+        "label": "Horário do último boot",
+        "desc": "Consulta pelo CIM sem depender do idioma de systeminfo.",
+        "os": {
+          "win": "(Get-CimInstance Win32_OperatingSystem).LastBootUpTime"
+        },
+        "result": "Tempo de atividade ou horário do último boot.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-uptime-mac",
+        "label": "Tempo de Atividade (Terminal)",
+        "desc": "Há quanto tempo o sistema está ligado",
+        "os": {
+          "mac": "uptime"
+        },
+        "result": "Tempo de atividade ou horário do último boot.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-uptime-linux",
+        "label": "Tempo de Atividade (Terminal)",
+        "desc": "Há quanto tempo o sistema está ligado",
+        "os": {
+          "linux": "uptime"
+        },
+        "result": "Tempo de atividade ou horário do último boot.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      }
+    ]
+  },
+  {
+    "title": "Gestão de Processos e Serviços — revisados",
+    "commands": [
+      {
+        "id": "cmd-tasklist-win",
+        "label": "Listar Processos (Terminal)",
+        "desc": "Mostra todos os processos a correr",
+        "os": {
+          "win": "tasklist"
+        },
+        "result": "Lista de processos ativos.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-tasklist-mac",
+        "label": "Listar Processos (Terminal)",
+        "desc": "Mostra todos os processos a correr",
+        "os": {
+          "mac": "ps aux"
+        },
+        "result": "Lista de processos ativos.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-tasklist-linux",
+        "label": "Listar Processos (Terminal)",
+        "desc": "Mostra todos os processos a correr",
+        "os": {
+          "linux": "ps aux"
+        },
+        "result": "Lista de processos ativos.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-taskkill-win",
+        "label": "Matar Processo por PID (Admin)",
+        "desc": "Substitua [PID] pelo número do processo",
+        "os": {
+          "win": "taskkill /PID PID /F"
+        },
+        "result": "Processo alvo encerrado à força, se houver permissão.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Encerra à força; dados não salvos podem ser perdidos.",
+        "added": false
+      },
+      {
+        "id": "cmd-taskkill-mac",
+        "label": "Matar Processo por PID (Admin)",
+        "desc": "Substitua [PID] pelo número do processo",
+        "os": {
+          "mac": "sudo kill -9 PID"
+        },
+        "result": "Processo alvo encerrado à força, se houver permissão.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Encerra à força; dados não salvos podem ser perdidos.",
+        "added": false
+      },
+      {
+        "id": "cmd-taskkill-linux",
+        "label": "Matar Processo por PID (Admin)",
+        "desc": "Substitua [PID] pelo número do processo",
+        "os": {
+          "linux": "sudo kill -9 PID"
+        },
+        "result": "Processo alvo encerrado à força, se houver permissão.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Encerra à força; dados não salvos podem ser perdidos.",
+        "added": false
+      },
+      {
+        "id": "cmd-taskkill-name-win",
+        "label": "Matar Processo por Nome (Admin)",
+        "desc": "Substitua [NOME]",
+        "os": {
+          "win": "taskkill /IM \"NOME.EXE\" /F"
+        },
+        "result": "Processos com o nome indicado encerrados; pode atingir mais de um.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Encerra processos; dados não salvos podem ser perdidos.",
+        "added": false
+      },
+      {
+        "id": "cmd-taskkill-name-mac",
+        "label": "Matar Processo por Nome (Admin)",
+        "desc": "Substitua [NOME]",
+        "os": {
+          "mac": "sudo killall 'NOME'"
+        },
+        "result": "Processos com o nome indicado encerrados; pode atingir mais de um.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Encerra processos; dados não salvos podem ser perdidos.",
+        "added": false
+      },
+      {
+        "id": "cmd-taskkill-name-linux",
+        "label": "Matar Processo por Nome (Admin)",
+        "desc": "Substitua [NOME]",
+        "os": {
+          "linux": "sudo killall 'NOME'"
+        },
+        "result": "Processos com o nome indicado encerrados; pode atingir mais de um.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Encerra processos; dados não salvos podem ser perdidos.",
+        "added": false
+      },
+      {
+        "id": "cmd-net-start-win",
+        "label": "Ver Serviços a Correr (Terminal)",
+        "desc": "Consulta ou abre ver serviços a correr (terminal).",
+        "os": {
+          "win": "net start"
+        },
+        "result": "Serviços ativos ou estado do domínio de serviços.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-net-start-mac",
+        "label": "Domínio de serviços de sistema",
+        "desc": "Consulta estado do domínio system; nem todo job listado está executando.",
+        "os": {
+          "mac": "launchctl print system"
+        },
+        "result": "Serviços ativos ou estado do domínio de serviços.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-net-start-linux",
+        "label": "Ver Serviços a Correr (Terminal)",
+        "desc": "Consulta ou abre ver serviços a correr (terminal).",
+        "os": {
+          "linux": "sudo systemctl list-units --type=service --state=running"
+        },
+        "result": "Serviços ativos ou estado do domínio de serviços.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Sistema com systemd.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-net-stop-win",
+        "label": "Parar Serviço (Admin)",
+        "desc": "Substitua \"NOME_SERVICO\"",
+        "os": {
+          "win": "net stop \"NOME_SERVICO\""
+        },
+        "result": "Serviço parado; em launchd o job é removido do domínio.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Interrompe o serviço; pode encerrar o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-net-stop-mac",
+        "label": "Descarregar daemon do sistema",
+        "desc": "Substitua ROTULO pelo identificador do job; pode parar serviço crítico.",
+        "os": {
+          "mac": "sudo launchctl bootout system/ROTULO"
+        },
+        "result": "Serviço parado; em launchd o job é removido do domínio.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Interrompe o serviço; pode encerrar o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-net-stop-linux",
+        "label": "Parar Serviço (Admin)",
+        "desc": "Substitua \"NOME_SERVICO\"",
+        "os": {
+          "linux": "sudo systemctl stop SERVICO"
+        },
+        "result": "Serviço parado; em launchd o job é removido do domínio.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Sistema com systemd.",
+        "impact": "Interrompe o serviço; pode encerrar o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-net-start-srv-win",
+        "label": "Iniciar Serviço (Admin)",
+        "desc": "Substitua \"NOME_SERVICO\"",
+        "os": {
+          "win": "net start \"NOME_SERVICO\""
+        },
+        "result": "Serviço iniciado ou job carregado no domínio launchd.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera estado de serviço.",
+        "added": false
+      },
+      {
+        "id": "cmd-net-start-srv-mac",
+        "label": "Carregar daemon do sistema",
+        "desc": "Substitua o caminho pelo plist correto; pode falhar se o job já estiver carregado.",
+        "os": {
+          "mac": "sudo launchctl bootstrap system '/CAMINHO/servico.plist'"
+        },
+        "result": "Serviço iniciado ou job carregado no domínio launchd.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera estado de serviço.",
+        "added": false
+      },
+      {
+        "id": "cmd-net-start-srv-linux",
+        "label": "Iniciar Serviço (Admin)",
+        "desc": "Substitua \"NOME_SERVICO\"",
+        "os": {
+          "linux": "sudo systemctl start SERVICO"
+        },
+        "result": "Serviço iniciado ou job carregado no domínio launchd.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador. Sistema com systemd.",
+        "impact": "Altera estado de serviço.",
+        "added": false
+      }
+    ]
+  },
+  {
+    "title": "Sistema (Reparação e Admin) — revisados",
+    "commands": [
+      {
+        "id": "cmd-sfc-win",
+        "label": "Verificar Ficheiros de Sistema (Admin)",
+        "desc": "Repara ficheiros corrompidos do Windows",
+        "os": {
+          "win": "sfc /scannow"
+        },
+        "result": "Progresso e diagnóstico dos arquivos protegidos; pode reparar arquivos.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Pode reparar arquivos do sistema.",
+        "added": false
+      },
+      {
+        "id": "cmd-dism-win",
+        "label": "Verificar Imagem do Windows (Admin)",
+        "desc": "Repara a imagem do Windows",
+        "os": {
+          "win": "Dism /Online /Cleanup-Image /RestoreHealth"
+        },
+        "result": "Progresso e resultado da reparação da imagem do Windows.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Pode reparar a imagem e acessar fontes de atualização.",
+        "added": false
+      },
+      {
+        "id": "cmd-chkdsk-win",
+        "label": "Verificar Disco (Admin)",
+        "desc": "Verifica o disco C: (agenda para reiniciar)",
+        "os": {
+          "win": "chkdsk C: /f"
+        },
+        "result": "Verificação/reparo ou solicitação de agendamento para o próximo boot.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Repara o volume; pode exigir reinício e indisponibilidade.",
+        "added": false
+      },
+      {
+        "id": "cmd-cleanmgr-win",
+        "label": "Limpeza de Disco (GUI)",
+        "desc": "Abre a ferramenta de limpeza de disco",
+        "os": {
+          "win": "cleanmgr"
+        },
+        "result": "Seleção de categorias para limpeza; abrir não apaga automaticamente.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-control-win",
+        "label": "Painel de Controle (GUI)",
+        "desc": "Consulta ou abre painel de controle (gui).",
+        "os": {
+          "win": "control"
+        },
+        "result": "Painel de Controle aberto.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-eventvwr-win",
+        "label": "Visualizador de Eventos (GUI)",
+        "desc": "Ver logs de erro do Windows",
+        "os": {
+          "win": "mmc.exe eventvwr.msc"
+        },
+        "result": "Visualizador de Eventos aberto.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-gpedit-win",
+        "label": "Editor de Política de Grupo (GUI)",
+        "desc": "(Apenas Windows Pro/Enterprise)",
+        "os": {
+          "win": "mmc.exe gpedit.msc"
+        },
+        "result": "Editor de Política de Grupo Local, se disponível na edição do Windows.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-regedit-win",
+        "label": "Editor de Registo (GUI)",
+        "desc": "Consulta ou abre editor de registo (gui).",
+        "os": {
+          "win": "regedit"
+        },
+        "result": "Editor do Registro aberto; abrir não altera valores.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-gpupdate-win",
+        "label": "Forçar Atualização de Política (Admin)",
+        "desc": "Aplica novas políticas de grupo imediatamente",
+        "os": {
+          "win": "gpupdate /force"
+        },
+        "result": "Resultado da atualização; políticas podem exigir logoff/reinício.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Aplica políticas que podem alterar a sessão.",
+        "added": false
+      },
+      {
+        "id": "cmd-shutdown-r-win",
+        "label": "Reiniciar o PC (Terminal)",
+        "desc": "Solicita reinício em 60 segundos no Windows.",
+        "os": {
+          "win": "shutdown /r /t 60"
+        },
+        "result": "Reinício solicitado. Agendado para 60 segundos.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Reinicia a máquina e encerra o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-shutdown-r-mac",
+        "label": "Reiniciar o PC (Terminal)",
+        "desc": "Solicita reinício imediatamente no sistema.",
+        "os": {
+          "mac": "sudo shutdown -r now"
+        },
+        "result": "Reinício solicitado. Ação imediata.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Reinicia a máquina e encerra o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-shutdown-r-linux",
+        "label": "Reiniciar o PC (Terminal)",
+        "desc": "Solicita reinício imediatamente no sistema.",
+        "os": {
+          "linux": "sudo shutdown -r now"
+        },
+        "result": "Reinício solicitado. Ação imediata.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Reinicia a máquina e encerra o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-shutdown-s-win",
+        "label": "Desligar o PC (Terminal)",
+        "desc": "Solicita desligamento em 60 segundos no Windows.",
+        "os": {
+          "win": "shutdown /s /t 60"
+        },
+        "result": "Desligamento solicitado. Agendado para 60 segundos.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Desliga a máquina e encerra o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-shutdown-s-mac",
+        "label": "Desligar o PC (Terminal)",
+        "desc": "Solicita desligamento imediatamente no sistema.",
+        "os": {
+          "mac": "sudo shutdown -h now"
+        },
+        "result": "Desligamento solicitado. Ação imediata.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Desliga a máquina e encerra o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-shutdown-s-linux",
+        "label": "Desligar o PC (Terminal)",
+        "desc": "Solicita desligamento imediatamente no sistema.",
+        "os": {
+          "linux": "sudo shutdown -h now"
+        },
+        "result": "Desligamento solicitado. Ação imediata.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Desliga a máquina e encerra o acesso remoto.",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-diskutil-mac",
+        "label": "Verificar Disco (Terminal)",
+        "desc": "Verifica a integridade do disco principal",
+        "os": {
+          "mac": "diskutil verifyVolume /"
+        },
+        "result": "Diagnóstico de integridade; não solicita reparo, mas pode afetar uso do volume durante a verificação.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "A verificação pode afetar disponibilidade do volume durante o exame.",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-repairperm-mac",
+        "label": "Consultar permissões da pasta pessoal",
+        "desc": "Consulta permissões em vez de usar o reparo legado de permissões.",
+        "os": {
+          "mac": "ls -ld \"$HOME\""
+        },
+        "result": "Permissões e proprietário da pasta pessoal; nenhuma alteração.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-mac-firstaid-mac",
+        "label": "Abrir Utilitário de Disco",
+        "desc": "Abre a ferramenta para escolher o volume e os Primeiros Socorros.",
+        "os": {
+          "mac": "open -a \"Disk Utility\""
+        },
+        "result": "Utilitário de Disco aberto; selecione o volume para decidir a manutenção.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-fsck-linux",
+        "label": "Verificar volume desmontado",
+        "desc": "Substitua DISPOSITIVO por uma partição desmontada; -n não autoriza correções. Compatibilidade depende do sistema de arquivos.",
+        "os": {
+          "linux": "sudo fsck -n /dev/DISPOSITIVO"
+        },
+        "result": "Diagnóstico de sistema de arquivos sem autorizar correções; o dispositivo deve estar desmontado.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-logs-linux",
+        "label": "Ver Logs do Sistema (Terminal)",
+        "desc": "Mostra os logs em tempo real",
+        "os": {
+          "linux": "journalctl -f"
+        },
+        "result": "Novos eventos do journal; interrompa com Ctrl+C.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. systemd-journald e permissão para logs.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-lin-dmesg-linux",
+        "label": "Ver Logs de Hardware (Terminal)",
+        "desc": "Mostra mensagens do kernel (drivers, hardware)",
+        "os": {
+          "linux": "dmesg -H"
+        },
+        "result": "Mensagens do kernel em formato legível; leitura pode exigir sudo.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      }
+    ]
+  },
+  {
+    "title": "Gestão de Pacotes e Software — revisados",
+    "commands": [
+      {
+        "id": "cmd-appwiz-win",
+        "label": "Adicionar/Remover Programas (GUI)",
+        "desc": "Consulta ou abre adicionar/remover programas (gui).",
+        "os": {
+          "win": "control.exe appwiz.cpl"
+        },
+        "result": "Lista gráfica de programas instalados.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-winget-list-win",
+        "label": "Listar Programas (Winget)",
+        "desc": "Lista aplicativos detectados, inclusive os instalados fora do Winget.",
+        "os": {
+          "win": "winget list"
+        },
+        "result": "Aplicativos detectados pelo Winget, incluindo instalações feitas por outros métodos.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-brew-list-mac",
+        "label": "Listar Programas (Brew)",
+        "desc": "Mostra todos os pacotes instalados via Homebrew",
+        "os": {
+          "mac": "brew list"
+        },
+        "result": "Fórmulas e casks instalados pelo Homebrew.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Homebrew instalado.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-apt-list-linux",
+        "label": "Listar Programas (Apt)",
+        "desc": "Mostra todos os pacotes instalados via Apt",
+        "os": {
+          "linux": "apt list --installed"
+        },
+        "result": "Pacotes instalados registrados pelo APT/dpkg.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Debian/Ubuntu com APT.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-snap-list-linux",
+        "label": "Listar Programas (Snap)",
+        "desc": "Mostra todos os pacotes instalados via Snap",
+        "os": {
+          "linux": "snap list"
+        },
+        "result": "Snaps instalados e versões.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Snap instalado.",
+        "impact": "",
+        "added": false
+      }
+    ]
+  },
+  {
+    "title": "Gestão de Ficheiros (Terminal) — revisados",
+    "commands": [
+      {
+        "id": "cmd-dir-win",
+        "label": "Listar Ficheiros",
+        "desc": "Consulta ou abre listar ficheiros.",
+        "os": {
+          "win": "dir"
+        },
+        "result": "Entradas da pasta atual; Unix inclui arquivos ocultos.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-dir-mac",
+        "label": "Listar Ficheiros",
+        "desc": "Consulta ou abre listar ficheiros.",
+        "os": {
+          "mac": "ls -la"
+        },
+        "result": "Entradas da pasta atual; Unix inclui arquivos ocultos.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-dir-linux",
+        "label": "Listar Ficheiros",
+        "desc": "Consulta ou abre listar ficheiros.",
+        "os": {
+          "linux": "ls -la"
+        },
+        "result": "Entradas da pasta atual; Unix inclui arquivos ocultos.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-cd-win",
+        "label": "Mudar de pasta",
+        "desc": "Substitua NOME_DA_PASTA pelo caminho desejado.",
+        "os": {
+          "win": "Set-Location -LiteralPath 'NOME_DA_PASTA'"
+        },
+        "result": "Diretório de trabalho alterado; normalmente sem saída.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-cd-mac",
+        "label": "Mudar de Pasta",
+        "desc": "Substitua 'NOME_DA_PASTA'",
+        "os": {
+          "mac": "cd 'NOME_DA_PASTA'"
+        },
+        "result": "Diretório de trabalho alterado; normalmente sem saída.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-cd-linux",
+        "label": "Mudar de Pasta",
+        "desc": "Substitua 'NOME_DA_PASTA'",
+        "os": {
+          "linux": "cd 'NOME_DA_PASTA'"
+        },
+        "result": "Diretório de trabalho alterado; normalmente sem saída.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-mkdir-win",
+        "label": "Criar pasta",
+        "desc": "Substitua NOME_DA_PASTA pelo caminho desejado.",
+        "os": {
+          "win": "New-Item -ItemType Directory -Path 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta criada, se houver permissão; normalmente sem saída.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Cria pasta.",
+        "added": false
+      },
+      {
+        "id": "cmd-mkdir-mac",
+        "label": "Criar Pasta",
+        "desc": "Substitua 'NOME_DA_PASTA'",
+        "os": {
+          "mac": "mkdir 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta criada, se houver permissão; normalmente sem saída.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Cria pasta.",
+        "added": false
+      },
+      {
+        "id": "cmd-mkdir-linux",
+        "label": "Criar Pasta",
+        "desc": "Substitua 'NOME_DA_PASTA'",
+        "os": {
+          "linux": "mkdir 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta criada, se houver permissão; normalmente sem saída.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Cria pasta.",
+        "added": false
+      },
+      {
+        "id": "cmd-del-win",
+        "label": "Apagar arquivo",
+        "desc": "Substitua NOME_DO_FICHEIRO pelo caminho exato; não usa lixeira.",
+        "os": {
+          "win": "Remove-Item -LiteralPath 'NOME_DO_FICHEIRO'"
+        },
+        "result": "Arquivo removido, se houver permissão; não usa a lixeira.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Remove arquivo permanentemente.",
+        "added": false
+      },
+      {
+        "id": "cmd-del-mac",
+        "label": "Apagar Ficheiro",
+        "desc": "Substitua 'NOME_DO_FICHEIRO'",
+        "os": {
+          "mac": "rm 'NOME_DO_FICHEIRO'"
+        },
+        "result": "Arquivo removido, se houver permissão; não usa a lixeira.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Remove arquivo permanentemente.",
+        "added": false
+      },
+      {
+        "id": "cmd-del-linux",
+        "label": "Apagar Ficheiro",
+        "desc": "Substitua 'NOME_DO_FICHEIRO'",
+        "os": {
+          "linux": "rm 'NOME_DO_FICHEIRO'"
+        },
+        "result": "Arquivo removido, se houver permissão; não usa a lixeira.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Remove arquivo permanentemente.",
+        "added": false
+      },
+      {
+        "id": "cmd-rmdir-win",
+        "label": "Apagar pasta vazia",
+        "desc": "Executa rmdir do CMD para recusar pasta com conteúdo; substitua o caminho.",
+        "os": {
+          "win": "cmd /c rmdir \"NOME_DA_PASTA\""
+        },
+        "result": "Pasta vazia removida; pastas não vazias geram erro.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Remove pasta vazia.",
+        "added": false
+      },
+      {
+        "id": "cmd-rmdir-mac",
+        "label": "Apagar Pasta (Vazia)",
+        "desc": "Substitua 'NOME_DA_PASTA'",
+        "os": {
+          "mac": "rmdir 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta vazia removida; pastas não vazias geram erro.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Remove pasta vazia.",
+        "added": false
+      },
+      {
+        "id": "cmd-rmdir-linux",
+        "label": "Apagar Pasta (Vazia)",
+        "desc": "Substitua 'NOME_DA_PASTA'",
+        "os": {
+          "linux": "rmdir 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta vazia removida; pastas não vazias geram erro.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "Remove pasta vazia.",
+        "added": false
+      },
+      {
+        "id": "cmd-del-force-win",
+        "label": "Apagar pasta e conteúdo",
+        "desc": "Substitua o caminho; revisão da confirmação antecede remoção permanente.",
+        "os": {
+          "win": "Remove-Item -LiteralPath 'NOME_DA_PASTA' -Recurse -Force -Confirm"
+        },
+        "result": "Pasta e conteúdo removidos recursivamente, sem lixeira.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Remove pasta e todo o conteúdo permanentemente.",
+        "added": false
+      },
+      {
+        "id": "cmd-del-force-mac",
+        "label": "Forçar Apagar Pasta (Admin)",
+        "desc": "Apaga a pasta e tudo o que está dentro. CUIDADO!",
+        "os": {
+          "mac": "sudo rm -rf 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta e conteúdo removidos recursivamente, sem lixeira.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Remove pasta e todo o conteúdo permanentemente.",
+        "added": false
+      },
+      {
+        "id": "cmd-del-force-linux",
+        "label": "Forçar Apagar Pasta (Admin)",
+        "desc": "Apaga a pasta e tudo o que está dentro. CUIDADO!",
+        "os": {
+          "linux": "sudo rm -rf 'NOME_DA_PASTA'"
+        },
+        "result": "Pasta e conteúdo removidos recursivamente, sem lixeira.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Remove pasta e todo o conteúdo permanentemente.",
+        "added": false
+      },
+      {
+        "id": "cmd-find-win",
+        "label": "Procurar arquivo",
+        "desc": "Substitua NOME_OU_PADRAO pelo nome ou padrão, como *.log.",
+        "os": {
+          "win": "Get-ChildItem -Path . -Filter 'NOME_OU_PADRAO' -Recurse"
+        },
+        "result": "Caminhos que correspondem ao nome/padrão informado.",
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-find-mac",
+        "label": "Procurar Ficheiro (Terminal)",
+        "desc": "Substitua NOME_OU_PADRAO pelo nome ou padrão, como *.log.",
+        "os": {
+          "mac": "find . -name 'NOME_OU_PADRAO'"
+        },
+        "result": "Caminhos que correspondem ao nome/padrão informado.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-find-linux",
+        "label": "Procurar Ficheiro (Terminal)",
+        "desc": "Substitua NOME_OU_PADRAO pelo nome ou padrão, como *.log.",
+        "os": {
+          "linux": "find . -name 'NOME_OU_PADRAO'"
+        },
+        "result": "Caminhos que correspondem ao nome/padrão informado.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema.",
+        "impact": "",
+        "added": false
+      },
+      {
+        "id": "cmd-chmod-mac",
+        "label": "Alterar Permissões (Admin)",
+        "desc": "Substitua script.sh pelo caminho do script.",
+        "os": {
+          "mac": "chmod +x 'script.sh'"
+        },
+        "result": "Permissão de execução adicionada; normalmente sem saída.",
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera permissão de execução.",
+        "added": false
+      },
+      {
+        "id": "cmd-chmod-linux",
+        "label": "Alterar Permissões (Admin)",
+        "desc": "Substitua script.sh pelo caminho do script.",
+        "os": {
+          "linux": "chmod +x 'script.sh'"
+        },
+        "result": "Permissão de execução adicionada; normalmente sem saída.",
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Substitua campos em MAIÚSCULAS; disponibilidade depende da versão do sistema. Requer administrador.",
+        "impact": "Altera permissão de execução.",
+        "added": false
+      }
+    ]
+  }
+]

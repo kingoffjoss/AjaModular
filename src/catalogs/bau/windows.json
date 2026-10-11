@@ -1,0 +1,1337 @@
+[
+  {
+    "title": "Rede e conectividade",
+    "commands": [
+      {
+        "id": "bau-win-001",
+        "label": "Configuração IP completa",
+        "desc": "Identifica endereços, gateway e DNS usados pelas interfaces.",
+        "result": "Objetos com InterfaceAlias, IPv4Address, IPv4DefaultGateway e DNSServer.",
+        "os": {
+          "win": "Get-NetIPConfiguration"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-002",
+        "label": "Endereços IPv4",
+        "desc": "Localiza endereços IPv4 e seus prefixos.",
+        "result": "Lista de IPAddress, PrefixLength, InterfaceAlias e estado de cada endereço.",
+        "os": {
+          "win": "Get-NetIPAddress -AddressFamily IPv4"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-003",
+        "label": "Endereços IPv6",
+        "desc": "Confere endereços IPv6 locais e globais.",
+        "result": "Endereços IPv6, prefixos e interfaces; endereços locais não comprovam acesso à internet.",
+        "os": {
+          "win": "Get-NetIPAddress -AddressFamily IPv6"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-004",
+        "label": "Adaptadores e velocidade do enlace",
+        "desc": "Identifica a placa em uso e a velocidade negociada.",
+        "result": "Tabela com estado Up/Disconnected e velocidade; não é teste de velocidade da internet.",
+        "os": {
+          "win": "Get-NetAdapter | Format-Table Name,Status,LinkSpeed,InterfaceDescription -AutoSize"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-005",
+        "label": "Erros e tráfego da placa",
+        "desc": "Investiga erros, descartes e volume de tráfego.",
+        "result": "Contadores por adaptador; compare duas leituras para detectar aumento de erros.",
+        "os": {
+          "win": "Get-NetAdapterStatistics"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-006",
+        "label": "Propriedades avançadas da placa",
+        "desc": "Consulta opções e valores aceitos pelo driver; substitua ADAPTADOR.",
+        "result": "Propriedades como duplex e economia de energia, quando expostas pelo driver.",
+        "os": {
+          "win": "Get-NetAdapterAdvancedProperty -Name 'ADAPTADOR' -AllProperties"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-007",
+        "label": "Economia de energia da placa",
+        "desc": "Verifica recursos de suspensão e Wake-on-LAN; substitua ADAPTADOR.",
+        "result": "Estados Enabled/Disabled/Unsupported dos recursos suportados.",
+        "os": {
+          "win": "Get-NetAdapterPowerManagement -Name 'ADAPTADOR'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-008",
+        "label": "Rotas IPv4",
+        "desc": "Confere por qual interface e gateway o tráfego IPv4 sai.",
+        "result": "Prefixos de destino, próximo salto e métricas de rota.",
+        "os": {
+          "win": "Get-NetRoute -AddressFamily IPv4"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-009",
+        "label": "Rotas IPv6",
+        "desc": "Investiga caminho de saída IPv6.",
+        "result": "Prefixos IPv6, próximos saltos e interfaces.",
+        "os": {
+          "win": "Get-NetRoute -AddressFamily IPv6"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-010",
+        "label": "Vizinhos ARP e NDP",
+        "desc": "Confere associações de IP a MAC na rede local.",
+        "result": "IP, endereço físico e estado Reachable/Stale/Incomplete.",
+        "os": {
+          "win": "Get-NetNeighbor"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-011",
+        "label": "DNS por interface",
+        "desc": "Identifica quais servidores DNS estão configurados.",
+        "result": "Servidores IPv4/IPv6 associados a cada interface.",
+        "os": {
+          "win": "Get-DnsClientServerAddress"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-012",
+        "label": "Cache DNS local",
+        "desc": "Verifica respostas guardadas pelo cliente DNS.",
+        "result": "Registros e TTL presentes no cache; vazio pode ser normal.",
+        "os": {
+          "win": "Get-DnsClientCache"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-013",
+        "label": "Resolver endereço IPv4",
+        "desc": "Substitua HOST por um domínio para verificar a resolução IPv4.",
+        "result": "Registros A com IPAddress ou erro de resolução.",
+        "os": {
+          "win": "Resolve-DnsName -Name 'HOST' -Type A"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-014",
+        "label": "Consultar DNS específico",
+        "desc": "Compara a resposta de um servidor DNS; substitua HOST e IP_DNS.",
+        "result": "Endereços retornados pelo servidor informado ou erro/timeout.",
+        "os": {
+          "win": "Resolve-DnsName -Name 'HOST' -Server 'IP_DNS' -Type A"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-015",
+        "label": "Consultar DNS de e-mail",
+        "desc": "Verifica os servidores responsáveis pelo recebimento de e-mail.",
+        "result": "Destinos MX e prioridades; não testa envio de e-mail.",
+        "os": {
+          "win": "Resolve-DnsName -Name 'HOST' -Type MX"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-016",
+        "label": "Consultar registros TXT",
+        "desc": "Confere registros de texto como SPF e verificações de domínio.",
+        "result": "Strings TXT publicadas para o nome consultado.",
+        "os": {
+          "win": "Resolve-DnsName -Name 'HOST' -Type TXT"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-017",
+        "label": "Resolver endereço IPv6",
+        "desc": "Verifica se o domínio oferece endereço IPv6.",
+        "result": "Registros AAAA ou ausência de registros para esse tipo.",
+        "os": {
+          "win": "Resolve-DnsName -Name 'HOST' -Type AAAA"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-018",
+        "label": "Testar conexão HTTPS",
+        "desc": "Testa a abertura TCP da porta HTTPS; substitua HOST.",
+        "result": "TcpTestSucceeded True/False e interface usada; True não valida o certificado TLS.",
+        "os": {
+          "win": "Test-NetConnection -ComputerName 'HOST' -Port 443 -InformationLevel Detailed"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-019",
+        "label": "Diagnosticar rota escolhida",
+        "desc": "Identifica endereço de origem e rota selecionada para um destino.",
+        "result": "SelectedSourceAddress, OutgoingInterfaceIndex e SelectedNetRoute.",
+        "os": {
+          "win": "Test-NetConnection -ComputerName 'HOST' -DiagnoseRouting -InformationLevel Detailed"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-020",
+        "label": "Ping com quatro tentativas",
+        "desc": "Mede resposta ICMP; substitua HOST.",
+        "result": "Latência de quatro sondas ou falhas; ICMP bloqueado não comprova serviço indisponível.",
+        "os": {
+          "win": "Test-Connection -ComputerName 'HOST' -Count 4"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-021",
+        "label": "Estado do Wi-Fi",
+        "desc": "Confere SSID, sinal e velocidades do enlace sem revelar senha.",
+        "result": "Estado da conexão, canal, sinal e taxas de transmissão/recepção.",
+        "os": {
+          "win": "netsh wlan show interfaces"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-022",
+        "label": "Capacidades do driver Wi-Fi",
+        "desc": "Verifica tipos de rádio e autenticação aceitos pelo driver.",
+        "result": "Nome/versão do driver e padrões suportados.",
+        "os": {
+          "win": "netsh wlan show drivers"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-023",
+        "label": "Redes Wi-Fi e canais visíveis",
+        "desc": "Ajuda a identificar canais e intensidade das redes próximas.",
+        "result": "SSIDs/BSSIDs, sinal e canal; permissões de localização podem limitar a consulta.",
+        "os": {
+          "win": "netsh wlan show networks mode=bssid"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-024",
+        "label": "Preferências do serviço Wi-Fi",
+        "desc": "Consulta configurações do serviço WLAN.",
+        "result": "Preferências de configuração automática e notificações por interface.",
+        "os": {
+          "win": "netsh wlan show settings"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-025",
+        "label": "Proxy WinHTTP",
+        "desc": "Verifica o proxy usado por aplicações que utilizam WinHTTP.",
+        "result": "Proxy configurado ou Direct access; pode diferir do proxy do navegador.",
+        "os": {
+          "win": "netsh winhttp show proxy"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-026",
+        "label": "Configurações TCP globais",
+        "desc": "Confere parâmetros de autotuning e recursos TCP.",
+        "result": "Estado dos recursos TCP, sem alterar a configuração.",
+        "os": {
+          "win": "netsh interface tcp show global"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-027",
+        "label": "Conexões TCP e processos",
+        "desc": "Relaciona conexões TCP ao PID responsável.",
+        "result": "Endpoints, estado da conexão e OwningProcess.",
+        "os": {
+          "win": "Get-NetTCPConnection | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-028",
+        "label": "Portas UDP locais",
+        "desc": "Identifica serviços que utilizam UDP.",
+        "result": "Endereços/portas locais e processos; UDP não tem estado Established.",
+        "os": {
+          "win": "Get-NetUDPEndpoint | Select-Object LocalAddress,LocalPort,OwningProcess"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-029",
+        "label": "Perfil da rede",
+        "desc": "Confere se a conexão está marcada como pública, privada ou de domínio.",
+        "result": "NetworkCategory e conectividade IPv4/IPv6 por rede.",
+        "os": {
+          "win": "Get-NetConnectionProfile"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-030",
+        "label": "Perfis do firewall",
+        "desc": "Consulta o comportamento de cada perfil do firewall.",
+        "result": "Estados e ações padrão dos perfis Domain, Private e Public.",
+        "os": {
+          "win": "Get-NetFirewallProfile | Select-Object Name,Enabled,DefaultInboundAction,DefaultOutboundAction"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-031",
+        "label": "Regras habilitadas do firewall",
+        "desc": "Investiga regras ativas sem desligar o firewall.",
+        "result": "Nomes, direção, ação Allow/Block e perfis aplicáveis.",
+        "os": {
+          "win": "Get-NetFirewallRule -Enabled True | Select-Object DisplayName,Direction,Action,Profile"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-032",
+        "label": "VPNs do usuário",
+        "desc": "Identifica configurações de VPN da sessão atual.",
+        "result": "Nome, tipo de túnel e ConnectionStatus; conexões de todos os usuários são consultadas separadamente.",
+        "os": {
+          "win": "Get-VpnConnection"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Módulo VpnClient do Windows.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-033",
+        "label": "Conexões SMB do cliente",
+        "desc": "Verifica compartilhamentos de rede em uso.",
+        "result": "Servidor, compartilhamento, versão SMB e quantidade de arquivos abertos.",
+        "os": {
+          "win": "Get-SmbConnection"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-034",
+        "label": "Configuração do cliente SMB",
+        "desc": "Consulta parâmetros de comunicação com compartilhamentos.",
+        "result": "Opções do cliente SMB; não modifica compartilhamentos.",
+        "os": {
+          "win": "Get-SmbClientConfiguration"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-035",
+        "label": "Protocolos vinculados à placa",
+        "desc": "Confere quais componentes estão habilitados; substitua ADAPTADOR.",
+        "result": "ComponentID e Enabled para protocolos como IPv4 e IPv6.",
+        "os": {
+          "win": "Get-NetAdapterBinding -Name 'ADAPTADOR'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Sistema e hardware",
+    "commands": [
+      {
+        "id": "bau-win-036",
+        "label": "Última inicialização do Windows",
+        "desc": "Confere início da sessão do sistema sem depender do idioma.",
+        "result": "Datas da inicialização e hora atual do computador.",
+        "os": {
+          "win": "Get-CimInstance Win32_OperatingSystem | Select-Object LastBootUpTime,LocalDateTime"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-037",
+        "label": "Modelo e fabricante do computador",
+        "desc": "Identifica equipamento e RAM total para suporte.",
+        "result": "Nome, fabricante, modelo e quantidade de memória em bytes.",
+        "os": {
+          "win": "Get-CimInstance Win32_ComputerSystem | Select-Object Name,Manufacturer,Model,TotalPhysicalMemory"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-038",
+        "label": "BIOS e firmware",
+        "desc": "Confere versão e data do firmware.",
+        "result": "Fabricante, versão SMBIOS e data de lançamento reportados pelo equipamento.",
+        "os": {
+          "win": "Get-CimInstance Win32_BIOS | Select-Object Manufacturer,SMBIOSBIOSVersion,ReleaseDate"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-039",
+        "label": "Processador e núcleos",
+        "desc": "Identifica modelo e capacidade de processamento.",
+        "result": "Modelo, núcleos físicos e processadores lógicos.",
+        "os": {
+          "win": "Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-040",
+        "label": "Módulos de RAM",
+        "desc": "Confere capacidade e velocidade reportada de cada módulo.",
+        "result": "Uma linha por módulo, com capacidade em bytes e velocidade informada pelo firmware.",
+        "os": {
+          "win": "Get-CimInstance Win32_PhysicalMemory | Select-Object DeviceLocator,Capacity,Speed,Manufacturer"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-041",
+        "label": "Placa-mãe",
+        "desc": "Identifica a placa-mãe sem abrir o equipamento.",
+        "result": "Fabricante, produto e versão reportados pelo firmware.",
+        "os": {
+          "win": "Get-CimInstance Win32_BaseBoard | Select-Object Manufacturer,Product,Version"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-042",
+        "label": "Dispositivos com problema",
+        "desc": "Localiza dispositivos cujo estado PnP não é OK.",
+        "result": "Dispositivos com erro/estado desconhecido; dispositivos desconectados também podem aparecer.",
+        "os": {
+          "win": "Get-PnpDevice | Where-Object Status -ne 'OK' | Select-Object Class,FriendlyName,Status"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-043",
+        "label": "Controladores de vídeo",
+        "desc": "Investiga adaptador gráfico e versão do driver.",
+        "result": "Nome do adaptador, versão e modo de vídeo reportado.",
+        "os": {
+          "win": "Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,VideoModeDescription"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-044",
+        "label": "Drivers assinados instalados",
+        "desc": "Levanta versões de drivers para comparar com a documentação do fabricante.",
+        "result": "Tabela de dispositivos e versões/datas dos drivers.",
+        "os": {
+          "win": "Get-CimInstance Win32_PnPSignedDriver | Select-Object DeviceName,DriverVersion,DriverDate,Manufacturer"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-045",
+        "label": "Resumo da instalação do Windows",
+        "desc": "Confere edição, compilação e arquitetura.",
+        "result": "Resumo do Windows; o levantamento completo pode levar alguns segundos.",
+        "os": {
+          "win": "Get-ComputerInfo | Select-Object WindowsProductName,WindowsVersion,OsBuildNumber,OsArchitecture"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-046",
+        "label": "Versão do PowerShell",
+        "desc": "Identifica compatibilidade do terminal antes de usar cmdlets.",
+        "result": "PSVersion, PSEdition e informações da plataforma.",
+        "os": {
+          "win": "$PSVersionTable"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-047",
+        "label": "Fuso horário configurado",
+        "desc": "Investiga diferenças de horário em logs e autenticação.",
+        "result": "Id do fuso, nome e deslocamento base UTC.",
+        "os": {
+          "win": "Get-TimeZone"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-048",
+        "label": "Data em formato padronizado",
+        "desc": "Registra a hora local com indicação de fuso.",
+        "result": "Data ISO 8601 com frações de segundo e offset.",
+        "os": {
+          "win": "Get-Date -Format o"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-049",
+        "label": "Sincronização de horário",
+        "desc": "Verifica fonte de horário e última sincronização do Windows Time.",
+        "result": "Source, Stratum e Last Successful Sync Time ou erro do serviço.",
+        "os": {
+          "win": "w32tm /query /status"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-050",
+        "label": "Identificador de fuso do Windows",
+        "desc": "Obtém o identificador usado nas configurações de fuso.",
+        "result": "Um identificador como E. South America Standard Time.",
+        "os": {
+          "win": "tzutil /g"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Disco e armazenamento",
+    "commands": [
+      {
+        "id": "bau-win-051",
+        "label": "Discos físicos e estado",
+        "desc": "Verifica discos visíveis pelo subsistema de armazenamento.",
+        "result": "Número do disco, tamanho, estado operacional e estilo de partição.",
+        "os": {
+          "win": "Get-Disk"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-052",
+        "label": "Partições e letras de unidade",
+        "desc": "Confere distribuição das partições.",
+        "result": "Disco, número da partição, letra da unidade e tamanho.",
+        "os": {
+          "win": "Get-Partition"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-053",
+        "label": "Volumes e espaço livre",
+        "desc": "Investiga falta de espaço e integridade reportada.",
+        "result": "FileSystem, HealthStatus, SizeRemaining e Size dos volumes.",
+        "os": {
+          "win": "Get-Volume"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-054",
+        "label": "Saúde dos dispositivos de armazenamento",
+        "desc": "Confere o estado informado pelo provedor de armazenamento.",
+        "result": "FriendlyName, MediaType, HealthStatus e tamanho; alguns drivers fornecem dados limitados.",
+        "os": {
+          "win": "Get-PhysicalDisk"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-055",
+        "label": "Contadores de confiabilidade de discos",
+        "desc": "Consulta temperatura e erros disponíveis no controlador.",
+        "result": "Contadores de desgaste/erros quando suportados; ausência não comprova disco saudável.",
+        "os": {
+          "win": "Get-PhysicalDisk | Get-StorageReliabilityCounter"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "PowerShell como administrador; depende do provedor de armazenamento.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-056",
+        "label": "Espaço dos drives de arquivos",
+        "desc": "Confere uso e espaço livre das unidades acessíveis à sessão.",
+        "result": "Used, Free, Root e nome de cada drive.",
+        "os": {
+          "win": "Get-PSDrive -PSProvider FileSystem"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-057",
+        "label": "Estado do BitLocker",
+        "desc": "Verifica criptografia e proteção dos volumes sem mostrar chaves de recuperação.",
+        "result": "VolumeStatus, ProtectionStatus e EncryptionPercentage.",
+        "os": {
+          "win": "Get-BitLockerVolume"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Administrador e edição com BitLocker.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-058",
+        "label": "Resumo do BitLocker no terminal",
+        "desc": "Consulta criptografia e estado de proteção.",
+        "result": "Estado de conversão, porcentagem e proteção dos volumes; não imprime chaves de recuperação.",
+        "os": {
+          "win": "manage-bde -status"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Administrador e suporte a BitLocker.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-059",
+        "label": "Verificação online do volume C",
+        "desc": "Procura problemas no sistema de arquivos sem solicitar reparo neste comando.",
+        "result": "Resultado do scan como NoErrorsFound ou indicação de reparo necessário.",
+        "os": {
+          "win": "Repair-Volume -DriveLetter C -Scan"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Administrador; volume compatível, normalmente NTFS. A leitura pode consumir disco.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-060",
+        "label": "Análise de fragmentação",
+        "desc": "Gera análise do volume sem executar desfragmentação.",
+        "result": "Relatório de análise/fragmentação; /A não otimiza o volume.",
+        "os": {
+          "win": "defrag C: /A /V"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Processos e serviços",
+    "commands": [
+      {
+        "id": "bau-win-061",
+        "label": "Processos com mais CPU acumulada",
+        "desc": "Localiza processos com maior tempo de CPU desde que iniciaram.",
+        "result": "Lista ordenada por segundos acumulados; não é porcentagem instantânea.",
+        "os": {
+          "win": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 15 Name,Id,CPU"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-062",
+        "label": "Processos com mais memória",
+        "desc": "Identifica consumo de memória física por processo.",
+        "result": "Os quinze maiores working sets em bytes.",
+        "os": {
+          "win": "Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 15 Name,Id,WorkingSet64"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-063",
+        "label": "Detalhes de um processo",
+        "desc": "Substitua PID para investigar um processo específico.",
+        "result": "Caminho, início e tempo de CPU; processos protegidos podem limitar acesso.",
+        "os": {
+          "win": "Get-Process -Id PID | Format-List Name,Id,Path,StartTime,CPU"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-064",
+        "label": "Usuários responsáveis por processos",
+        "desc": "Relaciona processos à conta que os executa.",
+        "result": "Nome do processo, PID e conta responsável.",
+        "os": {
+          "win": "Get-Process -IncludeUserName | Select-Object Name,Id,UserName"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Administrador para consultar processos de outras contas.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-065",
+        "label": "Lista de serviços",
+        "desc": "Consulta serviços e seus estados.",
+        "result": "Status Running/Stopped, nome e descrição curta.",
+        "os": {
+          "win": "Get-Service | Sort-Object Status,Name"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-066",
+        "label": "Estado de um serviço",
+        "desc": "Substitua SERVICO pelo nome interno para investigar um serviço.",
+        "result": "Nome, DisplayName e estado atual do serviço.",
+        "os": {
+          "win": "Get-Service -Name 'SERVICO'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-067",
+        "label": "Serviços e modo de inicialização",
+        "desc": "Relaciona modo de inicialização e PID de cada serviço.",
+        "result": "State, StartMode e processo associado ao serviço.",
+        "os": {
+          "win": "Get-CimInstance Win32_Service | Select-Object Name,State,StartMode,ProcessId"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-068",
+        "label": "Tarefas agendadas",
+        "desc": "Verifica tarefas registradas no Agendador.",
+        "result": "Nome, pasta e estado das tarefas acessíveis.",
+        "os": {
+          "win": "Get-ScheduledTask | Select-Object TaskName,TaskPath,State"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-069",
+        "label": "Último resultado de uma tarefa",
+        "desc": "Substitua TAREFA e a pasta da tarefa.",
+        "result": "LastRunTime, LastTaskResult e NextRunTime; código zero costuma indicar sucesso.",
+        "os": {
+          "win": "Get-ScheduledTaskInfo -TaskName 'TAREFA' -TaskPath '\\'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-070",
+        "label": "Inventário detalhado de tarefas",
+        "desc": "Consulta tarefas pelo comando nativo do Windows.",
+        "result": "Detalhes das tarefas, agendamento e resultado da última execução.",
+        "os": {
+          "win": "schtasks /query /fo LIST /v"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Logs e atualização",
+    "commands": [
+      {
+        "id": "bau-win-071",
+        "label": "Eventos recentes de Sistema",
+        "desc": "Investiga falhas recentes de serviços e drivers.",
+        "result": "Vinte eventos mais recentes com horário, origem, ID e mensagem.",
+        "os": {
+          "win": "Get-WinEvent -LogName System -MaxEvents 20"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-072",
+        "label": "Eventos recentes de Aplicativo",
+        "desc": "Investiga falhas de programas.",
+        "result": "Vinte eventos recentes; a ordem começa pelo mais novo.",
+        "os": {
+          "win": "Get-WinEvent -LogName Application -MaxEvents 20"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-073",
+        "label": "Erros de Sistema nas últimas 24 horas",
+        "desc": "Filtra eventos classificados como erro no último dia.",
+        "result": "Até cinquenta erros; ausência de correspondências é informada pelo cmdlet.",
+        "os": {
+          "win": "Get-WinEvent -FilterHashtable @{LogName='System';Level=2;StartTime=(Get-Date).AddDays(-1)} -MaxEvents 50"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-074",
+        "label": "Canais de eventos disponíveis",
+        "desc": "Localiza o canal apropriado para diagnóstico.",
+        "result": "Nome dos canais, contagem de registros e estado de habilitação.",
+        "os": {
+          "win": "Get-WinEvent -ListLog * | Select-Object LogName,RecordCount,IsEnabled"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-075",
+        "label": "Eventos de Segurança recentes",
+        "desc": "Consulta eventos recentes para diagnóstico de autenticação autorizado.",
+        "result": "Registros recentes; interpretação depende da política de auditoria.",
+        "os": {
+          "win": "Get-WinEvent -LogName Security -MaxEvents 20"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Administrador; o log pode conter informações pessoais.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-076",
+        "label": "Últimas linhas de um log",
+        "desc": "Substitua CAMINHO pelo arquivo de log.",
+        "result": "Até cinquenta linhas finais, sem modificar o arquivo.",
+        "os": {
+          "win": "Get-Content -LiteralPath 'CAMINHO' -Tail 50"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-077",
+        "label": "Procurar erro em um log",
+        "desc": "Localiza linhas que contêm a palavra erro.",
+        "result": "Nome do arquivo, número da linha e trecho correspondente.",
+        "os": {
+          "win": "Select-String -LiteralPath 'CAMINHO' -Pattern 'erro'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-078",
+        "label": "Histórico de confiabilidade",
+        "desc": "Investiga registros coletados pelo monitor de confiabilidade.",
+        "result": "Eventos de falha/alteração quando o coletor RAC tem dados disponíveis.",
+        "os": {
+          "win": "Get-CimInstance Win32_ReliabilityRecords | Sort-Object TimeGenerated -Descending | Select-Object -First 20 TimeGenerated,SourceName,Message"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-079",
+        "label": "Listar canais com ferramenta nativa",
+        "desc": "Lista canais de eventos mesmo sem PowerShell.",
+        "result": "Um nome de canal por linha.",
+        "os": {
+          "win": "wevtutil el"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-080",
+        "label": "Atualizações instaladas",
+        "desc": "Consulta atualizações reportadas pelo componente de manutenção.",
+        "result": "HotFixID e data quando disponíveis; não lista todo software atualizado.",
+        "os": {
+          "win": "Get-HotFix"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Programas e impressão",
+    "commands": [
+      {
+        "id": "bau-win-081",
+        "label": "Pacotes com atualização disponível",
+        "desc": "Verifica atualizações de aplicativos sem instalar.",
+        "result": "Pacotes com versões atual e disponível, ou nenhuma atualização.",
+        "os": {
+          "win": "winget upgrade"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Winget/App Installer instalado; pode consultar fontes na internet.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-082",
+        "label": "Detalhes de um pacote Winget",
+        "desc": "Substitua ID_PACOTE para verificar origem, versão e instalador.",
+        "result": "Metadados do pacote encontrado na fonte configurada.",
+        "os": {
+          "win": "winget show --id 'ID_PACOTE' --exact"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Winget/App Installer instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-083",
+        "label": "Fontes do Winget",
+        "desc": "Confere de onde o gerenciador obtém pacotes.",
+        "result": "Nomes, URLs e tipos de fontes cadastradas.",
+        "os": {
+          "win": "winget source list"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Winget/App Installer instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-084",
+        "label": "Aplicativos da sessão",
+        "desc": "Lista pacotes Appx do usuário atual.",
+        "result": "Nomes, versões e arquiteturas dos pacotes acessíveis.",
+        "os": {
+          "win": "Get-AppxPackage | Select-Object Name,Version,Architecture"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-085",
+        "label": "Pacotes dos provedores do PowerShell",
+        "desc": "Consulta software reportado pelos provedores de pacotes disponíveis.",
+        "result": "Lista dos provedores instalados; não é inventário completo de todos os programas.",
+        "os": {
+          "win": "Get-Package | Select-Object Name,Version,ProviderName"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-086",
+        "label": "Validade de certificados locais",
+        "desc": "Investiga vencimento de certificados sem exportar chaves privadas.",
+        "result": "Assunto, data de expiração e identificador do certificado.",
+        "os": {
+          "win": "Get-ChildItem Cert:\\LocalMachine\\My | Select-Object Subject,NotAfter,Thumbprint"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-087",
+        "label": "Impressoras instaladas",
+        "desc": "Confere impressoras e suas portas.",
+        "result": "Nome, driver, porta e estado reportado.",
+        "os": {
+          "win": "Get-Printer | Select-Object Name,DriverName,PortName,PrinterStatus"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-088",
+        "label": "Fila de uma impressora",
+        "desc": "Substitua IMPRESSORA para investigar documentos presos.",
+        "result": "IDs e estado dos trabalhos na fila, quando existentes.",
+        "os": {
+          "win": "Get-PrintJob -PrinterName 'IMPRESSORA'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-089",
+        "label": "Portas de impressoras",
+        "desc": "Verifica portas TCP/IP e locais configuradas para impressão.",
+        "result": "Nomes de portas e parâmetros reportados pelo subsistema de impressão.",
+        "os": {
+          "win": "Get-PrinterPort"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-090",
+        "label": "Configuração de impressão",
+        "desc": "Consulta papel, duplex e cor; substitua IMPRESSORA.",
+        "result": "Preferências padrão disponíveis no driver da impressora.",
+        "os": {
+          "win": "Get-PrintConfiguration -PrinterName 'IMPRESSORA'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Arquivos e suporte remoto",
+    "commands": [
+      {
+        "id": "bau-win-091",
+        "label": "Arquivos inclusive ocultos",
+        "desc": "Lista o conteúdo de uma pasta, incluindo arquivos ocultos.",
+        "result": "Nome, tamanho e data dos itens acessíveis.",
+        "os": {
+          "win": "Get-ChildItem -LiteralPath 'CAMINHO' -Force"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-092",
+        "label": "Informações de um arquivo",
+        "desc": "Confere datas, tamanho e atributos sem modificar o arquivo.",
+        "result": "Propriedades do item; Length se aplica a arquivos.",
+        "os": {
+          "win": "Get-Item -LiteralPath 'CAMINHO' | Select-Object FullName,Length,CreationTime,LastWriteTime,Attributes"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-093",
+        "label": "SHA-256 de arquivo",
+        "desc": "Compara integridade com o hash informado pelo fornecedor.",
+        "result": "Algorithm, Hash e Path; compare o hash com uma referência confiável.",
+        "os": {
+          "win": "Get-FileHash -LiteralPath 'CAMINHO' -Algorithm SHA256"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-094",
+        "label": "Permissões de um arquivo ou pasta",
+        "desc": "Investiga impedimentos de acesso.",
+        "result": "Proprietário e permissões; não altera ACL.",
+        "os": {
+          "win": "Get-Acl -LiteralPath 'CAMINHO' | Format-List Owner,AccessToString"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-095",
+        "label": "Ler arquivo de texto inteiro",
+        "desc": "Abre conteúdo textual para diagnóstico; substitua CAMINHO.",
+        "result": "Texto completo; escolha um arquivo de tamanho adequado.",
+        "os": {
+          "win": "Get-Content -LiteralPath 'CAMINHO' -Raw"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-096",
+        "label": "Localizar arquivos de log",
+        "desc": "Procura até cinquenta logs em uma pasta e subpastas.",
+        "result": "Caminhos e tamanhos; pastas sem permissão podem gerar avisos.",
+        "os": {
+          "win": "Get-ChildItem -LiteralPath 'CAMINHO' -Filter '*.log' -File -Recurse -ErrorAction Continue | Select-Object -First 50 FullName,Length"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-097",
+        "label": "Compartilhamentos publicados",
+        "desc": "Verifica os compartilhamentos disponíveis no computador.",
+        "result": "Nome, caminho e descrição; não fornece credenciais de acesso.",
+        "os": {
+          "win": "Get-SmbShare"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-098",
+        "label": "Sessões de usuários",
+        "desc": "Identifica sessões locais/remotas já conectadas.",
+        "result": "Usuário, ID, estado e horário da sessão; requer permissão para algumas consultas.",
+        "os": {
+          "win": "quser"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-099",
+        "label": "Serviços de acesso remoto",
+        "desc": "Confere RDP, WinRM e OpenSSH sem alterar seu estado.",
+        "result": "Estados dos serviços presentes; sshd pode não estar instalado.",
+        "os": {
+          "win": "Get-Service -Name TermService,WinRM,sshd -ErrorAction Continue"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-win-100",
+        "label": "Testar serviço WinRM",
+        "desc": "Verifica se o serviço de gerenciamento remoto responde; substitua HOST.",
+        "result": "Identificação do serviço WS-Management ou erro de conexão; não habilita acesso remoto.",
+        "os": {
+          "win": "Test-WSMan -ComputerName 'HOST'"
+        },
+        "shell": "PowerShell (Windows 5.1 ou superior)",
+        "requires": "WinRM acessível e permissões de consulta.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  }
+]

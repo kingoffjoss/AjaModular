@@ -1,0 +1,1376 @@
+[
+  {
+    "title": "Rede e conectividade",
+    "commands": [
+      {
+        "id": "bau-linux-001",
+        "label": "Endereços resumidos",
+        "desc": "Identifica interfaces e endereços IP.",
+        "result": "Interface, estado e endereços IPv4/IPv6.",
+        "os": {
+          "linux": "ip -br address"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-002",
+        "label": "Estado das interfaces",
+        "desc": "Confere interfaces ativas e endereços MAC.",
+        "result": "Estado UP/DOWN e endereço físico.",
+        "os": {
+          "linux": "ip -br link"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-003",
+        "label": "Estatísticas de interfaces",
+        "desc": "Investiga erros e descarte de pacotes.",
+        "result": "Contadores RX/TX, erros e descartes.",
+        "os": {
+          "linux": "ip -s link"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-004",
+        "label": "Rotas IPv4",
+        "desc": "Confere gateway e caminhos IPv4.",
+        "result": "Destinos, gateway, interface e métrica.",
+        "os": {
+          "linux": "ip -4 route show"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-005",
+        "label": "Rotas IPv6",
+        "desc": "Confere caminhos IPv6.",
+        "result": "Rotas IPv6 e suas interfaces.",
+        "os": {
+          "linux": "ip -6 route show"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-006",
+        "label": "Vizinhos da rede",
+        "desc": "Investiga resolução de vizinhos ARP/NDP.",
+        "result": "IP, MAC, interface e estado de alcance.",
+        "os": {
+          "linux": "ip neigh show"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-007",
+        "label": "Rota para um destino",
+        "desc": "Descobre a interface usada para chegar ao destino; substitua IP_DESTINO.",
+        "result": "Gateway, interface e IP de origem escolhidos.",
+        "os": {
+          "linux": "ip route get IP_DESTINO"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-008",
+        "label": "Portas em escuta",
+        "desc": "Identifica serviços TCP/UDP que aceitam conexões.",
+        "result": "Portas, endereços e processos; sudo permite ver mais detalhes.",
+        "os": {
+          "linux": "sudo ss -tulpen"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-009",
+        "label": "Conexões estabelecidas",
+        "desc": "Investiga conexões TCP já abertas.",
+        "result": "Endereços local/remoto e filas de dados.",
+        "os": {
+          "linux": "ss -tan state established"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-010",
+        "label": "Resumo de sockets",
+        "desc": "Avalia volume de conexões e estados TCP.",
+        "result": "Totais de sockets e resumo TCP/UDP.",
+        "os": {
+          "linux": "ss -s"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-011",
+        "label": "Configuração do resolvedor",
+        "desc": "Confere servidores DNS por interface.",
+        "result": "DNS, domínios e estado do resolvedor.",
+        "os": {
+          "linux": "resolvectl status"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd-resolved.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-012",
+        "label": "Consulta pelo resolvedor",
+        "desc": "Testa resolução do sistema; substitua HOST.",
+        "result": "IPs encontrados, protocolo e servidor usado.",
+        "os": {
+          "linux": "resolvectl query HOST"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd-resolved.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-013",
+        "label": "Consulta DNS IPv4",
+        "desc": "Consulta registros A de um domínio; substitua HOST.",
+        "result": "Resposta DNS, TTL e tempo de consulta.",
+        "os": {
+          "linux": "dig HOST A"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote dnsutils/bind-utils.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-014",
+        "label": "Consulta DNS IPv6",
+        "desc": "Verifica registros IPv6; substitua HOST.",
+        "result": "Registros AAAA ou resposta sem registros.",
+        "os": {
+          "linux": "dig HOST AAAA"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote dnsutils/bind-utils.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-015",
+        "label": "Consulta a um DNS específico",
+        "desc": "Compara resposta de um servidor DNS; substitua IP_DNS e HOST.",
+        "result": "Resposta desse servidor ou timeout.",
+        "os": {
+          "linux": "dig @IP_DNS HOST A"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote dnsutils/bind-utils.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-016",
+        "label": "DNS reverso",
+        "desc": "Busca nome associado a um endereço; substitua IP_DESTINO.",
+        "result": "Registro PTR, se existir.",
+        "os": {
+          "linux": "dig -x IP_DESTINO"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote dnsutils/bind-utils.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-017",
+        "label": "Servidores de e-mail",
+        "desc": "Confere encaminhamento de e-mail do domínio; substitua HOST.",
+        "result": "Prioridades e destinos dos registros MX.",
+        "os": {
+          "linux": "dig HOST MX"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote dnsutils/bind-utils.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-018",
+        "label": "Resolução usada por aplicativos",
+        "desc": "Consulta as fontes configuradas em nsswitch; substitua HOST.",
+        "result": "Endereço e nome encontrados via DNS, hosts ou outras fontes.",
+        "os": {
+          "linux": "getent hosts HOST"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-019",
+        "label": "Arquivo de DNS",
+        "desc": "Inspeciona configuração de DNS visível ao sistema.",
+        "result": "Servidores e domínios; pode apontar para um resolvedor local.",
+        "os": {
+          "linux": "cat /etc/resolv.conf"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-020",
+        "label": "Dispositivos NetworkManager",
+        "desc": "Confere quem gerencia cada interface.",
+        "result": "Dispositivo, tipo, estado e conexão.",
+        "os": {
+          "linux": "nmcli device status"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "NetworkManager instalado e ativo.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-021",
+        "label": "Conexões ativas",
+        "desc": "Identifica perfis de conexão em uso.",
+        "result": "Nome, UUID, tipo e dispositivo.",
+        "os": {
+          "linux": "nmcli connection show --active"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "NetworkManager instalado e ativo.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-022",
+        "label": "Detalhes NetworkManager",
+        "desc": "Inspeciona IP, gateway e DNS das interfaces.",
+        "result": "Propriedades por dispositivo.",
+        "os": {
+          "linux": "nmcli device show"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "NetworkManager instalado e ativo.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-023",
+        "label": "Estado geral da rede",
+        "desc": "Verifica conectividade reconhecida pelo gerenciador.",
+        "result": "Estado geral, conectividade e estado do Wi-Fi.",
+        "os": {
+          "linux": "nmcli general status"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "NetworkManager instalado e ativo.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-024",
+        "label": "Redes Wi-Fi NetworkManager",
+        "desc": "Compara redes visíveis e intensidade de sinal.",
+        "result": "SSID, canal, segurança e sinal; pode atualizar a varredura.",
+        "os": {
+          "linux": "nmcli device wifi list"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "NetworkManager e adaptador Wi-Fi.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-025",
+        "label": "Interfaces sem fio",
+        "desc": "Descobre o nome correto da interface Wi-Fi.",
+        "result": "Interfaces, tipo e parâmetros de rádio.",
+        "os": {
+          "linux": "iw dev"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote iw e adaptador compatível.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-026",
+        "label": "Conexão sem fio atual",
+        "desc": "Investiga sinal e rede conectada; substitua INTERFACE.",
+        "result": "SSID, frequência, sinal e taxa ou indicação de desconectado.",
+        "os": {
+          "linux": "iw dev INTERFACE link"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote iw.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-027",
+        "label": "Velocidade Ethernet",
+        "desc": "Confere negociação e suporte da placa; substitua INTERFACE.",
+        "result": "Velocidade, duplex e Link detected; alguns drivers não informam tudo.",
+        "os": {
+          "linux": "ethtool INTERFACE"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote ethtool.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-028",
+        "label": "Driver Ethernet",
+        "desc": "Identifica driver e firmware; substitua INTERFACE.",
+        "result": "Nome do driver, versão e informações do barramento.",
+        "os": {
+          "linux": "ethtool -i INTERFACE"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote ethtool.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-029",
+        "label": "Contadores do driver",
+        "desc": "Procura erros físicos e descartes; substitua INTERFACE.",
+        "result": "Contadores específicos do driver; suporte varia.",
+        "os": {
+          "linux": "sudo ethtool -S INTERFACE"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote ethtool; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-030",
+        "label": "Ping com limite",
+        "desc": "Testa alcance e latência; substitua HOST.",
+        "result": "Quatro tentativas, perda e tempos; ICMP pode estar bloqueado.",
+        "os": {
+          "linux": "ping -c 4 HOST"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-031",
+        "label": "Caminho e MTU",
+        "desc": "Investiga caminho e MTU até o destino; substitua HOST.",
+        "result": "Saltos e MTU estimada; filtros podem impedir respostas.",
+        "os": {
+          "linux": "tracepath HOST"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote iputils/tracepath.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-032",
+        "label": "Relatório de perda por salto",
+        "desc": "Compara latência e perda por salto; substitua HOST.",
+        "result": "Relatório de dez ciclos; perda em um salto isolado não prova falha.",
+        "os": {
+          "linux": "mtr -r -w -c 10 HOST"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote mtr; permissões podem ser necessárias.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-033",
+        "label": "Cabeçalhos HTTP",
+        "desc": "Confere resposta HTTP sem baixar a página; substitua HOST.",
+        "result": "Status e cabeçalhos; alguns serviços rejeitam HEAD.",
+        "os": {
+          "linux": "curl -I --connect-timeout 10 --max-time 20 'https://HOST'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "curl instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-034",
+        "label": "Diagnóstico HTTPS",
+        "desc": "Investiga DNS, TLS e conexão HTTP; substitua HOST.",
+        "result": "Etapas de conexão, certificado e status; corpo descartado.",
+        "os": {
+          "linux": "curl -v --connect-timeout 10 --max-time 20 -o /dev/null 'https://HOST'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "curl instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-035",
+        "label": "Certificado TLS",
+        "desc": "Inspeciona handshake e cadeia do servidor; substitua HOST.",
+        "result": "Certificados e resultado de verificação; não equivale à validação de um navegador.",
+        "os": {
+          "linux": "openssl s_client -connect HOST:443 -servername HOST </dev/null"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "OpenSSL instalado.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Sistema e desempenho",
+    "commands": [
+      {
+        "id": "bau-linux-036",
+        "label": "Identificação do computador",
+        "desc": "Confere nome, sistema e arquitetura.",
+        "result": "Nome do host, kernel e sistema em máquinas systemd.",
+        "os": {
+          "linux": "hostnamectl"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-037",
+        "label": "Versão do kernel",
+        "desc": "Confere kernel em execução.",
+        "result": "Versão do kernel atual.",
+        "os": {
+          "linux": "uname -r"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-038",
+        "label": "Características da CPU",
+        "desc": "Investiga arquitetura, núcleos e virtualização.",
+        "result": "Resumo completo da CPU; difere da consulta legada apenas do modelo.",
+        "os": {
+          "linux": "lscpu"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-039",
+        "label": "Distribuição da memória física",
+        "desc": "Confere blocos de memória reconhecidos.",
+        "result": "Faixas e tamanho de memória online/offline.",
+        "os": {
+          "linux": "lsmem"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "util-linux; suporte depende do sistema.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-040",
+        "label": "Memória e filas em amostras",
+        "desc": "Investiga pressão de memória e CPU durante cinco amostras.",
+        "result": "Processos, memória, swap, I/O e CPU; a primeira linha resume desde o boot.",
+        "os": {
+          "linux": "vmstat 1 5"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote procps.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-041",
+        "label": "Carga do sistema",
+        "desc": "Consulta carga média e processos em execução.",
+        "result": "Carga em 1, 5 e 15 minutos e contagem de processos.",
+        "os": {
+          "linux": "cat /proc/loadavg"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-042",
+        "label": "Último boot registrado",
+        "desc": "Consulta horário do último boot no registro utmp.",
+        "result": "Data/hora do boot, se o registro estiver disponível.",
+        "os": {
+          "linux": "who -b"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-043",
+        "label": "Relógio e sincronização",
+        "desc": "Investiga horário, fuso e sincronização.",
+        "result": "Relógio local/UTC, fuso e estado NTP.",
+        "os": {
+          "linux": "timedatectl status"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-044",
+        "label": "Data com fuso",
+        "desc": "Registra horário em formato comparável.",
+        "result": "Data ISO 8601 com deslocamento do fuso.",
+        "os": {
+          "linux": "date -Is"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-045",
+        "label": "Idioma e teclado",
+        "desc": "Confere configuração de idioma e teclado.",
+        "result": "Locale e mapas de teclado configurados.",
+        "os": {
+          "linux": "localectl status"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-046",
+        "label": "Variáveis de idioma",
+        "desc": "Investiga formatação, codificação e mensagens.",
+        "result": "Valores LANG e LC_* da sessão.",
+        "os": {
+          "linux": "locale"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Discos e armazenamento",
+    "commands": [
+      {
+        "id": "bau-linux-047",
+        "label": "Espaço e tipo de sistema de arquivos",
+        "desc": "Identifica volumes cheios e seus formatos.",
+        "result": "Uso, disponível, tipo e ponto de montagem.",
+        "os": {
+          "linux": "df -hT"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-048",
+        "label": "Uso de inodes",
+        "desc": "Investiga falta de espaço causada por muitos arquivos.",
+        "result": "Inodes totais, usados, livres e percentual.",
+        "os": {
+          "linux": "df -i"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-049",
+        "label": "Volumes e montagens",
+        "desc": "Relaciona discos, partições e montagens.",
+        "result": "Árvore de dispositivos, tamanho, formato e montagens.",
+        "os": {
+          "linux": "lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINTS"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "util-linux recente com coluna MOUNTPOINTS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-050",
+        "label": "Montagens atuais",
+        "desc": "Verifica hierarquia de volumes montados.",
+        "result": "Origem, destino, formato e opções de montagem.",
+        "os": {
+          "linux": "findmnt"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-051",
+        "label": "Tabela de partições",
+        "desc": "Inspeciona partições sem abrir o editor.",
+        "result": "Discos, setores e partições; consulta não grava alterações.",
+        "os": {
+          "linux": "sudo fdisk -l"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-052",
+        "label": "Saúde SMART",
+        "desc": "Consulta saúde do disco; substitua DISPOSITIVO.",
+        "result": "Atributos, logs e estado SMART; nem todo adaptador USB permite a leitura.",
+        "os": {
+          "linux": "sudo smartctl -a /dev/DISPOSITIVO"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote smartmontools; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-053",
+        "label": "Tamanho das subpastas",
+        "desc": "Localiza uso de espaço em uma pasta; substitua CAMINHO.",
+        "result": "Tamanho da pasta e subpastas imediatas; a leitura pode demorar.",
+        "os": {
+          "linux": "du -h --max-depth=1 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-054",
+        "label": "Identificação dos discos",
+        "desc": "Identifica discos físicos e capacidade.",
+        "result": "Nome, modelo, serial e tamanho; alguns campos podem estar vazios.",
+        "os": {
+          "linux": "lsblk -d -o NAME,MODEL,SERIAL,SIZE"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-055",
+        "label": "Verificar fstab",
+        "desc": "Confere consistência da configuração de montagens.",
+        "result": "Diagnóstico de fstab; não monta nem corrige volumes.",
+        "os": {
+          "linux": "findmnt --verify --verbose"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-056",
+        "label": "Swap ativo",
+        "desc": "Investiga arquivos e partições de swap.",
+        "result": "Nome, tipo, tamanho, uso e prioridade.",
+        "os": {
+          "linux": "swapon --show"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Processos e serviços",
+    "commands": [
+      {
+        "id": "bau-linux-057",
+        "label": "Processos por CPU",
+        "desc": "Localiza processos com maior CPU acumulada.",
+        "result": "Lista ordenada por percentual de CPU; não é uma amostra instantânea.",
+        "os": {
+          "linux": "ps -eo pid,ppid,user,comm,%cpu,%mem --sort=-%cpu"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-058",
+        "label": "Processos por memória",
+        "desc": "Localiza maior consumo de memória residente.",
+        "result": "Processos por RSS em KiB e percentual de memória.",
+        "os": {
+          "linux": "ps -eo pid,user,comm,%mem,rss --sort=-rss"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-059",
+        "label": "Árvore de processos",
+        "desc": "Identifica processos filhos e responsáveis.",
+        "result": "Árvore com nomes e PIDs.",
+        "os": {
+          "linux": "pstree -p"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote psmisc.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-060",
+        "label": "Buscar processo por nome",
+        "desc": "Localiza processos e argumentos; substitua PROGRAMA.",
+        "result": "PIDs e linhas de comando correspondentes.",
+        "os": {
+          "linux": "pgrep -af 'PROGRAMA'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-061",
+        "label": "Amostras por processo",
+        "desc": "Avalia CPU por processo durante cinco intervalos.",
+        "result": "Percentuais por PID e médias.",
+        "os": {
+          "linux": "pidstat 1 5"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote sysstat.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-062",
+        "label": "Unidades com falha",
+        "desc": "Identifica serviços ou outras unidades que falharam.",
+        "result": "Unidades em estado failed.",
+        "os": {
+          "linux": "systemctl --failed --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-063",
+        "label": "Estado de um serviço",
+        "desc": "Investiga execução e erros; substitua SERVICO.",
+        "result": "Estado, PID e mensagens recentes; unidade inexistente gera erro.",
+        "os": {
+          "linux": "systemctl status SERVICO --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-064",
+        "label": "Serviços disponíveis",
+        "desc": "Confere unidades instaladas e habilitação.",
+        "result": "Serviços e estados enabled/disabled/static.",
+        "os": {
+          "linux": "systemctl list-unit-files --type=service --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-065",
+        "label": "Agendamentos systemd",
+        "desc": "Investiga tarefas temporizadas.",
+        "result": "Última e próxima execução e unidade acionada.",
+        "os": {
+          "linux": "systemctl list-timers --all --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-066",
+        "label": "Propriedades de um serviço",
+        "desc": "Consulta estado para diagnóstico; substitua SERVICO.",
+        "result": "Propriedades e código de saída do processo principal.",
+        "os": {
+          "linux": "systemctl show SERVICO -p ActiveState -p SubState -p MainPID -p ExecMainStatus"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Sistema com systemd.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Logs e usuários",
+    "commands": [
+      {
+        "id": "bau-linux-067",
+        "label": "Erros do boot atual",
+        "desc": "Procura erros registrados desde o boot.",
+        "result": "Eventos de prioridade erro ou mais grave; pode não haver eventos.",
+        "os": {
+          "linux": "journalctl -b -p err --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "systemd-journald; permissões de leitura dos logs.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-068",
+        "label": "Logs de um serviço",
+        "desc": "Investiga falhas de uma unidade; substitua SERVICO.",
+        "result": "Até cinquenta eventos recentes.",
+        "os": {
+          "linux": "journalctl -u SERVICO -n 50 --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "systemd-journald; acesso aos logs.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-069",
+        "label": "Logs da última hora",
+        "desc": "Delimita o período de investigação.",
+        "result": "Eventos da última hora ou indicação de ausência.",
+        "os": {
+          "linux": "journalctl --since '1 hour ago' --no-pager"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "systemd-journald; acesso aos logs.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-070",
+        "label": "Espaço dos logs",
+        "desc": "Confere espaço usado pelo journal.",
+        "result": "Total ocupado pelos arquivos de journal.",
+        "os": {
+          "linux": "journalctl --disk-usage"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "systemd-journald.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-071",
+        "label": "Erros e alertas do kernel",
+        "desc": "Investiga drivers, hardware e falhas do kernel.",
+        "result": "Mensagens nos níveis selecionados.",
+        "os": {
+          "linux": "sudo dmesg --level=err,warn"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Administrador; util-linux.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-072",
+        "label": "Últimas linhas de log",
+        "desc": "Lê o final de um log sem segui-lo; substitua CAMINHO.",
+        "result": "Até cinquenta linhas finais.",
+        "os": {
+          "linux": "tail -n 50 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-073",
+        "label": "Procurar erros em arquivo",
+        "desc": "Localiza mensagens relevantes; substitua CAMINHO e o padrão.",
+        "result": "Linhas encontradas com números; código 1 significa nenhuma correspondência.",
+        "os": {
+          "linux": "grep -ni 'erro' 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-074",
+        "label": "Últimos acessos",
+        "desc": "Investiga logins recentes.",
+        "result": "Até dez sessões registradas; depende de wtmp.",
+        "os": {
+          "linux": "last -n 10"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-075",
+        "label": "Usuários conectados",
+        "desc": "Confere sessões registradas atualmente.",
+        "result": "Usuário, terminal e horário de entrada; não inclui toda aplicação remota.",
+        "os": {
+          "linux": "who"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-076",
+        "label": "Identidade e grupos",
+        "desc": "Confere UID, GID e grupos da sessão.",
+        "result": "Identificadores e grupos do usuário atual.",
+        "os": {
+          "linux": "id"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-077",
+        "label": "Grupos da sessão",
+        "desc": "Investiga acesso por grupos.",
+        "result": "Nomes dos grupos do usuário atual.",
+        "os": {
+          "linux": "groups"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Acesso remoto e impressão",
+    "commands": [
+      {
+        "id": "bau-linux-078",
+        "label": "Versão do OpenSSH",
+        "desc": "Confere cliente SSH instalado.",
+        "result": "Versão exibida na saída de diagnóstico.",
+        "os": {
+          "linux": "ssh -V"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Cliente OpenSSH.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-079",
+        "label": "Configuração efetiva SSH",
+        "desc": "Confere opções calculadas sem conectar; substitua HOST.",
+        "result": "Configuração do cliente para o destino, incluindo porta e usuário.",
+        "os": {
+          "linux": "ssh -G HOST"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Cliente OpenSSH.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-080",
+        "label": "Validar configuração SSH do servidor",
+        "desc": "Confere sintaxe antes de uma manutenção.",
+        "result": "Nenhuma saída e código 0 quando válido; erros são descritos. Não reinicia o serviço.",
+        "os": {
+          "linux": "sudo sshd -t"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Servidor OpenSSH; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-081",
+        "label": "Opções efetivas do servidor SSH",
+        "desc": "Consulta configuração efetiva do daemon.",
+        "result": "Opções avaliadas; regras Match podem exigir contexto adicional com -C.",
+        "os": {
+          "linux": "sudo sshd -T"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Servidor OpenSSH; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-082",
+        "label": "Firewall UFW detalhado",
+        "desc": "Confere regras e políticas de acesso.",
+        "result": "Estado, políticas e regras; não ativa o firewall.",
+        "os": {
+          "linux": "sudo ufw status verbose"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "UFW instalado; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-083",
+        "label": "Regras nftables",
+        "desc": "Investiga bloqueios no firewall.",
+        "result": "Tabelas, cadeias e regras ativas.",
+        "os": {
+          "linux": "sudo nft list ruleset"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "nftables instalado; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-084",
+        "label": "Estado firewalld",
+        "desc": "Confere serviço de firewall em distribuições que o utilizam.",
+        "result": "running se ativo; ausência ou inatividade gera erro.",
+        "os": {
+          "linux": "firewall-cmd --state"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "firewalld instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-085",
+        "label": "Zona atual firewalld",
+        "desc": "Consulta regras da zona padrão.",
+        "result": "Interfaces, serviços e portas permitidos.",
+        "os": {
+          "linux": "sudo firewall-cmd --list-all"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "firewalld ativo; administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-086",
+        "label": "Estado SELinux",
+        "desc": "Investiga controle obrigatório de acesso.",
+        "result": "Modo, política e estado SELinux.",
+        "os": {
+          "linux": "sestatus"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote policycoreutils em sistemas SELinux.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-087",
+        "label": "Impressoras e padrão",
+        "desc": "Confere impressoras e destino padrão.",
+        "result": "Impressoras e estado; pode indicar que nenhuma está configurada.",
+        "os": {
+          "linux": "lpstat -p -d"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Cliente CUPS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Arquivos e programas",
+    "commands": [
+      {
+        "id": "bau-linux-088",
+        "label": "Metadados de arquivo",
+        "desc": "Confere tamanho, datas e permissões; substitua CAMINHO.",
+        "result": "Metadados do arquivo ou diretório.",
+        "os": {
+          "linux": "stat 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-089",
+        "label": "Tipo de arquivo",
+        "desc": "Identifica formato pelo conteúdo; substitua CAMINHO.",
+        "result": "Tipo detectado, como texto, executável ou arquivo compactado.",
+        "os": {
+          "linux": "file 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote file.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-090",
+        "label": "Caminho resolvido",
+        "desc": "Resolve links e caminho absoluto; substitua CAMINHO.",
+        "result": "Caminho canônico, se a resolução for possível.",
+        "os": {
+          "linux": "readlink -f 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-091",
+        "label": "Buscar logs até duas camadas",
+        "desc": "Procura logs em uma área delimitada; substitua CAMINHO.",
+        "result": "Caminhos correspondentes; não modifica arquivos.",
+        "os": {
+          "linux": "find 'CAMINHO' -maxdepth 2 -type f -name '*.log'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-092",
+        "label": "SHA-256 de arquivo",
+        "desc": "Compara integridade; substitua CAMINHO.",
+        "result": "Hash SHA-256 e nome do arquivo; compare com uma referência.",
+        "os": {
+          "linux": "sha256sum 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-093",
+        "label": "Contar linhas",
+        "desc": "Mede linhas de um texto; substitua CAMINHO.",
+        "result": "Número de caracteres de nova linha e caminho.",
+        "os": {
+          "linux": "wc -l 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-094",
+        "label": "Primeiras linhas",
+        "desc": "Inspeciona cabeçalho de um arquivo; substitua CAMINHO.",
+        "result": "Até vinte linhas iniciais.",
+        "os": {
+          "linux": "head -n 20 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-095",
+        "label": "ACL de arquivo",
+        "desc": "Investiga permissões adicionais; substitua CAMINHO.",
+        "result": "ACL e permissões base.",
+        "os": {
+          "linux": "getfacl 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Pacote acl.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-096",
+        "label": "Permissões de cada pasta",
+        "desc": "Localiza um componente do caminho sem acesso; substitua CAMINHO.",
+        "result": "Permissões e proprietários dos componentes.",
+        "os": {
+          "linux": "namei -l 'CAMINHO'"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "util-linux.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-097",
+        "label": "Versões disponíveis no APT",
+        "desc": "Compara versão instalada e candidata; substitua PACOTE.",
+        "result": "Versões e origens disponíveis no cache.",
+        "os": {
+          "linux": "apt-cache policy PACOTE"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Debian/Ubuntu com APT.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-098",
+        "label": "Atualizações disponíveis no APT",
+        "desc": "Lista atualizações sem instalá-las.",
+        "result": "Pacotes com nova versão segundo o cache local.",
+        "os": {
+          "linux": "apt list --upgradable"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Debian/Ubuntu com APT; cache pode estar desatualizado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-099",
+        "label": "Pacotes e versões dpkg",
+        "desc": "Consulta banco de pacotes instalados.",
+        "result": "Pacotes e versões registrados no dpkg.",
+        "os": {
+          "linux": "dpkg-query -W"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Debian/Ubuntu.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-100",
+        "label": "Atualizações disponíveis no DNF",
+        "desc": "Consulta atualizações nos repositórios.",
+        "result": "Lista de atualizações; código 100 significa disponíveis e 0 nenhuma.",
+        "os": {
+          "linux": "dnf check-update"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Fedora/RHEL com DNF; acessa repositórios.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-101",
+        "label": "Pacotes RPM",
+        "desc": "Lista pacotes registrados no banco RPM.",
+        "result": "Nomes e versões instalados.",
+        "os": {
+          "linux": "rpm -qa"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Distribuição com RPM.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-102",
+        "label": "Serviços Snap",
+        "desc": "Investiga serviços instalados por snaps.",
+        "result": "Serviços, inicialização e estado.",
+        "os": {
+          "linux": "snap services"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Snap instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-linux-103",
+        "label": "Aplicativos Flatpak",
+        "desc": "Confere aplicativos instalados nesse formato.",
+        "result": "Nome, identificador, versão e origem.",
+        "os": {
+          "linux": "flatpak list --app"
+        },
+        "shell": "Terminal (Bash/sh)",
+        "requires": "Flatpak instalado.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,1405 @@
+[
+  {
+    "title": "Rede e conectividade",
+    "commands": [
+      {
+        "id": "bau-mac-001",
+        "label": "Portas de hardware",
+        "desc": "Descobre nomes de interfaces e portas.",
+        "result": "Porta de hardware, dispositivo e endereço Ethernet.",
+        "os": {
+          "mac": "networksetup -listallhardwareports"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-002",
+        "label": "Serviços de rede",
+        "desc": "Descobre nomes de serviços para outros comandos.",
+        "result": "Lista de serviços; asterisco indica desabilitado.",
+        "os": {
+          "mac": "networksetup -listallnetworkservices"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-003",
+        "label": "Configuração de um serviço",
+        "desc": "Confere IP e gateway; substitua SERVICO pelo nome listado.",
+        "result": "Configuração IPv4 e outras informações do serviço.",
+        "os": {
+          "mac": "networksetup -getinfo 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-004",
+        "label": "DNS de um serviço",
+        "desc": "Confere servidores DNS definidos manualmente; substitua SERVICO.",
+        "result": "DNS configurados ou indicação de nenhum definido; DNS efetivo pode vir do DHCP.",
+        "os": {
+          "mac": "networksetup -getdnsservers 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-005",
+        "label": "Domínios de pesquisa",
+        "desc": "Investiga resolução de nomes curtos; substitua SERVICO.",
+        "result": "Domínios de pesquisa configurados.",
+        "os": {
+          "mac": "networksetup -getsearchdomains 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-006",
+        "label": "Proxy HTTP",
+        "desc": "Confere proxy web; substitua SERVICO.",
+        "result": "Habilitação, endereço e porta do proxy HTTP.",
+        "os": {
+          "mac": "networksetup -getwebproxy 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-007",
+        "label": "Proxy HTTPS",
+        "desc": "Confere proxy seguro; substitua SERVICO.",
+        "result": "Habilitação, endereço e porta do proxy HTTPS.",
+        "os": {
+          "mac": "networksetup -getsecurewebproxy 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-008",
+        "label": "Proxy SOCKS",
+        "desc": "Investiga encaminhamento via SOCKS; substitua SERVICO.",
+        "result": "Estado e servidor SOCKS configurado.",
+        "os": {
+          "mac": "networksetup -getsocksfirewallproxy 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-009",
+        "label": "Exceções de proxy",
+        "desc": "Confere destinos que ignoram proxy; substitua SERVICO.",
+        "result": "Lista de domínios excluídos.",
+        "os": {
+          "mac": "networksetup -getproxybypassdomains 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-010",
+        "label": "Configuração automática de proxy",
+        "desc": "Investiga arquivo PAC; substitua SERVICO.",
+        "result": "URL e estado de configuração automática.",
+        "os": {
+          "mac": "networksetup -getautoproxyurl 'SERVICO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-011",
+        "label": "Energia do Wi-Fi",
+        "desc": "Confere rádio sem alterá-lo; substitua INTERFACE pelo dispositivo Wi-Fi.",
+        "result": "Estado ligado ou desligado.",
+        "os": {
+          "mac": "networksetup -getairportpower INTERFACE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-012",
+        "label": "Rede Wi-Fi atual",
+        "desc": "Consulta rede conectada; substitua INTERFACE.",
+        "result": "SSID ou estado desconectado; versões recentes podem restringir essa informação.",
+        "os": {
+          "mac": "networksetup -getairportnetwork INTERFACE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Interface Wi-Fi; permissões de privacidade podem ser necessárias.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-013",
+        "label": "Redes Wi-Fi preferidas",
+        "desc": "Confere nomes de redes salvas; substitua INTERFACE.",
+        "result": "Lista de redes preferidas, sem senhas.",
+        "os": {
+          "mac": "networksetup -listpreferredwirelessnetworks INTERFACE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-014",
+        "label": "Endereço IPv4 da interface",
+        "desc": "Confere endereço atribuído; substitua INTERFACE.",
+        "result": "IPv4, se a interface possuir um endereço.",
+        "os": {
+          "mac": "ipconfig getifaddr INTERFACE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-015",
+        "label": "Pacote DHCP recebido",
+        "desc": "Investiga concessão DHCP; substitua INTERFACE.",
+        "result": "Opções recebidas, como servidor, lease e DNS; pode não haver pacote.",
+        "os": {
+          "mac": "ipconfig getpacket INTERFACE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-016",
+        "label": "Detalhes de interface",
+        "desc": "Inspeciona estado, MTU e IP; substitua INTERFACE.",
+        "result": "Flags, endereços e estado da interface.",
+        "os": {
+          "mac": "ifconfig INTERFACE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-017",
+        "label": "Gateway padrão",
+        "desc": "Confere o caminho padrão IPv4.",
+        "result": "Gateway e interface usada.",
+        "os": {
+          "mac": "route -n get default"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-018",
+        "label": "Rotas IPv4",
+        "desc": "Investiga roteamento IPv4.",
+        "result": "Tabela numérica de destinos, gateways e interfaces.",
+        "os": {
+          "mac": "netstat -rn -f inet"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-019",
+        "label": "Rotas IPv6",
+        "desc": "Investiga roteamento IPv6.",
+        "result": "Tabela numérica de rotas IPv6.",
+        "os": {
+          "mac": "netstat -rn -f inet6"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-020",
+        "label": "Conexões TCP",
+        "desc": "Investiga conexões e portas TCP.",
+        "result": "Endereços, estado e informações de sockets TCP.",
+        "os": {
+          "mac": "netstat -anv -p tcp"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-021",
+        "label": "Sockets UDP",
+        "desc": "Confere sockets e portas UDP.",
+        "result": "Endereços locais/remotos UDP.",
+        "os": {
+          "mac": "netstat -an -p udp"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-022",
+        "label": "Estatísticas de interfaces",
+        "desc": "Investiga contadores de tráfego e erros.",
+        "result": "Pacotes, erros e colisões por interface.",
+        "os": {
+          "mac": "netstat -i"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-023",
+        "label": "Estatísticas TCP",
+        "desc": "Investiga retransmissões e falhas TCP.",
+        "result": "Contadores acumulados do protocolo.",
+        "os": {
+          "mac": "netstat -s -p tcp"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-024",
+        "label": "DNS efetivo do macOS",
+        "desc": "Confere resolvedores usados pelo sistema.",
+        "result": "Servidores, domínios e resolvedores por escopo.",
+        "os": {
+          "mac": "scutil --dns"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-025",
+        "label": "Proxy efetivo",
+        "desc": "Confere proxies reconhecidos pelo sistema.",
+        "result": "Dicionário de configuração de proxy atual.",
+        "os": {
+          "mac": "scutil --proxy"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-026",
+        "label": "Estado de rede do sistema",
+        "desc": "Investiga interfaces disponíveis para conectividade.",
+        "result": "Estado das redes IPv4/IPv6.",
+        "os": {
+          "mac": "scutil --nwi"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-027",
+        "label": "Resolução pelo cache do sistema",
+        "desc": "Confere resolução usada pelo sistema; substitua HOST.",
+        "result": "Nome e endereços encontrados ou ausência de resultado.",
+        "os": {
+          "mac": "dscacheutil -q host -a name HOST"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-028",
+        "label": "Consulta DNS IPv4",
+        "desc": "Consulta registros IPv4; substitua HOST.",
+        "result": "Registros A, TTL e servidor consultado.",
+        "os": {
+          "mac": "dig HOST A"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-029",
+        "label": "Consulta DNS IPv6",
+        "desc": "Consulta registros IPv6; substitua HOST.",
+        "result": "Registros AAAA ou resposta sem registros.",
+        "os": {
+          "mac": "dig HOST AAAA"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-030",
+        "label": "Servidores de e-mail",
+        "desc": "Confere registros de encaminhamento de e-mail; substitua HOST.",
+        "result": "Prioridades e destinos MX.",
+        "os": {
+          "mac": "dig HOST MX"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-031",
+        "label": "DNS reverso",
+        "desc": "Consulta nome de um IP; substitua IP_DESTINO.",
+        "result": "Registro PTR, quando publicado.",
+        "os": {
+          "mac": "dig -x IP_DESTINO"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-032",
+        "label": "Ping com limite",
+        "desc": "Testa alcance e latência; substitua HOST.",
+        "result": "Quatro tentativas, tempos e perda; filtros ICMP podem impedir resposta.",
+        "os": {
+          "mac": "ping -c 4 HOST"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-033",
+        "label": "Rota até um host",
+        "desc": "Investiga até doze saltos; substitua HOST.",
+        "result": "Saltos ou asteriscos em caso de silêncio; timeout de dois segundos por sondagem.",
+        "os": {
+          "mac": "traceroute -m 12 -w 2 HOST"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-034",
+        "label": "Teste de porta TCP",
+        "desc": "Confere conexão TCP; substitua HOST e PORTA.",
+        "result": "Sucesso ou falha de conexão; não valida funcionamento do aplicativo.",
+        "os": {
+          "mac": "nc -vz -w 5 HOST PORTA"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-035",
+        "label": "Cabeçalhos HTTP",
+        "desc": "Confere status HTTP; substitua HOST.",
+        "result": "Status e cabeçalhos; alguns servidores não aceitam HEAD.",
+        "os": {
+          "mac": "curl -I --connect-timeout 10 --max-time 20 'https://HOST'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-036",
+        "label": "Diagnóstico HTTPS",
+        "desc": "Investiga DNS, TLS e conexão; substitua HOST.",
+        "result": "Etapas da conexão, certificado e status; corpo descartado.",
+        "os": {
+          "mac": "curl -v --connect-timeout 10 --max-time 20 -o /dev/null 'https://HOST'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-037",
+        "label": "Certificado TLS",
+        "desc": "Inspeciona handshake e cadeia; substitua HOST.",
+        "result": "Certificados e verificação; confiança pode diferir da do navegador.",
+        "os": {
+          "mac": "openssl s_client -connect HOST:443 -servername HOST </dev/null"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "OpenSSL/LibreSSL disponível.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-038",
+        "label": "Qualidade da conexão",
+        "desc": "Mede capacidade e responsividade da conexão.",
+        "result": "Upload, download e responsividade; gera tráfego e consome banda.",
+        "os": {
+          "mac": "networkQuality -v"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "macOS 12 ou superior.",
+        "impact": "Gera tráfego de teste e consome banda.",
+        "added": true
+      },
+      {
+        "id": "bau-mac-039",
+        "label": "Diagnóstico sem fio",
+        "desc": "Consulta estado de Wi-Fi e interfaces.",
+        "result": "Informações de diagnóstico; certos campos podem estar ocultos por privacidade.",
+        "os": {
+          "mac": "sudo wdutil info"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "macOS com wdutil; administrador.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Acesso remoto e segurança",
+    "commands": [
+      {
+        "id": "bau-mac-040",
+        "label": "Modo discreto do firewall",
+        "desc": "Confere política de resposta a sondagens.",
+        "result": "Estado do modo discreto do firewall de aplicativos.",
+        "os": {
+          "mac": "sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-041",
+        "label": "Bloqueio total do firewall",
+        "desc": "Confere bloqueio de conexões recebidas.",
+        "result": "Estado da opção de bloquear todas as conexões.",
+        "os": {
+          "mac": "sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getblockall"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-042",
+        "label": "Aplicativos no firewall",
+        "desc": "Investiga permissões de aplicativos.",
+        "result": "Lista de aplicativos e regras de entrada.",
+        "os": {
+          "mac": "sudo /usr/libexec/ApplicationFirewall/socketfilterfw --listapps"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-043",
+        "label": "Aplicativos assinados no firewall",
+        "desc": "Confere política para aplicativos assinados.",
+        "result": "Estado das opções de permitir software assinado.",
+        "os": {
+          "mac": "sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getallowsigned"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-044",
+        "label": "Versão do OpenSSH",
+        "desc": "Confere cliente SSH instalado.",
+        "result": "Versão do OpenSSH na saída de diagnóstico.",
+        "os": {
+          "mac": "ssh -V"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-045",
+        "label": "Configuração efetiva SSH",
+        "desc": "Confere opções sem conectar; substitua HOST.",
+        "result": "Parâmetros calculados para o destino.",
+        "os": {
+          "mac": "ssh -G HOST"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-046",
+        "label": "Estado de Login Remoto",
+        "desc": "Confere se o Login Remoto está habilitado.",
+        "result": "Estado On/Off; não ativa SSH.",
+        "os": {
+          "mac": "sudo systemsetup -getremotelogin"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador; restrições de acesso do macOS podem impedir consulta.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-047",
+        "label": "Registro em gerenciamento",
+        "desc": "Confere inscrição do Mac em gerenciamento.",
+        "result": "Estado de inscrição MDM e inscrição automatizada.",
+        "os": {
+          "mac": "profiles status -type enrollment"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-048",
+        "label": "Estado do Gatekeeper",
+        "desc": "Confere verificação de execução de aplicativos.",
+        "result": "Estado das avaliações; não altera a política.",
+        "os": {
+          "mac": "spctl --status"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-049",
+        "label": "Proteção de integridade",
+        "desc": "Confere estado da proteção do sistema.",
+        "result": "Estado do SIP; não modifica proteção.",
+        "os": {
+          "mac": "csrutil status"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-050",
+        "label": "Estado do FileVault",
+        "desc": "Confere criptografia do volume de inicialização.",
+        "result": "Estado do FileVault ou andamento da operação.",
+        "os": {
+          "mac": "fdesetup status"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Sistema e desempenho",
+    "commands": [
+      {
+        "id": "bau-mac-051",
+        "label": "Resumo do software",
+        "desc": "Confere sistema, kernel e tempo desde o boot.",
+        "result": "Relatório de software do sistema.",
+        "os": {
+          "mac": "system_profiler SPSoftwareDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-052",
+        "label": "Informações de RAM",
+        "desc": "Inspeciona memória reportada pelo hardware.",
+        "result": "Capacidade e dados disponíveis; módulos detalhados variam por arquitetura.",
+        "os": {
+          "mac": "system_profiler SPMemoryDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-053",
+        "label": "Vídeo e monitores",
+        "desc": "Investiga GPU e monitores.",
+        "result": "Modelo, resolução e características de vídeo.",
+        "os": {
+          "mac": "system_profiler SPDisplaysDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-054",
+        "label": "Armazenamento do sistema",
+        "desc": "Inspeciona volumes e espaço.",
+        "result": "Relatório de armazenamento; pode levar alguns segundos.",
+        "os": {
+          "mac": "system_profiler SPStorageDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-055",
+        "label": "Dispositivos USB",
+        "desc": "Investiga periféricos e adaptadores.",
+        "result": "Árvore USB com identificação e velocidades.",
+        "os": {
+          "mac": "system_profiler SPUSBDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-056",
+        "label": "Bluetooth",
+        "desc": "Investiga controlador e dispositivos.",
+        "result": "Relatório de Bluetooth; detalhes dependem de permissões e versão.",
+        "os": {
+          "mac": "system_profiler SPBluetoothDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-057",
+        "label": "Energia e bateria",
+        "desc": "Investiga saúde e alimentação.",
+        "result": "Capacidade, ciclos e informações de energia, quando disponíveis.",
+        "os": {
+          "mac": "system_profiler SPPowerDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-058",
+        "label": "Impressoras instaladas",
+        "desc": "Confere configuração de impressoras.",
+        "result": "Modelos, drivers e filas disponíveis.",
+        "os": {
+          "mac": "system_profiler SPPrintersDataType"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-059",
+        "label": "Núcleos físicos e lógicos",
+        "desc": "Confere capacidade de processamento.",
+        "result": "Duas linhas: número de núcleos físicos e lógicos.",
+        "os": {
+          "mac": "sysctl -n hw.physicalcpu hw.logicalcpu"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-060",
+        "label": "Tamanho de página de memória",
+        "desc": "Interpreta contadores do vm_stat.",
+        "result": "Tamanho de uma página em bytes; varia por arquitetura.",
+        "os": {
+          "mac": "sysctl -n hw.pagesize"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-061",
+        "label": "Estatísticas de memória",
+        "desc": "Investiga paginação e utilização de memória.",
+        "result": "Contadores em páginas; use o tamanho indicado no cabeçalho.",
+        "os": {
+          "mac": "vm_stat"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-062",
+        "label": "Pressão de memória",
+        "desc": "Consulta disponibilidade de memória sem provocar pressão.",
+        "result": "Estatísticas e percentual de memória livre; sem opções de teste.",
+        "os": {
+          "mac": "memory_pressure"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-063",
+        "label": "Processos por CPU",
+        "desc": "Consulta uma amostra dos processos mais ativos.",
+        "result": "Resumo e até dez processos; a primeira amostra pode ter CPU pouco representativa.",
+        "os": {
+          "mac": "top -l 1 -n 10 -o cpu"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-064",
+        "label": "Processos detalhados",
+        "desc": "Relaciona processos, usuários e consumo.",
+        "result": "PID, pai, usuário, CPU, memória e executável.",
+        "os": {
+          "mac": "ps -axo pid,ppid,user,%cpu,%mem,comm"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-065",
+        "label": "Buscar processo",
+        "desc": "Localiza processos pelo padrão; substitua PROGRAMA.",
+        "result": "PIDs e nomes correspondentes.",
+        "os": {
+          "mac": "pgrep -fl 'PROGRAMA'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-066",
+        "label": "Portas TCP em escuta",
+        "desc": "Identifica aplicativos que aceitam conexões.",
+        "result": "Processos, PIDs e portas em escuta.",
+        "os": {
+          "mac": "sudo lsof -nP -iTCP -sTCP:LISTEN"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador para visibilidade completa.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-067",
+        "label": "Aplicativo usando uma porta",
+        "desc": "Investiga ocupação de uma porta; substitua PORTA.",
+        "result": "Processos e conexões TCP associados.",
+        "os": {
+          "mac": "sudo lsof -nP -iTCP:PORTA"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador para visibilidade completa.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-068",
+        "label": "Quem usa um arquivo",
+        "desc": "Investiga arquivo ocupado; substitua CAMINHO.",
+        "result": "Processos que mantêm o arquivo aberto.",
+        "os": {
+          "mac": "sudo lsof 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador para visibilidade completa.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-069",
+        "label": "Serviços da sessão gráfica",
+        "desc": "Investiga agentes da sessão atual.",
+        "result": "Estado do domínio gráfico e serviços; requer sessão gráfica.",
+        "os": {
+          "mac": "launchctl print gui/$(id -u)"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-070",
+        "label": "Serviço de sistema específico",
+        "desc": "Investiga um daemon; substitua ROTULO.",
+        "result": "Estado, PID e propriedades ou erro de serviço inexistente.",
+        "os": {
+          "mac": "sudo launchctl print system/ROTULO"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-071",
+        "label": "Agentes desabilitados",
+        "desc": "Confere desabilitação explícita de agentes.",
+        "result": "Mapa de rótulos e estados do domínio gráfico.",
+        "os": {
+          "mac": "launchctl print-disabled gui/$(id -u)"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Discos e arquivos",
+    "commands": [
+      {
+        "id": "bau-mac-072",
+        "label": "Lista de discos",
+        "desc": "Relaciona discos físicos e virtuais.",
+        "result": "Mapa de discos, partições e identificadores.",
+        "os": {
+          "mac": "diskutil list"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-073",
+        "label": "Informações do volume principal",
+        "desc": "Investiga formato e estado do volume em uso.",
+        "result": "Identificador, formato, capacidade e propriedades.",
+        "os": {
+          "mac": "diskutil info /"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-074",
+        "label": "Contêineres APFS",
+        "desc": "Relaciona contêineres e volumes APFS.",
+        "result": "Árvore APFS e consumo de espaço.",
+        "os": {
+          "mac": "diskutil apfs list"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-075",
+        "label": "Uso de inodes",
+        "desc": "Investiga quantidade de arquivos e capacidade.",
+        "result": "Uso de blocos e inodes dos volumes; disponibilidade depende do formato.",
+        "os": {
+          "mac": "df -i"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-076",
+        "label": "Uso por subpasta",
+        "desc": "Investiga espaço de uma pasta; substitua CAMINHO.",
+        "result": "Tamanhos da pasta e subpastas imediatas.",
+        "os": {
+          "mac": "du -h -d 1 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-077",
+        "label": "Metadados de arquivo",
+        "desc": "Confere datas, tamanho e permissões; substitua CAMINHO.",
+        "result": "Metadados em formato legível.",
+        "os": {
+          "mac": "stat -x 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-078",
+        "label": "ACL e atributos de arquivo",
+        "desc": "Investiga permissões, flags e atributos; substitua CAMINHO.",
+        "result": "Listagem com ACL, flags e atributos estendidos.",
+        "os": {
+          "mac": "ls -leO@ 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-079",
+        "label": "Tipo de arquivo",
+        "desc": "Identifica formato pelo conteúdo; substitua CAMINHO.",
+        "result": "Tipo detectado e características do arquivo.",
+        "os": {
+          "mac": "file 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-080",
+        "label": "Destino de link simbólico",
+        "desc": "Consulta para onde um link aponta; substitua CAMINHO.",
+        "result": "Destino armazenado no link; não resolve toda a cadeia.",
+        "os": {
+          "mac": "readlink 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-081",
+        "label": "Localizar logs",
+        "desc": "Procura arquivos de log; substitua CAMINHO.",
+        "result": "Caminhos correspondentes; leitura recursiva pode demorar.",
+        "os": {
+          "mac": "find 'CAMINHO' -type f -name '*.log'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-082",
+        "label": "SHA-256 de arquivo",
+        "desc": "Compara integridade com referência; substitua CAMINHO.",
+        "result": "Hash SHA-256 e nome do arquivo.",
+        "os": {
+          "mac": "shasum -a 256 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-083",
+        "label": "Metadados Spotlight",
+        "desc": "Inspeciona metadados indexados; substitua CAMINHO.",
+        "result": "Propriedades Spotlight; alguns valores podem estar nulos.",
+        "os": {
+          "mac": "mdls 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-084",
+        "label": "Buscar PDFs com Spotlight",
+        "desc": "Localiza PDFs indexados em uma pasta; substitua CAMINHO.",
+        "result": "Caminhos encontrados; depende da indexação Spotlight.",
+        "os": {
+          "mac": "mdfind -onlyin 'CAMINHO' 'kMDItemFSName == \"*.pdf\"'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-085",
+        "label": "Atributos estendidos",
+        "desc": "Investiga metadados como quarentena; substitua CAMINHO.",
+        "result": "Nomes e valores dos atributos; não remove atributos.",
+        "os": {
+          "mac": "xattr -l 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-086",
+        "label": "Contar linhas",
+        "desc": "Mede linhas de um texto; substitua CAMINHO.",
+        "result": "Quantidade de caracteres de nova linha.",
+        "os": {
+          "mac": "wc -l 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-087",
+        "label": "Primeiras linhas",
+        "desc": "Inspeciona cabeçalho de arquivo; substitua CAMINHO.",
+        "result": "Até vinte linhas iniciais.",
+        "os": {
+          "mac": "head -n 20 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-088",
+        "label": "Últimas linhas",
+        "desc": "Inspeciona final de um log; substitua CAMINHO.",
+        "result": "Até cinquenta linhas finais.",
+        "os": {
+          "mac": "tail -n 50 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-089",
+        "label": "Buscar mensagens em log",
+        "desc": "Localiza padrão em um arquivo; substitua CAMINHO e o padrão.",
+        "result": "Linhas numeradas; código 1 indica nenhuma correspondência.",
+        "os": {
+          "mac": "grep -ni 'erro' 'CAMINHO'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  },
+  {
+    "title": "Logs, energia e software",
+    "commands": [
+      {
+        "id": "bau-mac-090",
+        "label": "Logs da última hora",
+        "desc": "Investiga eventos recentes do sistema.",
+        "result": "Logs compactos da última hora; acesso e retenção limitam resultados.",
+        "os": {
+          "mac": "log show --last 1h --style compact"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-091",
+        "label": "Logs de um processo",
+        "desc": "Delimita eventos de um processo; substitua PROGRAMA.",
+        "result": "Eventos disponíveis desse processo na última hora.",
+        "os": {
+          "mac": "log show --last 1h --style compact --predicate 'process == \"PROGRAMA\"'"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-092",
+        "label": "Configuração de energia",
+        "desc": "Confere política de suspensão e alimentação.",
+        "result": "Configurações de gerenciamento de energia.",
+        "os": {
+          "mac": "pmset -g"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-093",
+        "label": "Impedimentos de suspensão",
+        "desc": "Investiga por que o Mac não dorme.",
+        "result": "Asserções de energia e processos responsáveis.",
+        "os": {
+          "mac": "pmset -g assertions"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-094",
+        "label": "Estado da bateria",
+        "desc": "Confere carga e fonte de energia.",
+        "result": "Percentual, carregamento e estimativa, quando disponíveis.",
+        "os": {
+          "mac": "pmset -g batt"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-095",
+        "label": "Histórico de energia",
+        "desc": "Investiga eventos recentes de suspensão e despertar.",
+        "result": "Até cinquenta linhas finais do histórico.",
+        "os": {
+          "mac": "pmset -g log | tail -n 50"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-096",
+        "label": "Fuso horário",
+        "desc": "Confere fuso configurado.",
+        "result": "Nome do fuso; não altera o relógio.",
+        "os": {
+          "mac": "sudo systemsetup -gettimezone"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-097",
+        "label": "Sincronização de horário",
+        "desc": "Confere uso de horário pela rede.",
+        "result": "Estado On/Off da opção.",
+        "os": {
+          "mac": "sudo systemsetup -getusingnetworktime"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Administrador.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-098",
+        "label": "Atualizações do macOS",
+        "desc": "Consulta atualizações sem instalar.",
+        "result": "Atualizações oferecidas ou indicação de nenhuma; consulta pode demorar.",
+        "os": {
+          "mac": "softwareupdate -l"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-099",
+        "label": "Recibos de instalação",
+        "desc": "Confere pacotes com recibos registrados.",
+        "result": "Identificadores de recibos; não é uma lista completa de aplicativos.",
+        "os": {
+          "mac": "pkgutil --pkgs"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-100",
+        "label": "Detalhes de um recibo",
+        "desc": "Consulta versão e instalação; substitua ID_PACOTE.",
+        "result": "Versão, volume, local e data do recibo.",
+        "os": {
+          "mac": "pkgutil --pkg-info ID_PACOTE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-101",
+        "label": "Pacotes Homebrew desatualizados",
+        "desc": "Consulta versões pendentes.",
+        "result": "Fórmulas e casks com atualizações; pode atualizar metadados automaticamente.",
+        "os": {
+          "mac": "brew outdated"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Homebrew instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-102",
+        "label": "Detalhes de pacote Homebrew",
+        "desc": "Investiga versão, origem e dependências; substitua PACOTE.",
+        "result": "Informações da fórmula ou cask.",
+        "os": {
+          "mac": "brew info PACOTE"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Homebrew instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-103",
+        "label": "Diagnóstico Homebrew",
+        "desc": "Investiga inconsistências da instalação.",
+        "result": "Avisos ou indicação de ambiente pronto; não corrige automaticamente.",
+        "os": {
+          "mac": "brew doctor"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Homebrew instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-104",
+        "label": "Serviços Homebrew",
+        "desc": "Confere serviços gerenciados pelo Homebrew.",
+        "result": "Nome, estado e usuário; não inicia nem para serviços.",
+        "os": {
+          "mac": "brew services list"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Homebrew instalado.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-105",
+        "label": "Filas de impressão",
+        "desc": "Investiga trabalhos pendentes.",
+        "result": "Lista de trabalhos ou nenhuma saída se a fila estiver vazia.",
+        "os": {
+          "mac": "lpstat -o"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      },
+      {
+        "id": "bau-mac-106",
+        "label": "Identidade e grupos",
+        "desc": "Confere permissões por identidade.",
+        "result": "UID, GID e grupos do usuário atual.",
+        "os": {
+          "mac": "id"
+        },
+        "shell": "Terminal (zsh/Bash)",
+        "requires": "Ferramenta disponível no sistema; substitua os campos em MAIÚSCULAS.",
+        "impact": "",
+        "added": true
+      }
+    ]
+  }
+]

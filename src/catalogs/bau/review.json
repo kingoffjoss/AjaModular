@@ -1,0 +1,181 @@
+[
+  {
+    "id": "cmd-mac-net",
+    "os": "mac",
+    "before": "open /System/Library/PreferencePanes/Network.prefPane",
+    "after": "open -a \"System Settings\""
+  },
+  {
+    "id": "cmd-flushdns",
+    "os": "linux",
+    "before": "sudo systemd-resolve --flush-caches",
+    "after": "sudo resolvectl flush-caches"
+  },
+  {
+    "id": "cmd-releaseip",
+    "os": "mac",
+    "change": "Removida variante duplicada: ela renovava DHCP, não liberava IP."
+  },
+  {
+    "id": "cmd-renewip",
+    "os": "mac",
+    "before": "sudo ipconfig set en0 BOOTP && sudo ipconfig set en0 DHCP",
+    "after": "sudo ipconfig set INTERFACE DHCP"
+  },
+  {
+    "id": "cmd-wifi-off",
+    "os": "win",
+    "before": "powershell -Command \"Disable-NetAdapter -Name 'Wi-Fi' -Confirm:$false\"",
+    "after": "Disable-NetAdapter -Name 'ADAPTADOR'"
+  },
+  {
+    "id": "cmd-wifi-off",
+    "os": "linux",
+    "before": "sudo ip link set wlan0 down",
+    "after": "sudo ip link set INTERFACE down"
+  },
+  {
+    "id": "cmd-wifi-on",
+    "os": "win",
+    "before": "powershell -Command \"Enable-NetAdapter -Name 'Wi-Fi'\"",
+    "after": "Enable-NetAdapter -Name 'ADAPTADOR'"
+  },
+  {
+    "id": "cmd-wifi-on",
+    "os": "linux",
+    "before": "sudo ip link set wlan0 up",
+    "after": "sudo ip link set INTERFACE up"
+  },
+  {
+    "id": "cmd-mac-airport",
+    "os": "mac",
+    "before": "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -s",
+    "after": "open -a \"Wireless Diagnostics\""
+  },
+  {
+    "id": "cmd-lin-iwlist",
+    "os": "linux",
+    "before": "sudo iwlist wlan0 scan",
+    "after": "sudo iw dev INTERFACE scan"
+  },
+  {
+    "id": "cmd-wmic-cpu",
+    "os": "win",
+    "before": "wmic cpu get name, MaxClockSpeed, L3CacheSize",
+    "after": "Get-CimInstance Win32_Processor | Select-Object Name,MaxClockSpeed,L3CacheSize"
+  },
+  {
+    "id": "cmd-wmic-cpu",
+    "os": "mac",
+    "before": "sysctl -n machdep.cpu.brand_string",
+    "after": "system_profiler SPHardwareDataType"
+  },
+  {
+    "id": "cmd-wmic-cpu",
+    "os": "linux",
+    "before": "lscpu | grep 'Model name'",
+    "after": "lscpu | grep -i \"model name\""
+  },
+  {
+    "id": "cmd-wmic-mem",
+    "os": "win",
+    "before": "wmic memorychip get Capacity, Speed, Manufacturer",
+    "after": "Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity,Speed,Manufacturer"
+  },
+  {
+    "id": "cmd-wmic-mem",
+    "os": "linux",
+    "before": "free -h",
+    "after": "free -h"
+  },
+  {
+    "id": "cmd-wmic-os",
+    "os": "win",
+    "before": "wmic os get Caption, Version, OSArchitecture",
+    "after": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,OSArchitecture"
+  },
+  {
+    "id": "cmd-wmic-os",
+    "os": "linux",
+    "before": "lsb_release -a",
+    "after": "cat /etc/os-release"
+  },
+  {
+    "id": "cmd-uptime",
+    "os": "win",
+    "before": "systeminfo | find \"Tempo de Arranque\"",
+    "after": "(Get-CimInstance Win32_OperatingSystem).LastBootUpTime"
+  },
+  {
+    "id": "cmd-net-start",
+    "os": "mac",
+    "before": "sudo launchctl list",
+    "after": "launchctl print system"
+  },
+  {
+    "id": "cmd-net-stop",
+    "os": "mac",
+    "before": "sudo launchctl stop [NOME_SERVICO]",
+    "after": "sudo launchctl bootout system/ROTULO"
+  },
+  {
+    "id": "cmd-net-start-srv",
+    "os": "mac",
+    "before": "sudo launchctl start [NOME_SERVICO]",
+    "after": "sudo launchctl bootstrap system '/CAMINHO/servico.plist'"
+  },
+  {
+    "id": "cmd-mac-repairperm",
+    "os": "mac",
+    "before": "diskutil resetUserPermissions / `id -u`",
+    "after": "ls -ld \"$HOME\""
+  },
+  {
+    "id": "cmd-mac-firstaid",
+    "os": "mac",
+    "before": "diskutil repairVolume /",
+    "after": "open -a \"Disk Utility\""
+  },
+  {
+    "id": "cmd-lin-fsck",
+    "os": "linux",
+    "before": "sudo fsck /dev/sda1",
+    "after": "sudo fsck -n /dev/DISPOSITIVO"
+  },
+  {
+    "id": "cmd-cd",
+    "os": "win",
+    "before": "cd NOME_DA_PASTA",
+    "after": "Set-Location -LiteralPath 'NOME_DA_PASTA'"
+  },
+  {
+    "id": "cmd-mkdir",
+    "os": "win",
+    "before": "mkdir NOME_DA_PASTA",
+    "after": "New-Item -ItemType Directory -Path 'NOME_DA_PASTA'"
+  },
+  {
+    "id": "cmd-del",
+    "os": "win",
+    "before": "del NOME_DO_FICHEIRO",
+    "after": "Remove-Item -LiteralPath 'NOME_DO_FICHEIRO'"
+  },
+  {
+    "id": "cmd-rmdir",
+    "os": "win",
+    "before": "rmdir NOME_DA_PASTA",
+    "after": "cmd /c rmdir \"NOME_DA_PASTA\""
+  },
+  {
+    "id": "cmd-del-force",
+    "os": "win",
+    "before": "rmdir /s /q NOME_DA_PASTA",
+    "after": "Remove-Item -LiteralPath 'NOME_DA_PASTA' -Recurse -Force -Confirm"
+  },
+  {
+    "id": "cmd-find",
+    "os": "win",
+    "before": "dir [nome] /s",
+    "after": "Get-ChildItem -Path . -Filter 'NOME_OU_PADRAO' -Recurse"
+  }
+]
