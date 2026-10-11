@@ -1,1 +1,2927 @@
-[]
+[
+  {
+    "title": "I - Apresentação Padrão",
+    "text": "Olá [NOME DO CLIENTE]! Espero que esteja tudo bem. Sou da equipe de atendimento da Brisanet e estou aqui para ajudar. Lamentamos a demora na fila, o movimento hoje está um pouco acima do normal. Estou falando com o titular do contrato?",
+    "isFavorite": true,
+    "requiredData": [
+      "NOME_DO_CLIENTE"
+    ],
+    "hotkey": "/i1"
+  },
+  {
+    "title": "I - Confirmação de Dados de Segurança",
+    "text": "Para documentação no protocolo, por favor, informe seu nome completo.\npara confirmarmos sua identidade, precisamos dos seguintes dados cadastrais: nome completo, data de nascimento e endereço completo, incluindo rua, número e bairro.\nAgradeço a confirmação. Em que posso ser útil hoje?",
+    "isFavorite": true,
+    "requiredData": [
+      "NOME_COMPLETO",
+      "DATA_NASC",
+      "ENDERECO"
+    ],
+    "hotkey": "/i2"
+  },
+  {
+    "title": "I - Erro na confirmação do endereço",
+    "text": "O endereço informado não corresponde ao registrado. Para auxiliar, envie uma foto do comprovante de residência ou da tela \"plano\" do aplicativo BrisaCliente em caso de dúvidas.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/Q2"
+  },
+  {
+    "title": "I - Erro na confirmação da data de nascimento",
+    "text": "Detectamos uma divergência entre a data de nascimento fornecida e a registrada. Para prosseguirmos, por favor, confirme sua data de nascimento. Caso necessite de auxílio, envie uma imagem de um documento oficial (RG ou certidão de nascimento).",
+    "isFavorite": false,
+    "requiredData": [
+      "DATA_NASC"
+    ]
+  },
+  {
+    "title": "I - Erro na confirmação do nome do titular",
+    "text": "Constatamos uma divergência no nome do titular informado em relação ao registrado em nosso sistema. Para a confirmação dos seus dados, solicitamos que nos informe novamente o nome completo ou envie uma foto de um documento oficial com foto (RG, CNH ou passaporte).",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_COMPLETO"
+    ],
+    "hotkey": "/Q3"
+  },
+  {
+    "title": "I - Correção do endereço (Instruções)",
+    "text": "Para assegurar o recebimento adequado de nossas mensagens, por favor, envie seu comprovante de residência e CPF para dados@grupobrisanet.com.br.",
+    "isFavorite": false,
+    "requiredData": [
+      "CPF"
+    ],
+    "hotkey": "/Q4"
+  },
+  {
+    "title": "I - Questionar o motivo das perguntas",
+    "text": "Para reforçar a segurança da sua privacidade e dos seus dados, solicitamos algumas informações adicionais. Essa medida garantirá que somente você tenha acesso e possa administrar seu cadastro e sua rede.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "I - CPF incorreto (Revisar)",
+    "text": "O CPF digitado não foi encontrado. Revise o número e tente outra vez. Caso necessário, consulte seu CPF para garantir a digitação correta.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/o1"
+  },
+  {
+    "title": "A - Início e Sondagem (Proativo)",
+    "text": "Olá! Como vai? Meu nome é Josias Queiroz e faço parte do suporte técnico da Brisanet. Gostaria de falar com o [NOME DO CLIENTE] para tratar uma solicitação de atendimento. O número do protocolo é [PROTOCOLO].\nPor favor, poderia me informar se ele está disponível ou quando seria o melhor momento para entrar em contato?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_DO_CLIENTE",
+      "PROTOCOLO"
+    ]
+  },
+  {
+    "title": "A - Confirmação de dados de segurança (Completa)",
+    "text": "Como posso ajudá-lo(a) hoje?\nPor gentileza, para que eu possa ajudá-lo de maneira mais personalizada, poderia me informar o seu nome completo?\nEntendo que você está enfrentando um problema e estou aqui para ajudar. Fique tranquilo(a), estou comprometido(a) em resolver o seu problema e garantir a sua satisfação. Antes de prosseguirmos, preciso confirmar alguns dados do titular da conta para garantir a sua segurança.\nPor gentileza, poderia fornecer o nome completo do titular, a data de nascimento, CPF e o endereço completo (rua, número e bairro)? Caso não tenha certeza do endereço, você pode enviar uma foto do comprovante de endereço de residência ou captura de tela dos planos no aplicativo Brisacliente.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_COMPLETO",
+      "DATA_NASC",
+      "CPF",
+      "ENDERECO"
+    ]
+  },
+  {
+    "title": "A - Agradecimento Confirmação de Segurança",
+    "text": "Agradeço sinceramente por responder às perguntas de segurança.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "E - Agradecimento e Despedida",
+    "text": "Agradecemos sinceramente pela tua paciência e compreensão. Estamos à disposição para qualquer dúvida ou suporte adicional. Tenha um excelente dia!",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/e4"
+  },
+  {
+    "title": "E - Despedida (Feriado)",
+    "text": "Descanse e recarregue as energias neste feriado maravilhoso! Espero que você tenha momentos inesquecíveis ao lado de sua família.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "E - Avaliação (Importância)",
+    "text": "Sua opinião sobre o meu atendimento é muito importante para mim. Peço gentilmente que responda à avaliação.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/r1"
+  },
+  {
+    "title": "E - Avaliação (Agradecimento)",
+    "text": "Agradeço desde já por dedicar um momento para avaliar o meu atendimento. A sua opinião é fundamental para que possamos continuar melhorando a sua experiência.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/r3"
+  },
+  {
+    "title": "E - Inatividade (Falta de Retorno)",
+    "text": "Sem um retorno, não posso prosseguir com o atendimento. Caso necessite de assistência no futuro, nossa equipe estará pronta para ajudar. Agradeço sua compreensão e tenha um excelente dia!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/f1"
+  },
+  {
+    "title": "C - Chamar Atenção do Cliente",
+    "text": "Olá! Continuo à disposição para ajuda. Quer continuar?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/oi"
+  },
+  {
+    "title": "C - Aguarde um Momento (Geral)",
+    "text": "Peço que aguarde um momento enquanto verifico essa questão com o setor responsável.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/m1"
+  },
+  {
+    "title": "C - Solicitar Urgência (Equipe)",
+    "text": "Entendo o que você está sentindo, solicitei que nossa equipe dê máxima prioridade à resolução do problema.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/u1"
+  },
+  {
+    "title": "C - Solicitar Urgência (Prioridade)",
+    "text": "Compreendo perfeitamente a tua situação. Vou solicitar urgência em teu atendimento para ter prioridade.",
+    "isFavorite": false,
+    "requiredData": [
+      "TEMPOESTIMADO"
+    ],
+    "hotkey": "/u2"
+  },
+  {
+    "title": "C - Desculpas Genéricas (Verificação)",
+    "text": "Após a confirmação dos seus dados cadastrais, procederemos à verificação do problema. Agradecemos a sua compreensão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/A1"
+  },
+  {
+    "title": "C - Desculpas Genéricas (Resolução Rápida)",
+    "text": "Muito obrigado pela tua compreensão. Pode ficar tranquilo(a), vamos fazer de tudo para resolver tudo rapidamente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/A2"
+  },
+  {
+    "title": "C - Desculpas Genéricas (Transbordo)",
+    "text": "Sinto muito pelo transtorno que está passando. Pode ficar tranquilo que vamos resolver isso rapidinho e com eficiência.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/A3"
+  },
+  {
+    "title": "C - Desculpas Genéricas (Empatia)",
+    "text": "Entendo perfeitamente que essa situação esteja te causando problemas. Pode ficar tranquilo que vou fazer de tudo para resolver da melhor forma possível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/A4"
+  },
+  {
+    "title": "C - Desculpas Genéricas (Sinceras)",
+    "text": "Lamento sinceramente pelo ocorrido. Em nome da brisanet, peço desculpas pelo inconveniente causado.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/A5"
+  },
+  {
+    "title": "CL - Cancelamento (Motivo)",
+    "text": "Entendemos que você esteja considerando cancelar e sentimos muito por isso. Antes de continuar com o processo, gostaríamos de entender o que te levou a tomar essa decisão. O que levou a tomar essa decisão?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/cl1"
+  },
+  {
+    "title": "CL - Cancelamento (Tentar Tratativa)",
+    "text": "Será que podemos encontrar juntos uma solução para continuar com a gente?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/cl2"
+  },
+  {
+    "title": "CL - Cancelamento (Aviso de Contato)",
+    "text": "Entendo! Dentro de 48 horas, um membro da nossa equipe entrará em contato com você. Agradeço pela sua compreensão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/cl3"
+  },
+  {
+    "title": "CL - Alteração do número de celular (Qual o novo)",
+    "text": "Qual o novo número?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "CL - Assinatura de Contratos (Instruções App)",
+    "text": "Para assinar contratos e enviar fotos, acesse o aplicativo \"brisacliente\", vá para o seu perfil e, em seguida, clique em \"notificações\". Lá, você encontrará os contratos para assinar e a opção de enviar a foto.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "CL - Particularidades Técnicas (Link de Consulta)",
+    "text": "Para consultar o contrato e anexos no site da Brisanet, siga este caminho: Regulatórios > Particularidades Técnicas > Em Vigência > Internet > Clique aqui.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "D - Início da Sondagem (Pré)",
+    "text": "Vou fazer algumas perguntas para entender o que está causando o problema.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/D1"
+  },
+  {
+    "title": "D - Fim da Sondagem (Pós)",
+    "text": "Perfeito, [NOME]! Com esses detalhes, já dá para ter uma ideia do que pode estar acontecendo!",
+    "isFavorite": true,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": "/D2"
+  },
+  {
+    "title": "D - Sinal está nos padrões",
+    "text": "No sistema, o sinal está nos padrões.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/S2"
+  },
+  {
+    "title": "D - Wi-Fi ou Cabeada?",
+    "text": "O problema está acontecendo apenas no Wi-Fi ou também na rede cabeada?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/S3"
+  },
+  {
+    "title": "D - Foto da lista de redes Wi-Fi",
+    "text": "Por favor, envie uma foto da lista de redes Wi-Fi que aparecem em seu celular?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/S4"
+  },
+  {
+    "title": "D - Problema perto do roteador?",
+    "text": "O problema continua mesmo quando você está próximo do roteador?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/S5"
+  },
+  {
+    "title": "D - Como percebeu o problema?",
+    "text": "Como você percebeu esse problema (navegação, redes sociais, YouTube, aplicativos de bancos, ect.)?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/S6"
+  },
+  {
+    "title": "D - Tentou conectar em outra rede?",
+    "text": "Você já tentou conectar seu dispositivo em outro lugar, como em uma rede Wi-Fi diferente ou nos dados móveis do seu celular, para ver se o problema persiste?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/S7"
+  },
+  {
+    "title": "P - Desconectar Modem da Tomada",
+    "text": "Peço que gentilmente desconecte o modem da tomada (o aparelho que recebe o sinal de fibra óptica da rua) por um minuto e, em seguida, o reconecte.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/P2"
+  },
+  {
+    "title": "P - Desconectar Roteador TP-Link",
+    "text": "Desconecte o roteador da marca TP-Link da tomada de energia por um minuto e, por gentileza, reconecte-o.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/P3"
+  },
+  {
+    "title": "P - Teste após procedimentos (Site/Vídeo)",
+    "text": "Por favor, verifique se sua conexão de internet está funcionando corretamente. Abra um site e assista a um vídeo para confirmar.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/TT1"
+  },
+  {
+    "title": "P - Teste após procedimentos (Acompanhamento)",
+    "text": "[NOME], você pode ficar testando a internet ao longo do dia para verificar se o problema persiste? Caso continue, entre em contato conosco para podermos enviar um técnico para analisar a situação.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": "/TT2"
+  },
+  {
+    "title": "P - Sem Êxito (Agendar Equipe Técnica)",
+    "text": "Realmente lamentamos não ter conseguido resolver ainda, mesmo fazendo todos os procedimentos possíveis remotamente. Como última etapa, nossa equipe técnica vai até você para resolver, tudo bem?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/agr"
+  },
+  {
+    "title": "PN - Bajulação (Empatia)",
+    "text": "Entendo como é frustrante quando a velocidade da internet não atende às suas expectativas. Peço desculpas por qualquer inconveniente que isso possa estar causando.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "PN - Hardware (Cabo de rede UTP - Categoria 5E)",
+    "text": "A categoria do cabo tem um impacto direto na velocidade da sua conexão. Cabos de categorias mais baixas podem restringir essa velocidade. O ideal é possuir um cabo de categoria 5E.\nPor favor, verifique quais palavras estão escritas no cabo de rede UTP. Tem que ter a palavrinha 'CAT' seguida de um número ou letra.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "PN - Hardware (Placa de Rede Fast Ethernet)",
+    "text": "A velocidade do seu plano não chega onde deveria por causa da placa de rede do seu equipamento, que suporta apenas até 100Mbps. Para melhorar, considere atualizar a placa de rede para aproveitar ao máximo sua conexão.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "AG - Agendamento Padrão (Verificar horário)",
+    "text": "Vamos marcar essa visita técnica para resolver tudo. Vou verificar a agenda das nossas equipes para te passar o próximo horário disponível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/AG1"
+  },
+  {
+    "title": "AG - Agendamento Padrão (Registrado/Prioridade)",
+    "text": "Seu agendamento foi confirmado e já está marcado como prioridade para nossa equipe.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/AG2"
+  },
+  {
+    "title": "AG - Agendamento Padrão (Preferência Manhã/Tarde)",
+    "text": "Qual é a sua preferência de horário para a visita: manhã ou tarde?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/AG3"
+  },
+  {
+    "title": "AG - Próximo Horário Disponível",
+    "text": "Nosso próximo horário disponível para sua [CIDADE] é [DIA_E_MES], no período da tarde. Pode ser? Aguardo sua confirmação!",
+    "isFavorite": false,
+    "requiredData": [
+      "CIDADE",
+      "DIA_E_MES"
+    ],
+    "hotkey": "/AGT"
+  },
+  {
+    "title": "AG - Problema Recorrente (Agendar Técnico)",
+    "text": "Já notei que você tem vários chamados abertos recentemente, relatando o mesmo problema, dessa vez, vou encaminhar uma equipe técnica ao local para investigar a fundo, nossa prioridade é resolver isso de vez!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/AGR"
+  },
+  {
+    "title": "CR - Cobrança de Chamados - Cancelamento Imediato (Retenção)",
+    "text": "Você pode ligar para o número 0800 281 3017 e solicitar ser encaminhado ao setor de retenção para concluir o cancelamento imediatamente. Agradeço pela sua paciência e compreensão.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "SV - Visita Técnica Particular (Custo R$20)",
+    "text": "A visita técnica gera o valor de R$20,00, pois trata-se de uma questão particular, não relacionada a problemas na rede. Você concorda em contratar o serviço?",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "SV - Revisão de Problema (Custo Condicional R$20)",
+    "text": "Posso enviar uma equipe ao local. Se o problema não estiver na rede, será cobrada uma taxa de R$20,00 pela visita técnica. Você concorda em contratar o serviço?",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "L - LOS - Sondagem (Luz Vermelha)",
+    "text": "Pode me confirmar se no seu modem, tem uma luz vermelha acesa ou piscando? Geralmente é a que está marcada como \"LOS\".",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/L1"
+  },
+  {
+    "title": "L - LOS - Explicação do Problema",
+    "text": "O que está acontecendo parece ser um problema chamado LOS (Loss of Signal), que é quando o sinal da fibra não está chegando até o modem. Isso pode ser causado por: cabo de fibra danificado ou fora do lugar, conector solto, ou algum defeito no próprio equipamento. Para resolver, é necessário ir uma equipe ao local para analisar.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/L5"
+  },
+  {
+    "title": "PON - Sondagem (Luz Apagada/Piscando)",
+    "text": "Você consegue verificar se a luz \"PON\" no modem está apagada ou piscando?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/PON1"
+  },
+  {
+    "title": "PON - Explicação do Problema",
+    "text": "A luz PON no modem indica se o sinal da nossa rede de fibra está chegando corretamente até você. Se ela estiver apagada significa que a ONU não está conseguindo identificar a fibra. Se estiver piscando, é que o modem não está conseguindo se conectar com a nossa central. Isso pode ser por algum mau contato, queda de energia, defeito no modem ou até um cabo fora do lugar.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/pon5"
+  },
+  {
+    "title": "TP - Sem Gerência - Procedimento (Desligar Roteador TP-Link 1 Min)",
+    "text": "Por favor, desligue o roteador Para solucionar esse problema, desligue o roteador principal da marca TP-Link, espere cerca de um minuto e, em seguida, ligue-o novamente.\nLembre-se de desligar apenas o roteador TP-Link.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/TP2"
+  },
+  {
+    "title": "RTC - Cobrança de rota",
+    "text": "Desculpe, [NOME DO CLIENTE], mas o reparo do problema na infraestrutura da rede ainda não foi concluído.\nA previsão é de [QUANTIDADE_HORAS] horas para normalização. Estamos trabalhando para resolver o problema o mais rápido possível.\nPedimos desculpas pelo transtorno causado e agradecemos sua paciência.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_DO_CLIENTE",
+      "QUANTIDADE_HORAS"
+    ],
+    "hotkey": "/RTC1"
+  },
+  {
+    "title": "RTA - Abertura de Rota (Rompimento de Fibra)",
+    "text": "Desculpe, [NOME], descobri a existência de um rompimento de cabos de fibra que está impactando o acesso de [QUANTIDADEDECLIENTES] clientes. Foi aberto o chamado para o nosso setor de FTTH analisar e enviar a equipe aos locais afetados. A estimativa é de [TEMPOESTIMADO] horas para normalização. Peço desculpas pelo transtorno causado e agradeço sua paciência. Lembrando que *[TEMPOESTIMADO] horas* é apenas um prazo máximo, está sendo verificado com extrema urgência, visto que, há muitos clientes sem acesso.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME",
+      "QUANTIDADEDECLIENTES",
+      "TEMPOESTIMADO"
+    ],
+    "hotkey": "/RTA1"
+  },
+  {
+    "title": "PIS - Manutenção do Revan (Encerramento - 2h)",
+    "text": "Olá, tudo bem? Atualmente, enfrentamos uma instabilidade em nosso sistema interno, impossibilitando a realização de procedimentos. Estimamos que a normalização ocorra em até 2 horas. Pedimos desculpas pelo transtorno e agradecemos sua compreensão. Caso necessite de assistência após esse período, entre em contato conosco pelo 0800 281 3017.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "PIS - Instabilidade com Roteadores TP-Link (3h)",
+    "text": "Atualmente, enfrentamos uma instabilidade em nosso sistema que afeta todos os roteadores da marca TP-Link, impossibilitando qualquer procedimento. Nossa equipe responsável está trabalhando para resolver o problema, e a previsão é de normalização em até 3 horas. Importante ressaltar que a situação pode se normalizar a qualquer momento.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INS - Instalação - Mal Sucedida (Falha Física)",
+    "text": "Analisei seu caso e identifiquei que a sua falta de acesso foi causada por um erro durante a instalação. Peço desculpas por essa falha. Para resolver isso o mais rápido possível, já acionei uma equipe técnica com prioridade máxima que irá corrigir o problema para você.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INS - Metragem de Cabo - Conecta+",
+    "text": "Conecta+ ainda não foi instalado em sua residência. Você tem até 30 metros de cabo de rede para conectar até 4 aparelhos. Cada metro adicional custará R$1,30. Está de acordo?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "APP - BrisaApps - Erro no Servidor (Limpar Cache Android)",
+    "text": "Para android\n☐ Abra as *\"Configurações\"* do seu celular.\n2 Procure por *\"Aplicativos\"* (ou \"Apps e notificações\", ou semelhantes).\n3 Encontre e selecione o nosso aplicativo na lista.\n4 Toque em *\"Armazenamento\"* e depois em \"Limpar cache\".\n☑*Importante:* Após limpar, reinicie o seu celular antes de abrir o aplicativo novamente.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "APP - BrisaApps - Brisacliente (Primeiro Acesso - Padrão)",
+    "text": "Para solicitar sua senha do aplicativo, siga estas etapas:\nAbra o aplicativo e insira seu CPF.\nToque em \"Continuar\".\nSelecione \"Esqueci minha senha\".\nDigite seu CPF novamente.\nEscolha o número para receber o SMS.\nClique em \"Confirmar\" para receber um código por SMS.\nDigite o código no campo e faça a sua nova senha.\nToque em \"Confirmar\".\nPronto, sua senha foi definida!",
+    "isFavorite": false,
+    "requiredData": [
+      "CPF"
+    ]
+  },
+  {
+    "title": "APP - BrisaApps - Brisacliente (Visualizar Senha Wi-Fi)",
+    "text": "A senha atual de sua rede Wi-Fi só pode ser visualizada pelo aplicativo brisacliente no menu de acesso rápido na opção 'Acessar Meu Wi-Fi'.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "APP - SVA's - Ubook S'elect (Primeiro Acesso)",
+    "text": "Acesse o aplicativo é necessário cadastrar seu e-mail através do link https://brisanet.ubook.com/login e, em seguida, acesse o aplicativo ou site com o e-mail cadastrado.",
+    "isFavorite": false,
+    "requiredData": [
+      "EMAIL"
+    ]
+  },
+  {
+    "title": "T - Alteração de Senha da Rede Wi-Fi (Procedimento)",
+    "text": "Verifique a nova senha da sua Wi-Fi e informe se conseguiu conectar. Lembre-se, a senha é totalmente minúscula e sem espaços",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": "/PW1"
+  },
+  {
+    "title": "T - Rede Unificada (Mensagem Simples)",
+    "text": "Seu roteador combina as frequências de 5.8 GHz (turbo) e 2.4 GHz (normal) em uma única rede para melhorar automaticamente a conectividade dos seus dispositivos, escolhendo a frequência com melhor alcance e desempenho.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "T - Alcance da Rede Wi-Fi (Informações)",
+    "text": "Os roteadores da Brisanet têm um alcance padrão de 7 a 12 metros quadrados. Na rede 2.4Ghz, e na turbo (5Ghz), esse alcance pode ser cerca de 1/3. Para uma melhor cobertura de sinal, é importante instalar o modem em um local sem interferências, como paredes, cerâmicas, gessos, vidros e eletrodomésticos. Para ampliar a cobertura do Wi-Fi, pode ser vantajoso investir em um roteador pessoal posicionado estrategicamente na residência.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "T - Bloqueio Parcial (Débito)",
+    "text": "Identificamos um débito em seu contrato, afetando seu acesso aos serviços. Sua conexão com a internet está limitada. O bloqueio parcial também afeta a disponibilidade de alguns canais em sua TV Brisanet. Se você regularizou o pagamento, solicite a normalização do acesso no aplicativo BrisaCliente.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "J - Sondagem (Nomes, Problema, Ping)",
+    "text": "Quais são os nomes dos jogos com problemas?\nQual é o problema específico que você está enfrentando? Por exemplo: Ping alto, perdas de pacotes, desconexões durante partidas, impossibilidade de login no jogo ou no lançador.\nQual é a média do ping agora? Como era antes do problema?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "J - Nat em Consoles (Como Verificar)",
+    "text": "No menu de ajustes do console, você pode encontrar a ferramenta de teste de conexão que relata as métricas da rede e inclui o Tipo NAT detectado.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "J - Ping (Anatel - 80ms)",
+    "text": "A Anatel, diz que o tempo que os dados demoram para ir do seu aparelho até o servidor do jogo (o ping) deve ser de no máximo 80 milissegundos na rede cabeada. Isso garante que sua experiência de jogo seja suave e sem atrasos.\nConsoante a ANATEL, para a rede cabeada, o ping estará dentro dos padrões se for igual ou inferior a 80ms. Essa informação pode ser verificada no Regulamento de Gestão da Qualidade do Serviço de Comunicação Multimídia (RGQ-SCM), aprovado pela Resolução n.º 574, de 28 de outubro de 2011.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "J - IP Fixo para diminuir o Ping",
+    "text": "Ter um IP fixo em jogos é benéfico, mantendo seu NAT aberto (Tipo 1) para uma maior compatibilidade na conexão com jogos. A diferença no ping não é grande, pois este está ligado à geolocalização do cliente e do servidor do jogo - quanto mais longe, maior o ping.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "S - Sempre Verificar OLT PPPoE",
+    "text": "Sempre verificar a se a OLT do cliente disca PPPoE na planilha clicando aqui",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "S - Tratativas (Limpar Cache da Rede - CMD)",
+    "text": "Abra o menu Iniciar do Windows, digite \"cmd\", clique com o botão direito no prompt de comando e selecione \"Executar como administrador\".\nNa tela preta, digite \"ipconfig /release\", pressione [Enter], depois \"ipconfig /renew\" e pressione [Enter]. Finalize com \"ipconfig /flushdns\" e pressione [Enter]. Feche o prompt de comando e tente conectar.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "S - VPN - Tratativas (IP Fixo/Roteador Dedicado)",
+    "text": "Para usar esta VPN, é preciso um IP fixo (público) e um roteador dedicado (próprio) com autenticação PPPoE para gerenciar a rede e configurar o redirecionamento de portas.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "S - Portas Lógicas - Por que IP Fixo é Necessário (CGNAT)",
+    "text": "A rede da Brisanet usa CGNAT, compartilhando um único IP público entre clientes, cada um com seu IP privado. Se estivermos atrás do CGNAT, não dá para abrir portas no roteador, porque a gente usa o roteador da operadora para traduzir endereços. Então, se quiser redirecionar portas numa rede CGNAT, é essencial ter um IP público da operadora.\nDevido à falta de endereços IPv4, usamos CG-NAT para compartilhar IPs públicos. Vários usuários podem acessar a internet ao mesmo tempo, pelo mesmo IP público. Se alguém não quiser ou não puder trabalhar com um IPv4 compartilhado, pode escolher um IPv4 fixo, mas é pago (oferta atual).",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "T - Portas FXS (Sondagem)",
+    "text": "O fio do telefone ao modem da brisanet está conectado à porta phone1?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/Porta1"
+  },
+  {
+    "title": "T - Portas FXS (Conectar à Phone1)",
+    "text": "O telefone fixo da Brisanet opera exclusivamente na porta phone1, por favor, conecte à porta phone1.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/Porta2"
+  },
+  {
+    "title": "T - Linha Desativada (Ativar e Testar)",
+    "text": "O sistema indicava que a linha estava desativada. Pode tentar novamente agora?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/LD1"
+  },
+  {
+    "title": "T - Erro de Autenticação (Prazo 24h)",
+    "text": "Identifiquei no sistema um problema em sua linha telefônica, sendo necessário encaminhar para autenticação pelo setor responsável. A previsão de resolução é de até 24 horas.\nQual é o seu número de contato? Após a resolução do problema, entraremos em contato para verificar se normalizou, tudo bem?",
+    "isFavorite": false,
+    "requiredData": [
+      "NUMERO_DE_CONTATO"
+    ]
+  },
+  {
+    "title": "TV - Inicialização (Modem e STB)",
+    "text": "Por gentileza, desligue o modem de internet e o receptor de TV da tomada. Ligue novamente, ligando somente o modem de internet, e após 2 minutos, o receptor da TV.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "TV - Atualizar Lista de Canais",
+    "text": "Por gentileza, digite 500 no controle remoto do receptor da Brisanet.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "EQ - Roteador Particular (Instabilidade)",
+    "text": "Percebi que você está usando um roteador particular em vez do da empresa. Infelizmente, não consigo fazer ajustes no seu roteador, apenas no modem. Posso reconfigurar o modem e, depois, você reinicia seu roteador, está bem?",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "EQ - TV sem Sinal (Cabo HDMI)",
+    "text": "A ausência de sinal na TV pode ocorrer devido a cabos conectados incorretamente. Por gentileza, verifique se os cabos entre a TV e o receptor estão bem conectados.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "EQ - IPTV (Sem Bloqueio Brisanet)",
+    "text": "A Brisanet não realiza nenhum bloqueio em serviços de streaming ou IPTV particulares, Quanto ao IPTV, a Brisanet não oferece suporte, já que muitas vezes esse serviço não é homologado pela Anatel.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "SV - Troca de Kit (Grátis - Modem 2.4GHz)",
+    "text": "Seu modem é antigo e funciona apenas na frequência de 2.4 GHz. Isso pode afetar a velocidade e a qualidade da sua internet. Para melhorar sua experiência, podemos instalar um roteador TP-Link sem custos. Seu modem atual continuará sendo usado para receber a fibra. Você concorda com a instalação do roteador TP-Link?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "SV - Troca de Kit (Paga - R$100)",
+    "text": "A troca do equipamento tem um custo único de R$100,00. Essa taxa inclui o serviço, a instalação do equipamento. Você pode parcelar a taxa em até 4 vezes sem juros na sua fatura, você concorda em contratar o serviço?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "SV - Conecta+ (Primeiro Cabeamento - 30m Grátis)",
+    "text": "Verifiquei no sistema que ainda não foi feito o cabeamento para o serviço Conecta+ associado ao seu cadastro. Nesse cenário, está autorizado o uso de até 30 metros (no total) de cabo de rede para conectar até 4 aparelhos em sua residência. Caso ultrapasse essa metragem, será cobrado o valor de R$1,30 por metro. Tudo bem?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "PIS - Manutenção em OLT (3h)",
+    "text": "Atualmente, estamos realizando uma manutenção emergencial em nossas OLT's. Nossa equipe responsável está trabalhando arduamente para concluir, e a previsão é de normalização em até 3 horas. Importante ressaltar que a situação pode se normalizar a qualquer momento.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Ativo (Retorno/Prospecção)",
+    "text": "Olá! Tudo bem? 😊 Me chamo Josias Queiroz do suporte da Brisanet, estou entrando em contato devido a uma solicitação de retorno.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Receptivo (Boas-vindas)",
+    "text": "Olá, tudo bem? 😊 Me chamo Josias Queiroz, faço parte do time de atendimento da Brisanet e vou te atender hoje. 🙂",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - ID Positivo (Pergunta Titular)",
+    "text": "Falo com o próprio titular?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Confirmação de Dados (Segurança)",
+    "text": "Por questão de segurança, me confirma o nome completo do titular, data de nascimento e o endereço (nome da rua, bairro e número) no qual deseja atendimento, por gentileza.",
+    "isFavorite": true,
+    "requiredData": [
+      "NOME_COMPLETO",
+      "DATA_NASC",
+      "ENDERECO"
+    ]
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Falha na ID (Encerramento de Segurança)",
+    "text": "Como você não me confirmou as informações solicitadas e por questão de segurança dos dados pessoais do titular, não posso seguir com nosso atendimento. Peço que entre em contato em outro momento com o nome, endereço completo e data de nascimento do titular, tudo bem?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - ID Concluída (Solicitar Motivo)",
+    "text": "Obrigado por informar! Qual o problema ou dúvida, por gentileza?",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Aguarde um Momento",
+    "text": "Só um momento, por gentileza, enquanto verifico! ⏳ / Aguarda mais um pouquinho, ainda estou trabalhando na sua solicitação. ⏳",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Instabilidade Interna (Aviso)",
+    "text": "Olá! Meu nome é Josias Queiroz, tudo bem? 😊 No momento, estamos passando por uma instabilidade em nosso sistema interno, impossibilitando a realização de procedimentos e a abertura de protocolos, com prazo para normalização em até 30 minutos. Por gentileza, após este horário entre em contato conosco novamente através desse mesmo canal ou pelo 0800 281 3017. Agradecemos a compreensão. 💻📞",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Problema Resolvido (Alegria)",
+    "text": "Fico muito feliz que já tenha resolvido sua solicitação. 😊",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Serviço Normalizado",
+    "text": "Fico muito feliz que seu serviço tenha normalizado! Caso o problema venha a persistir, pode nos contactar quando desejar, estaremos sempre à disposição! 😊",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Finalizar (Instabilidade Persistente)",
+    "text": "Nesse caso, peço que se o problema vir a persistir, nos contacte de imediato para ser verificado, tudo bem?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Verificação Geral",
+    "text": "Tem algo mais em que eu possa ser útil? 🤔 / Fora disso, ajudo com algo mais? 🤔",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Agradecimento Simples",
+    "text": "Disponha, eu que agradeço pela atenção! 😊",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Saudações (Dia/Semana)",
+    "text": "Tenha uma ótima tarde/noite, e uma excelente semana! 🌞🌜",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Saudações (Fim de Semana)",
+    "text": "Tenha uma ótima tarde/noite, e um excelente fim de semana! 🌞🌜",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Aviso de Retorno",
+    "text": "Se você precisar de mais alguma coisa, pode nos contactar novamente. Será um prazer ajudar você. 💙😊",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Solicitar Avaliação",
+    "text": "Se possível, peço que avalie meu atendimento. Vai me ajudar bastante no meu trabalho e na qualidade. Um grande abraço! 💙🧡",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INICIO_ENCERRAMENTO - Desculpas (Empatia)",
+    "text": "Sinto muito pelo acontecido. 😕 Peço desculpa em nome da empresa. Certamente, essa não é a experiência que gostaríamos que você tivesse com nosso atendimento.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "DADOS_ID - Erro na Confirmação do Endereço",
+    "text": "O endereço informado não corresponde ao registrado. Para auxiliar, envie uma foto do comprovante de residência ou da tela \"plano\" do aplicativo BrisaCliente em caso de dúvidas.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DADOS_ID - Erro na Confirmação de Data de Nasc.",
+    "text": "Detectamos uma divergência entre a data de nascimento fornecida e a registrada. Para prosseguirmos, por favor, confirme sua data de nascimento. Caso necessite de auxílio, envie uma imagem de um documento oficial (RG ou certidão de nascimento).",
+    "isFavorite": false,
+    "requiredData": [
+      "DATA_NASC"
+    ]
+  },
+  {
+    "title": "DADOS_ID - Erro na Confirmação do Nome do Titular",
+    "text": "Constatamos uma divergência no nome do titular informado em relação ao registrado em nosso sistema. Para a confirmação dos seus dados, solicitamos que nos informe novamente o nome completo ou envie uma foto de um documento oficial com foto (RG, CNH ou passaporte).",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_COMPLETO"
+    ]
+  },
+  {
+    "title": "DADOS_ID - Correção do Endereço (Procedimento)",
+    "text": "Para assegurar o recebimento adequado de nossas mensagens, por favor, envie seu comprovante de residência e CPF para dados@grupobrisanet.com.br.",
+    "isFavorite": false,
+    "requiredData": [
+      "CPF"
+    ]
+  },
+  {
+    "title": "DADOS_ID - CPF Incorreto (Não Encontrado)",
+    "text": "O CPF digitado não foi encontrado. Revise o número e tente outra vez. Caso necessário, consulte seu CPF para garantir a digitação correta.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DADOS_ID - Questionar o Motivo das Perguntas",
+    "text": "Para reforçar a segurança da sua privacidade e dos seus dados, solicitamos algumas informações adicionais. Essa medida garantirá que somente você tenha acesso e possa administrar seu cadastro e sua rede.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DADOS_ID - Alteração do Número de Celular (Solicitação)",
+    "text": "Qual o novo número?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DADOS_ID - Alteração do Número (Restrição DDD)",
+    "text": "O nosso sistema permite alterar somente para outro número do mesmo DDD por motivos de segurança. Para alterar para um número com DDD diferente é necessário que realize troca no aplicativo brisacliente ou em um escritório da brisanet em sua cidade.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "ATIVO - Início do Atendimento Ativo",
+    "text": "Olá! Como vai? Meu nome é Josias Queiroz e faço parte do suporte técnico da Brisanet. Gostaria de falar com o [NOME DO CLIENTE] para tratar uma solicitação de atendimento. O número do protocolo é [PROTOCOLO]. Por favor, poderia me informar se ele está disponível ou quando seria o melhor momento para entrar em contato?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_DO_CLIENTE",
+      "PROTOCOLO"
+    ]
+  },
+  {
+    "title": "ATIVO - Confirmação de Dados (Introdução)",
+    "text": "Como posso ajudá-lo(a) hoje?\nPor gentileza, para que eu possa ajudá-lo de maneira mais personalizada, poderia me informar o seu nome completo?\nEntendo que você está enfrentando um problema e estou aqui para ajudar. Fique tranquilo(a), estou comprometido(a) em resolver o seu problema e garantir a sua satisfação. Antes de prosseguirmos, preciso confirmar alguns dados do titular da conta para garantir a sua segurança.\nPor gentileza, poderia fornecer o nome completo do titular, a data de nascimento, CPF e o endereço completo (rua, número e bairro)? Caso não tenha certeza do endereço, você pode enviar uma foto do comprovante de endereço de residência ou captura de tela dos planos no aplicativo Brisacliente.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME_COMPLETO",
+      "DATA_NASC",
+      "CPF",
+      "ENDERECO"
+    ]
+  },
+  {
+    "title": "INSTABILIDADE - Pré-Sondagem (Início do Diagnóstico)",
+    "text": "Vou fazer algumas perguntas para entender o que está causando o problema.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Sondagem Otimizada (Natureza do Problema)",
+    "text": "Para começar, qual é o problema em específico? (Ex: Não navega, cai toda hora, lentidão, só no Wi-Fi, etc.)",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Sondagem Otimizada (Tipo de Rede/Local)",
+    "text": "O problema é na rede Wi-Fi ou na rede cabeada? Se for Wi-Fi, o problema ocorre perto ou longe do roteador?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Sondagem Otimizada (Teste Rápido e Uso)",
+    "text": "Como você percebeu o problema (em um aplicativo específico, redes sociais, jogos) e já tentou reiniciar o modem/roteador?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Sondagem Otimizada (Requisito: Sinal OK)",
+    "text": "No sistema, o sinal está nos padrões.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Procedimento (Aviso de Alterações)",
+    "text": "Após revisar os registros de seus atendimentos anteriores, gostaria de pedir que aguarde por um momento. Vou efetuar algumas alterações na sua conexão de internet, o que pode causar uma breve indisponibilidade. Está tudo bem para você? Caso venha a ficar sem acesso, não se preocupe, em instantes sua conexão será restabelecida!",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Procedimento (Desligar Modem ONU)",
+    "text": "Peço que gentilmente desconecte o modem da tomada (o aparelho que recebe o sinal de fibra óptica da rua) por um minuto e, em seguida, o reconecte.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Procedimento Sem Êxito (Envio de Técnico)",
+    "text": "Tentei de todas as formas resolver o problema, porém, não obtive sucesso. Vou enviar uma equipe técnica para verificar a causa do problema, tudo bem?",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "INSTABILIDADE - Causas da Instabilidade (Base)",
+    "text": "A instabilidade pode ser ocasionada de diversas formas: a quantidade de dispositivos conectados no seu modem/roteador, fluxo alto de acesso ou problemas nos servidores dos sites e aplicativos, canais com interferência, obstáculos físicos como eletrodomésticos, espelhos, cerâmicas, paredes, dispositivos eletrônicos muito próximos do roteador, como, por exemplo, celulares e TVs. Além disso, há a possibilidade de ocorrer alguns problemas com a provedora de internet, como na rota, caixa no poste (CTO), OLT, entre outros que podem estar relacionados até mesmo com os dispositivos do próprio cliente.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Dispositivo Específico Sem Conexão",
+    "text": "A conexão falha apenas em um dispositivo (celular, tablet, TV) ou em todos? Se for em um só, por favor, esqueça a rede Wi-Fi e reconecte-se. Se persistir, o problema pode estar nas configurações do aparelho, e seria necessário um técnico particular.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Problema no Cabo de Rede (Teste Direto)",
+    "text": "Por favor, conecte um notebook/computador diretamente ao modem (a caixa que recebe o cabo da rua) via cabo de rede. Se a conexão funcionar, o problema está no roteador ou na rede Wi-Fi. Posso reiniciar o seu roteador agora?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Queda de Conexão Recorrente",
+    "text": "Entendo que a internet está caindo. Isso acontece em horários específicos? Vamos realizar o procedimento padrão: desligue o modem e o roteador da tomada por 5 minutos para que o sistema realoque seu sinal. Avise-me quando religar para que eu verifique o status.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Lentidão em Dispositivos Distantes",
+    "text": "A velocidade cai muito longe do roteador? Lembre-se que barreiras (paredes, espelhos) e a distância afetam o sinal Wi-Fi, principalmente a rede \"turbo\" (5.8 GHz). Para otimizar, mantenha o roteador centralizado e longe de obstáculos.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Verificação de Consumo Excessivo",
+    "text": "Há muitos dispositivos conectados (câmeras, TVs, downloads)? O excesso de consumo pode sobrecarregar o roteador. Por favor, desligue os aparelhos que não estão em uso e verifique se a velocidade melhora.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Solicitação de Envio de Foto (Redes)",
+    "text": "Para que eu possa analisar possíveis interferências externas, envie uma foto da lista de redes Wi-Fi que aparecem em seu celular.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "DIAG_RAPIDO - Problema em Acesso a Site Específico",
+    "text": "Se o problema é apenas para acessar um site ou aplicativo, pode ser um problema do servidor deles. Para testar, por favor, tente acessar o site usando dados móveis. Se funcionar, limpe o cache do seu navegador/app.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "TRANSFERENCIA - Transferência (SAC)",
+    "text": "Essa tratativa é realizada com o nosso setor SAC. Posso te transferir para que seja verificado?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "TRANSFERENCIA - Transferência (Comercial/SAC)",
+    "text": "Essa tratativa é realizada com o nosso setor COMERCIAL / SAC. Posso te transferir para ser verificado?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "TRANSFERENCIA - Transferência (Especializada)",
+    "text": "Essa situação é atendida por nosso time de [SETOR]. Aguarda só um instante enquanto te transfiro para a fila da nossa equipe especializada nesse assunto 😊😉",
+    "isFavorite": false,
+    "requiredData": [
+      "SETOR"
+    ]
+  },
+  {
+    "title": "VELOCIDADE - Solicitar Print do Teste",
+    "text": "Me envie um print para verificar.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Recomendação de Teste (fast.com)",
+    "text": "Como você mesmo pode ver, no print que me enviou, o teste foi realizado em um servidor da cidade de São Paulo-SP, eu recomendo você testar no fast.com.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Método Correto de Teste (Cabo)",
+    "text": "A forma correta de se realizar o teste é via rede cabeada em um computador que suporte o plano (Gigabit) e o cabo de rede utilizado tem que ser um CAT5e ou superior.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Teste em Consoles",
+    "text": "Os testes dos consoles tem o seguinte problema: os servidores do teste tem como localidade os EUA, devido a isso o ideal é que seja realizado em um computador.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Garantia de Plano (Wi-Fi x Cabo)",
+    "text": "Não podemos garantir o plano via rede Wi-Fi devido a fatores que podem contribuir para gerar instabilidade em sua conexão. Via rede Wi-Fi é garantido a estabilidade do acesso. Devido a isso, a Brisanet garante os planos via cabo.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Limitações e Interferências Wi-Fi",
+    "text": "Testes realizados via Wi-Fi podem não alcançar o plano contratado, pois sofrem interferências de diversos fatores, como: espelhos, paredes, micro-ondas e outros. A qualidade de acesso via Wi-Fi é variável, pois, alguns equipamentos apresentam compatibilidade apenas com a rede 2.4 GHz, cuja velocidade varia entre 20 e 60 Mb dependendo da distância que você estiver do equipamento.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Anatel (Wi-Fi)",
+    "text": "Conforme informado pela própria Anatel, a conexão sem fio depende de várias condições, por isso não é possível garantir a entrega do plano pela mesma. Pode estar verificando as informações no documento: Anatel - Redes Wi-Fi.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Contrato (Garantia de Velocidade)",
+    "text": "Mensalmente será garantida uma velocidade média de 80% da banda que outrora foi contratada. Ademais, um teste instantâneo não será inferior a 40% da velocidade original, como dispõe a Resolução n.º 574/2011 da ANATEL. A prestadora não garante qualquer velocidade pelos meios de transmissão sem fio.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "VELOCIDADE - Verificar Placa de Rede",
+    "text": "Para verificar a velocidade máxima de conexão que seu aparelho suporta, por gentileza, acesse o Painel de Controle... (link do Figma).",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INATIVIDADE_ENC - Encerramento por Inatividade",
+    "text": "Este atendimento estará sendo encerrado por falta de resposta do(a) cliente. Caso necessite pode nos contactar quando quiser. Se possível avaliar este atendimento. :D",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INATIVIDADE_ENC - Encerramento por Falta de Opção",
+    "text": "Poxa! Como você não me informou nenhuma opção, terei de finalizar o nosso atendimento. Mas não se preocupe, você pode entrar em contato novamente por este canal ou com o nosso 0800 281 3017.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INATIVIDADE_ENC - Encerramento por Inatividade (Motivo CRM)",
+    "text": "Visto no sistema que seu serviço no momento se encontra 100% operante, caso problema venha a persistir, pode nos contactar quando desejar, estaremos sempre a disposição!",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "INATIVIDADE_ENC - Encerramento (Inatividade - Sem Sondagem)",
+    "text": "Ao iniciar o atendimento, o mesmo não correspondeu ao diálogo. Não foi feita sondagem. Atendimento encerrado por inatividade. / Próprio titular. Informou estar com problemas de instabilidade no serviço de internet, o mesmo não correspondeu ao diálogo. Não foi feita sondagem. Atendimento encerrado por inatividade.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Abertura de Chamado (Técnico)",
+    "text": "Para te ajudar vou abrir um chamado para o nosso técnico externo passar no local para verificar e corrigir a falha. / Conforme informações, será aberto chamado de manutenção para o técnico ir até á residencia...",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Sondagem LOS/PON",
+    "text": "Tem uma luz vermelha em um dos equipamentos? Me envie uma foto para registro.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - LOS Ativo (Problema de Fibra)",
+    "text": "O LED “LOS” está acesa ou piscando, significa que o modem não está recebendo o sinal de internet pela fibra óptica, ou seja, há um problema na conexão entre o modem e a rede do provedor de internet.",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - PON Piscando (Configuração/Chamado)",
+    "text": "Ok, esse LED PON Piscando, detecta um possível problema físico... Vou configurar o sistema, caso não resolva abrimos um chamado para a equipe ir no local, tudo bem?",
+    "isFavorite": true,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Agendamento (Pergunta de Horário)",
+    "text": "Pode receber a equipe pela manhã ou pela tarde?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Sinal Irregular (Abertura Imediata)",
+    "text": "Percebi uma instabilidade no sinal da sua fibra óptica, o que pode resultar em problemas de conexão... Vou enviar imediatamente uma equipe técnica para o local.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Instalação Mal Sucedida",
+    "text": "Conforme informações, será repassado agora mesmo ao setor responsável para que a equipe retorne no local para verificar e normalizar o accessso.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Rota Inoperante (Aviso e Prazo 24h)",
+    "text": "Após um rompimento de nossos cabos de fibra óptica... Já enviamos uma equipe ao local para efetuar a manutenção... com prazo máximo de até 24 horas - podendo normalizar a qualquer momento.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Rompimento (Fatores Externos)",
+    "text": "Os rompimentos ocorrem por fatores externos ocasionados, por exemplo, por caminhões de grande porte, troca de postes pela companhia de energia, acidente, fogo no poste ou até mesmo vandalismo...",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "MANUTENCAO_SINAL - Desconto (Orientação)",
+    "text": "Você pode entrar em contato com o setor financeiro através do nosso 0800 281 3017 após o seu serviço normalizar para solicitar algum desconto na sua fatura em decorrência desse problema, ok?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "COBRANCA - Cobrança (Dentro do Prazo)",
+    "text": "Verifiquei no sistema que já existe um chamado em para o no dia ** para a nossa equipe passar no local e verificar o motivo desta ocorrência, peço por gentileza que aguarde, pois está no prazo.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "COBRANCA - Cobrança (Fora do Prazo/Prioridade)",
+    "text": "Verifiquei que seu atendimento ultrapassou o prazo, por esse motivo, repassei ao setor responsável. O status de seu atendimento está em prioridade máxima. Peço que aguarde.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "WIFI_SENHA - Troca de Senha (Solicitação/Confirmação)",
+    "text": "Eu posso gerar uma nova senha para você? A nova senha do wi-fi ** é: **. Peço que aguarde 2 minutos, esqueça a rede e teste com a nova senha. E me informe se deu certo.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "WIFI_SENHA - Nova Senha (Aleatória/Personalizada)",
+    "text": "A nova senha é uma mistura de letras e números, gerada aleatoriamente pelo nosso sistema para sua segurança. Posso criar essa senha agora? / Para personalizar a senha: 1. Entre no aplicativo BrisaCliente... (Passo a Passo)",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "WIFI_SENHA - Informação Técnica ONU (Portas)",
+    "text": "O aparelho oferecido pela Brisanet, como comodato, não é um roteador; na verdade, é um modem (ONU Fiberhome), cujas portas são direcionadas para serviços independentes: LAN 1 é para Internet, LAN 2, 3, 4 para TV a cabo e FONE 1 e 2 para telefonia.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "WIFI_SENHA - Rede Unificada (Explicação)",
+    "text": "A rede Wi-Fi é unificada, vai mostrar apenas brisa-xxxxxx, com isso o dispositivo vai conectar de acordo com a inteligência do aparelho (celular, notebook, TV…), alternando entre 2.4GHz e 5.8GHz.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "WIFI_SENHA - WPS (Desativado/Segurança)",
+    "text": "O WPS pode deixar a rede vulnerável a acessos indevidos. Devido a isso, está função em nossos equipamentos vem desativado para proteger a rede Wi-Fi. Não conseguimos habilitar esta função.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "TROCA_EQUIP - Troca para Desunificar a Rede (Condição)",
+    "text": "O equipamento que está em sua residência é o mais recente que temos no momento (TP-Link) com a rede unificada. Caso solicite um equipamento com as redes separadas (ONU dual band), e deseje retornar para o TP-Link, é cobrado o valor de R$100,00.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "TROCA_EQUIP - Troca de Equipamento (Custo/Motivo Pessoal)",
+    "text": "O equipamento será trocado de forma gratuita se for constatado problema físico ou lógico. Caso contrário, por motivo pessoal, esse procedimento gera taxa de apenas R$ 100,00, podendo ser dividido em até 4x sem juros.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "I - Apresentação (Bom Dia)",
+    "text": "Bom dia! Suporte Técnico da Brisanet aqui, tudo bem com você? Meu nome é Vinicius e vou te atender hoje.",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "I - Desculpas por Espera",
+    "text": "Antes de começarmos, gostaria de pedir desculpas pela espera. Estamos com uma alta demanda hoje, mas já estou aqui para te ajudar!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "I - Pergunta Titular",
+    "text": "Antes de prosseguir: você é o titular do serviço?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Confirmação de Dados (Segurança)",
+    "text": "Para darmos continuidade ao atendimento, vou precisar confirmar alguns dados de segurança.\nPode me informar o nome completo, a data de nascimento e o endereço completo (rua, número e bairro) onde deseja receber o atendimento?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Confirmação (Obrigado)",
+    "text": "☑ Obrigado pela confirmação. Em que posso te ajudar hoje?",
+    "isFavorite": true,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Registro de Nome (Não Titular)",
+    "text": "Por gentileza, poderia me informar seu nome? Assim, posso registrá-lo no protocolo.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Endereço (Geral)",
+    "text": "[NOME], em nosso sistema consta outro endereço. Esse endereço é conhecido de outra forma?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Endereço (Rua)",
+    "text": "[NOME], em nosso sistema consta outra rua. Essa rua é conhecida de outra forma?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Endereço (Bairro)",
+    "text": "[NOME], em nosso sistema consta outro bairro. Esse bairro é conhecido de outra forma?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Endereço (Número)",
+    "text": "[NOME], em nosso sistema consta outro número. Essa residência é conhecida por outro número?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência (Ajuda App/Comprovante)",
+    "text": "Caso haja alguma divergência, você pode nos enviar uma foto do seu comprovante de endereço ou da tela \"Plano\" do aplicativo brisacliente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Data Nasc (Verificar)",
+    "text": "Por favor, verifique se a data de nascimento informada anteriormente está correta.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Data Nasc (Ajuda Doc)",
+    "text": "Se preferir, envie uma foto do seu RG, CNH ou Passaporte.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Nome (Verificar)",
+    "text": "Percebi que o nome que temos aqui é diferente. Pode confirmar para gente qual o nome correto?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Divergência Nome (Ajuda Doc)",
+    "text": "Se preferir, pode mandar uma foto do seu RG, CNH ou Passaporte.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Confirmação (Resolver Imediatamente)",
+    "text": "Vamos resolver isso imediatamente, mas antes, preciso confirmar alguns dados para garantir que tudo corra bem.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Correção Endereço (Procedimento Email)",
+    "text": "Para solicitar a correção do seu endereço em nosso cadastro, por favor, envie um e-mail para dados@grupobrisanet.com.br contendo as seguintes informações:\nNome completo do titular da conta\nNúmero do seu CPF ou CNPJ\nFoto do comprovante do endereço correto",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - Correção Nome/Data (Confirmar Dados)",
+    "text": "Vou solicitar correção dos seus dados para que não ocorra novamente, por favor, pode confirmar os seguintes dados:",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "ID - CPF Incorreto (Não Encontrado)",
+    "text": "Notamos que o CPF/CNPJ informado não foi encontrado em nosso sistema. Pode nos ajudar verificando se digitou os números corretos, por favor? Às vezes, um pequeno erro de digitação pode acontecer. Dê uma olhadinha no seu documento para confirmar se todos os números estão corretos e tente novamente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Apresentação)",
+    "text": "Posso fazer uma pergunta?\nVocê já aproveita a qualidade da Brisanet também no seu celular com o nosso *chip móvel 5G* ou essa é uma novidade para você?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo A - Gerando Necessidade)",
+    "text": "Então essa é uma excelente notícia! Imagina ter no seu celular a mesma qualidade e confiança que você já tem com a nossa fibra em casa. Com o nosso *chip 5G*, você pode assistir a filmes, jogar online e fazer videochamadas com clareza perfeita, mesmo fora de casa, sem travamentos ou lentidão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo A - Diferencial)",
+    "text": "E o nosso 5G é diferente. Enquanto algumas operadoras adaptam redes antigas, a tecnologia da Brisanet é construída com uma *arquitetura 100% fibra ótica do início ao fim*. Isso garante não só mais velocidade, mas uma estabilidade de conexão que você não encontra em outra conexão móvel.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo A - Transição)",
+    "text": "Com base nisso que te expliquei, o que você acha da ideia de levar essa tecnologia para o seu dia a dia? Faz sentido para você?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo A - Hesitante)",
+    "text": "Pense na praticidade de nunca mais se preocupar com a internet caindo na rua. Posso te mostrar os planos rapidinho e sem compromisso, para você ver como é acessível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo A - Negativa)",
+    "text": "Entendo perfeitamente. Agradeço sua sinceridade! Fico feliz em ter resolvido sua questão inicial. Se precisar de mais algo, estou à disposição.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo B - Sondagem)",
+    "text": "Que excelente! E me diga, como está sendo a sua experiência com o nosso 5G?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo B - Neutra/Negativa)",
+    "text": "Lamento por isso e agradeço sua sinceridade. A sua satisfação é nossa prioridade. Deseja verificar o motivo desse problema?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo B - Positiva)",
+    "text": "Que ótimo ouvir isso! Fico muito feliz que você esteja aproveitando a qualidade do nosso serviço. É justamente por você já conhecer e aprovar nosso 5G que pensei em uma oportunidade. Muitos clientes satisfeitos como você acabam querendo estender essa mesma experiência para a família, seja para um filho, parceiro(a), ou até mesmo para um segundo aparelho, como um tablet.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo B - Transição)",
+    "text": "Pensando nisso, você estaria aberto a conhecer as condições especiais que temos para você adicionar novas linhas à sua conta, sem nenhum compromisso?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fluxo B - Negativa)",
+    "text": "Sem problemas, eu entendo perfeitamente. O importante é que sua experiência continue ótima! Se precisar de algo mais, é só chamar. Tenha um ótimo dia!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Ofertas - Fluxo A)",
+    "text": "Ótimo! Temos 3 planos excelentes e posso te garantir que um deles vai se encaixar perfeitamente no seu uso. E você pode escolher manter seu número atual fazendo a portabilidade ou, se preferir, ativar um número novo. Prometo ser breve.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Ofertas - Fluxo B)",
+    "text": "Maravilha! As opções são as mesmas que você já conhece, e você pode escolher o plano que melhor se adapta à necessidade de cada nova linha, tudo de forma prática na sua fatura atual.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Oferta - 20GB)",
+    "text": "*Temos 3 ofertas incríveis disponíveis:*\n1 Plano 20GB - R$ 29,99/mês\n*>* Apps ilimitados: WhatsApp, Waze e Facebook.\n*>* Ligações e SMS ilimitados para falar à vontade.\n*>* Ultra velocidade e conectividade para suas tarefas diárias.\n*>* Ideal para quem usa redes sociais e precisa de estabilidade no dia a dia.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Oferta - 30GB)",
+    "text": "2 Plano 30GB - R$ 39,99/mês\n*>* Apps ilimitados: WhatsApp, Instagram, Facebook, X e Waze.\n*>* Ligações e SMS ilimitados.\n*>* Ultra velocidade e conectividade.\n*>* Mais banda para redes sociais, navegação e jogar, perfeito para quem quer mais!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Oferta - 100GB)",
+    "text": "3 Plano 100GB - R$ 49,99/mês\n*>* Apps ilimitados: WhatsApp, Facebook e Waze.\n*>* Ligações e SMS ilimitados.\n*>* Ultra velocidade e conectividade.\n*>* Ideal para quem usa bastante internet, vídeos, redes sociais, jogar online e apps de localização, sem se preocupar com dados!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fechamento - Modelo Celular)",
+    "text": "Ótima escolha! Para seguirmos, preciso só confirmar o modelo do celular para ter total certeza que ele é compativel com o seu aparelho. Pode informar qual o modelo?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Fechamento - Portabilidade/Novo)",
+    "text": "Para o novo chip, você pode optar por trazer um número de outra operadora com a portabilidade ou ativar um número novo. Apenas o DDD que se mantém, conforme a sua região. Deseja a portabilidade ou um novo número?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Ativação e Entrega)",
+    "text": "A ativação do chip é feita por nossa equipe técnica, que vai até sua casa. A gente agenda esse atendimento no melhor dia e horário para você. Tudo bem para você assim?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Venda - Chip 5G (Prazo Entrega)",
+    "text": "O prazo de entrega é o mesmo da instalação da fibra: 5 dias, assim, você recebe na sua casa com comodidade e rapidez.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Pré-encerramento (Ajuda adicional)",
+    "text": "Além disso, tem mais alguma dúvida ou questão em que eu possa te ajudar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/e1"
+  },
+  {
+    "title": "E - Agradecimento (Qualquer coisa)",
+    "text": "Imagina! Qualquer coisa, pode me chamar!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Saudações (Semana / Fim de Semana)",
+    "text": "☑ Tenha um ótimo dia e uma excelente semana! / Tenha um ótimo dia e um excelente final de semana!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Agradecimento (Estarei por aqui)",
+    "text": "Se precisar de algo, estarei por aqui!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Avaliação (Pedir favor)",
+    "text": "[NOME], posso te pedir um pequeno favor? Se não for incômodo, me ajuda avaliando meu atendimento? Seria uma ajuda enorme para bater minha meta! Desde já agradeço!",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "E - Inatividade (Chamar Atenção - 5 Min)",
+    "text": "Oi, você continua aí?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Inatividade (Finalização - Fim de Semana)",
+    "text": "Como não tivemos retorno, vamos encerrar o nosso chat por enquanto. Mas fique tranquilo(a), pode voltar a entrar em contato quando precisar. Tenha um ótimo final de semana!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Inatividade (Finalização - Semana)",
+    "text": "Como não tivemos retorno, vamos encerrar o nosso chat por enquanto. Mas fique tranquilo(a), pode voltar a entrar em contato quando precisar. Tenha um ótimo semana!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Inatividade (Ausência Contínua)",
+    "text": "Como houve diversas interrupções na interação nos últimos minutos, precisaremos encerrar o atendimento por agora. Mas fique tranquilo(a), você pode entrar em contato assim que estiver disponível para continuar! Agradecemos pela compreensão!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "E - Ausência de Confirmação de Dados",
+    "text": "Entendo que confirmar os dados pode parecer burocrático, mas é uma etapa essencial para garantir a sua segurança. Não posso continuar ajudando sem confirmar as informações solicitadas. Por favor, entre em contato novamente quando estiver disponível para responder à confirmação para sua identificação e solução do problema. Obrigado!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/f2"
+  },
+  {
+    "title": "E - Procedimento Apenas com Titular",
+    "text": "Para sua segurança, precisamos falar diretamente com o titular do contrato para continuar o processo. Por favor, solicite que ele entre em contato conosco. Obrigado!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/f3"
+  },
+  {
+    "title": "E - Transferência (Padrão)",
+    "text": "Para poder te ajudar da melhor forma, vou transferir você para a equipe especializada nesse assunto. Por favor, aguarde um momento, tá?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/tr1"
+  },
+  {
+    "title": "E - Transferência (Corporativo)",
+    "text": "Como identificamos que você é cliente corporativo, vou transferir você para a nossa equipe especializada. Lá, você terá atendimento prioritário e suporte técnico avançado. Por favor, aguarde um momento.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/tr2"
+  },
+  {
+    "title": "E - Cliente Desrespeitoso (Aviso)",
+    "text": "Entendo que essa situação possa estar causando frustração, e quero te ajudar da melhor forma possível. Vamos manter uma conversa respeitosa e construtiva para podermos resolver o problema juntos, combinado?",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "E - Cliente Desrespeitoso (Fim)",
+    "text": "Lamentamos, mas, neste momento, não conseguimos continuar a conversa de maneira respeitosa e construtiva. Por isso, vamos precisar encerrar o atendimento por agora. No entanto, estamos à disposição para auxiliá-lo(a) no futuro, caso precise e esteja disposto a ter um diálogo cordial. Agradecemos pela compreensão e ficamos à espera de um novo contato quando for necessário.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "E - Falta de Compreensão no Agendamento",
+    "text": "entendemos sua frustração e pedimos desculpas pelo transtorno. Mas, por falta de compreensão, esse atendimento está sendo encerrado. Para evitar mais atrasos, o atendimento já foi reagendado automaticamente para o próximo horário disponível na sua região.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "E - Ausência Contínua",
+    "text": "Devido à falta contínua de interação, o atendimento será encerrado. Entre em contato quando estiver disponível para continuar.",
+    "isFavorite": false,
+    "requiredData": []
+  },
+  {
+    "title": "C - Aguarde um Momento (Verificação)",
+    "text": "Um momento, [NOME], vou verificar isso agora mesmo!",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME"
+    ],
+    "hotkey": "/m2"
+  },
+  {
+    "title": "C - Aguarde um Momento (Reconfiguração)",
+    "text": "Por favor, aguarde só um momento enquanto realizo a reconfiguração da sua rede.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/m3"
+  },
+  {
+    "title": "C - Aguarde um Momento (Salvando Senha)",
+    "text": "Por favor, aguarde um instante enquanto o sistema salva sua nova senha.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/m4"
+  },
+  {
+    "title": "C - Desculpa para Não Escutar Áudio",
+    "text": "☑ Desculpa, estou sem fones de ouvido no momento e não consigo ouvir áudio. Por favor, me escreve a sua solicitação para que eu possa te ajudar da melhor forma possível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/au"
+  },
+  {
+    "title": "CL - Por que o desconto não é automático?",
+    "text": "Entendo, ter o desconto aplicado automaticamente, realmente facilitaria! O motivo de não ser assim é que o nosso sistema não consegue determinar o instante exato em que o reparo foi 100% concluído. Se ele tentasse fazer esse cálculo sozinho, haveria o risco de registrar um tempo de interrupção menor e, com isso, lançar um desconto inferior ao que você de fato tem direito. Queremos ter certeza de que o valor seja o mais correto possível para você.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "CL - Alteração do número de celular (Mesmo DDD)",
+    "text": "Para garantir a segurança da conta, no momento só permitimos a alteração para números do mesmo DDD. Poderia informar o novo número neste formato: (DDD) 9XXXX-XXXX?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "CL - Alteração do número de celular (Outro DDD)",
+    "text": "Para alterar o número para outro DDD, é necessário realizar a troca pessoalmente em um de nossos escritórios ou pelo aplicativo brisacliente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "CL - Assinatura de Contratos (Desculpa Espera)",
+    "text": "Antes de começarmos, gostaria de pedir desculpas pela espera. Estamos com uma alta demanda hoje, mas já estou aqui para te ajudar!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "D - Início da Sondagem (Sinal OK)",
+    "text": "Verifiquei que o sinal da fibra está chegando normalmente até a residência. Acredito que possamos resolver o problema ajustando algumas configurações no roteador.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "D - Qual o problema em específico?",
+    "text": "Qual seria o problema em especifico, por gentileza?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/S1"
+  },
+  {
+    "title": "D - Afeta todos os dispositivos?",
+    "text": "O problema afeta todos os dispositivos conectados ao Wi-Fi ou apenas o seu celular?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Aviso de Indisponibilidade (Reconfiguração)",
+    "text": "Vou realizar alguns ajustes na sua conexão para melhorar a sua conexão. Durante esse processo, a internet pode ficar indisponível por alguns instantes. Tudo bem se eu continuar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": "/P1"
+  },
+  {
+    "title": "P - Reinicialização (Modem e Roteador 30s)",
+    "text": "Por favor, desligue os equipamentos e o roteador da tomada, aguarde 30 segundos e ligue-os novamente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Teste após procedimentos (Após reiniciar)",
+    "text": "Após reiniciar, verifique se normalizou e me informe, ok?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Teste após procedimentos (Sem reiniciar)",
+    "text": "Por favor, verifique se normalizou e me informe, ok?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Instabilidade resolvida",
+    "text": "Fico feliz que tenha melhorado!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Explicação do que causa a Instabilidade",
+    "text": "Existem vários motivos que podem levar à instabilidade da sua conexão à Internet. Barreiras físicas, como paredes e pisos, têm o potencial de interferir nos sinais sem fio, prejudicando a qualidade da conexão. Além disso, a distância entre o seu dispositivo e o ponto de acesso Wi-Fi, bem como o número de dispositivos conectados à rede, desempenham um papel significativo na velocidade da conexão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Dicas para Instabilidade",
+    "text": "Para uma experiência de Internet mais estável, leve em consideração as seguintes dicas:\n1. Posicionamento do Roteador: Coloque o roteador em uma posição central, afastado de obstáculos, como paredes grossas, para garantir uma distribuição de sinal mais uniforme.\n2. Tecnologia Wi-Fi: verifique se o seu celular utiliza tecnologias mais recentes, como Wi-Fi 5,8GHz, para obter velocidades mais rápidas e maior capacidade de conexão.\n3. Dispositivos Conectados: Gerencie os dispositivos conectados à sua rede, desconectando aqueles que não estão em uso para liberar largura de banda. Pode desconectar alterando a senha da rede Wi-Fi.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Sondagem (Foto Teste de Velocidade)",
+    "text": "Poderia me enviar uma foto do resultado do teste de velocidade para podermos começar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Sondagem (Cabo de Rede e Notebook)",
+    "text": "Você tem um cabo de rede e um computador ou notebook disponíveis para testar a velocidade com uma conexão direta?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Procedimento (Aviso de Wi-Fi)",
+    "text": "Posso ajustar a sua configuração para tentar otimizar a conexão. Lembrando que a velocidade no Wi-Fi pode ser menor que a contratada devido à distância e interferências. Deseja a configuração?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Procedimento (Encaminhar Técnico para Verificação)",
+    "text": "Como os ajustes não resolveram, podemos agendar uma visita técnica para uma verificação detalhada e garantir a velocidade contratada em um dispositivo conectado via cabo. Posso encaminhar a equipe?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Procedimento (Acesso Remoto)",
+    "text": "Você tem um computador disponível? Assim, posso acessá-lo remotamente para realizar alguns testes adicionais.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Garantia da Empresa (Download/Upload)",
+    "text": "A brisanet oferece 100% da velocidade de download contratada, garantindo pelo menos 80% em conexões cabeadas, com base na média mensal. Pequenas variações diárias podem ocorrer. A velocidade de upload é disponibilizada em 50% do contratado, também com garantia mínima de 80%.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Garantia na Rede Wi-Fi",
+    "text": "Na rede Wi-Fi, nosso objetivo é proporcionar uma conexão de qualidade para atividades como streaming de vídeo e uso de redes sociais.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Cabo de rede UTP - Categoria)",
+    "text": "O cabo de rede conectado pode estar limitando a velocidade, já que existem diferentes tipos de cabos, cada um com uma velocidade máxima. Recomendamos, no mínimo, o uso de um cabo CAT 5E ou superior. Em algum ponto ao longo do cabo, há uma inscrição com 'CAT' seguido de um número ou letra, como 'CAT 5', 'CAT 5E', 'CAT 6', entre outros.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Cabo de rede UTP - CAT5 ou inferior)",
+    "text": "Sua velocidade de internet está limitada a 90 Mbps porque você está usando um cabo CAT5 ou de categoria inferior. Esses cabos têm uma capacidade máxima de velocidade de 100 Mbps, então mesmo que sua conexão de internet seja mais rápida, o cabo restringe a taxa de transmissão de dados. É semelhante a um funil: não importa quanta água você despeje, ela só pode fluir na velocidade do gargalo. Se você quiser aproveitar toda a velocidade da sua internet, dá para substituir o cabo por um CAT5e, CAT6 ou até CAT6a, que são projetados para suportar velocidades muito maiores. Com isso, você tira todo o proveito da sua conexão!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Placa de Rede)",
+    "text": "Outro fator que pode limitar a velocidade é a placa de rede do aparelho. Existem vários modelos, mas a recomendada é a de barramento /1000, que suporta velocidades de até 1Gbps.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Verificar Placa de Rede - Windows)",
+    "text": "Para verificar o barramento da sua placa de rede, siga este procedimento:\n☐ Abra o *Painel de Controle* clicando no menu Iniciar do Windows e procurando por 'Painel de Controle'.\n☑ Clique em *Rede e Internet* e depois em *Central de Rede e Compartilhamento*.\n☐ Clique com o botão direito na conexão de internet (Wi-Fi ou Ethernet) e escolha *Propriedades*.\n☐ Clique em Configurar e depois na aba Avançado.\n5 Procure pela opção Speed & Duplex ou Velocidade & Duplex.\n☑ Verifique se a opção Valor está configurada como 1Gb Full Duplex.\n☑ Envie uma foto da tela.\nVocê pode acessar este link com imagens para facilitar a verificação/configuração: https://tinyurl.com/mryjz83j.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Verificar Placa de Rede - Linux)",
+    "text": "Para verificar o barramento da sua placa de rede, siga este procedimento:\n☐ Abra o terminal (é aquele ícone que parece uma tela preta ou procure por \"Terminal\" no menu).\n☐ Digite o comando: lspci | grep -i ethernet e aperte Enter.\n☑ Pronto, envie uma foto do resultado que apareceu no terminal.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Verificar Placa de Rede - MAC)",
+    "text": "Para verificar o barramento da sua placa de rede, siga este procedimento:\n☐ Clique no ícone da Maçã (no canto superior esquerdo da tela) e depois em Sobre este Mac.\n☑ Na janela que abrir, clique em Relatório do sistema.\n3 No menu à esquerda, procure por Ethernet ou Rede (dependendo da versão do macOS).\n☑ Ao clicar, você verá detalhes sobre a placa de rede, incluindo o tipo de barramento (geralmente aparece como PCI Express ou USB, dependendo da conexão).\n☑ Envie uma foto da tela.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PN - Hardware (Placa de Rede Fast Ethernet)",
+    "text": "A sua placa de rede é do tipo Fast Ethernet (FE), também conhecida como/100. Isso significa que ela tem uma capacidade máxima de 100 Mbps, ou seja, mesmo que sua internet seja mais rápida, a placa de rede não consegue passar disso. É como se fosse um \"gargalo\" no caminho dos dados.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "AG - Agendamento (Disponível Manhã)",
+    "text": "A próxima equipe disponível pode ir hoje, no período da manhã. Tudo bem para você?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "AG - Agendamento (Disponível Tarde)",
+    "text": "A próxima equipe disponível pode ir hoje, no período da tarde. Tudo bem para você?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "AG - Agenda sem Vagas (Solicitar Contato)",
+    "text": "Nosso sistema está com dificuldades para acessar a agenda das equipes no momento. Por isso, nosso agendador entrará em contato diretamente com você para definir o melhor horário.\nPor favor, nos informe:\n☐ Seu número de telefone (com DDD);\n☑ Dia e período preferido (manhã ou tarde).\nAssim que recebermos essas informações, garantimos que o agendador entrará em contato rapidamente para confirmar tudo!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "AG - Não Aceita (Horário Noturno)",
+    "text": "Entendemos que prefere o período noturno, mas, por segurança da equipe e para garantir uma solução eficiente, só conseguimos agendar visitas técnicas em horário comercial (das 8h às 18h). Sabemos que o escuro pode dificultar o reparo e até trazer riscos.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Sem Êxito (Problema Recorrente)",
+    "text": "Até o momento, já realizamos diversos atendimentos remotos para resolver, mas o problema persiste. Para garantir uma solução definitiva, precisamos enviar uma equipe técnica ao local para verificar a infraestrutura física (cabos, conectores, roteadores) e equipamentos. Podemos agendar essa visita técnica?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "P - Sem Êxito (Preferência Remota)",
+    "text": "Entendo! Se preferir, podemos tentar mais uma tratativa remota.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "AG - Qual o horário exato?",
+    "text": "O sistema nos informa apenas o período do agendamento (manhã ou tarde), mas, antes da equipe ir até sua casa, eles entrarão em contato para confirmar o horário exato.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "CR - Cobrança de Chamados - Reparo no Prazo (Manhã)",
+    "text": "[NOME], peço desculpas pela demora! A equipe está agendada para ir ao local no dia [DIA_MES], durante o período da manhã. Assim que eles estiverem a caminho, entrarão em contato para avisar.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME",
+      "DIA_MES"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "CR - Cobrança de Chamados - Reparo no Prazo (Tarde)",
+    "text": "[NOME], peço desculpas pela demora! A equipe está agendada para ir ao local no dia [DIA_MES], durante o período da tarde. Assim que eles estiverem a caminho, entrarão em contato para avisar.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME",
+      "DIA_MES"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "CR - Cobrança de Chamados - Fora do Prazo (Transferir)",
+    "text": "Realmente lamentamos pelo atraso da equipe! Já identificamos que o serviço está atrasado. Para resolver isso da melhor forma, vou transferir você para a fila do setor responsável pela remarcação, pois eles podem ajustar sua situação imediatamente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "MANUTENCAO_SINAL - PON com Sinal Irregular",
+    "text": "Identificamos que o sinal da fibra está irregular, o que pode causar quedas ou lentidão na conexão. Para resolver definitivamente, nossa equipe técnica precisa ir até o local verificar se o defeito está na fibra óptica ou nos conectores e realizar os ajustes necessários.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "MANUTENCAO_SINAL - CTO com Sinal Irregular",
+    "text": "Identificamos que o sinal da fibra da CTO (caixa do poste) que atende sua região está irregular, o que pode causar quedas e lentidão. Já abrimos um chamado prioritário para nossa equipe de FTTH ir até a caixa com defeito e resolver o problema.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TP - Sem Gerência - Sondagem (Luz Vermelha)",
+    "text": "No seu roteador TP-Link, há alguma luz vermelha acesa ou piscando? Se preferir, você pode nos enviar um vídeo curto mostrando as luzes do roteador e os cabos conectados.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TP - Sem Gerência - Procedimento (Reiniciar TP-Link)",
+    "text": "Por gentileza, realize o procedimento:\n☐ Desligue APENAS o roteador TP-Link da tomada e aguarde 2 minutos.\n2 NÃO desligue o modem ONU (aquele que fica conectado à fibra/linha telefônica). Ele precisa permanecer ligado!\nApós os 2 minutos, religue o roteador e aguarde 3 minutos para ver se o acesso volta ao normal.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TP - Sem Gerência - Procedimento (Reconfigurar)",
+    "text": "Agora, vamos fazer uma atualização remota do roteador. Para isso, siga os passos:\n1 Desligue o roteador TP-Link da tomada novamente.\n2 Mantenha o modem ONU ligado (é crucial para a atualização).\n3 Aguarde meu aviso para religar o roteador.\nAssim que você confirmar que desligou o roteador, iniciaremos a atualização. Não religue o equipamento até eu te avisar, ok?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TP - Sem Gerência - Erro (Cabo Conectado Errado)",
+    "text": "Percebi que o cabo de rede está conectado na porta errada! Para corrigir isso:\n☐ Desligue o roteador TP-Link e o modem ONU da tomada.\n2 Conecte o cabo na porta LAN1 do modem ONU (geralmente marcada como \"LAN\" ou \"Porta 1\").\n3 Conecte a outra ponta do cabo na porta WAN/INTERNET do roteador TP-Link (é a porta AZUL).\nImportante: A porta WAN/Internet do roteador é sempre AZUL e deve estar conectada à porta LAN1 do modem.\nApós ajustar, ligue os equipamentos novamente, aguarde 3 minutos e teste o acesso.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "L - LOS - Sondagem (Mexeu/Moveu)",
+    "text": "Você lembra se alguém mexeu no modem ou nos cabos de fibra na sua casa ou nos cabos fora da sua casa nos últimos dias? Às vezes uma movimentação pode afetar o sinal.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "L - LOS - Sondagem (Queda Energia)",
+    "text": "Houve alguma queda de energia recentemente na sua região ou dentro da sua casa? Isso também pode impactar a conexão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PON - Tratativa (Verificar Energia/Botão)",
+    "text": "Por favor, verifique se o modem está bem conectado na tomada de energia. Ele precisa estar recebendo energia corretamente. Tente conectar o modem em outra tomada da casa só para garantir que não seja problema na tomada atual. Agora dá uma verificada se o botão \"Power\" na parte de trás do modem (onde ficam os cabos) está pressionado. Ele precisa estar pressionado para funcionar.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "RTC - Cobrança de Rota (Em Andamento)",
+    "text": "[NOME], é um problema geral que afetou a região, e quero te assegurar que nossa equipe técnica está no local e totalmente empenhada em resolver isso o mais rápido possível. O reparo continua em andamento. A previsão máxima que temos para a normalização completa é de [TEMPOESTIMADO] horas, mas estamos trabalhando para ser antes. Agradeço de coração a sua paciência e compreensão.",
+    "isFavorite": false,
+    "requiredData": [
+      "NOME",
+      "TEMPOESTIMADO"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Manutenção em OLT (Prazo)",
+    "text": "Verifiquei aqui no sistema e a OLT que atende a sua região está passando por uma manutenção emergencial. Isso significa que o serviço de internet pode estar instável ou temporariamente indisponível. A previsão é que o serviço seja totalmente restabelecido em [TEMPOESTIMADO] horas. Assim que a manutenção for concluída, a sua conexão deverá voltar ao normal automaticamente. Agradeço de coração a sua paciência e compreensão.",
+    "isFavorite": false,
+    "requiredData": [
+      "TEMPOESTIMADO"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "INS - Roteador Particular Não Instalado",
+    "text": "Ao revisar os detalhes da sua instalação, verifiquei que a configuração do seu roteador particular não foi instaldo pela nossa equipe. Peço desculpas por esta falha. Para resolver isso, já agendei o retorno de um técnico ao seu endereço para concluir o procedimento e garantir que sua internet funcione perfeitamente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "INS - Insatisfeito com TP-Link (Troca FiberHome)",
+    "text": "Como você é um cliente recente, temos a possibilidade de enviar uma equipe para substituir seu roteador atual por um novo modelo da FiberHome, sem custos. Ele oferece alguns benefícios, mas tem um detalhe importante:\n☑ Vantagem: Ele cria duas redes Wi-Fi diferentes (uma de maior alcance e outra de maior velocidade), melhorando sua experiência de conexão.\n☑ Atenção: Este modelo possui apenas uma porta para conectar aparelhos via cabo de internet (como TV, videogame ou computador).\nA troca depende da disponibilidade do aparelho em sua cidade. Caso não o tenhamos em estoque no momento, pedimos sua compreensão para aguardar a chegada de um novo lote.\nVocê está de acordo com essas condições e gostaria de seguir com a solicitação?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "INS - Metragem de Cabo (Não Fornecido)",
+    "text": "Entendi. Verifiquei aqui seu relato de que o cabo foi solicitado e, por uma falha nossa, ele não foi instalado. Peço desculpas por isso. Para corrigir a situação, já estou abrindo um chamado para que nossa equipe retorne ao seu endereço e realize a instalação de até 20 metros de cabo de rede para você, sem nenhum custo, é claro.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "INS - Metragem de Cabo (Solicitação Maior)",
+    "text": "Como sua instalação original já foi concluída com sucesso, esta nova solicitação é considerada um novo serviço técnico, pois envolve o deslocamento de uma equipe e o uso de novos materiais. Por isso, a visita é tarifada.\nAs condições são as seguintes:\nUma vantagem é que o valor total pode ser parcelado em até 3x direto na sua fatura.\nVocê deseja aprovar e agendar este serviço completo?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "INS - Metragem de Cabo (Não Solicitado na Instalação)",
+    "text": "Verifiquei o relatório da sua instalação e vi que o cabo de rede não foi solicitado durante a visita do técnico. O fornecimento do cabo é uma cortesia que oferecemos quando o cliente solicita no ato da instalação. Como não houve essa solicitação, o serviço agora funciona como uma nova visita técnica tarifada. Mas não se preocupe, podemos agendar para você. O valor é de R$ 90,00, com direito a até 20 metros de cabo. Se precisar de mais, cada metro extra custa R$ 1,30, e você pode parcelar o total em até 3x na fatura. Podemos seguir com o agendamento nessas condições?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Primeiro Acesso / Recuperar Senha)",
+    "text": "Se o seu número de celular cadastrado está correto, é super simples:\n☐ Abra o app, digite seu *CPF* e clique em *\"Continuar\"*.\n2 Escolha a opção *\"Esqueci minha senha\"*.\n3 Confirme seu *CPF* e selecione o número de celular para receber o código SMS.\n4 Clique em *\"Enviar código\"* e digite o código que chegou no seu celular e crie sua nova senha.\n☑ Pronto! Acesso liberado!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Bloqueio por Tentativas)",
+    "text": "Por segurança, o sistema faz esse bloqueio temporário. É só aguardar 2 horas, que ele será liberado automaticamente para você tentar de novo. Peço só um pouquinho de paciência, por favor.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Número Incorreto - Mesmo DDD)",
+    "text": "Você pode informar um novo número para que eu possa adicionar ou alterar em cadastro, desde que ele tenha o mesmo DDD do número antigo. Caso não tenha essa opção, será necessário ir a uma de nossas lojas para que um atendente realize a alteração para você. Tem um número disponível?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Número Incorreto - Sem Opção)",
+    "text": "Neste caso, como o sistema exige uma validação inicial, é indispensável que você compareça a uma de nossas lojas ou escritórios. Nossa equipe presencial fará a configuração para você. Isso é devido motivos de segurança.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - BrisaApps - Erro no Servidor (Geral)",
+    "text": "Esse problema geralmente é resolvido com uma limpeza de cache do aplicativo. Por favor, siga o passo a passo correspondente ao sistema do seu celular:",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - BrisaApps - Erro no Servidor (Reinstalar IOS)",
+    "text": "Para IOS\nNo sistema do iPhone, não é possível limpar o cache de um aplicativo individualmente. A solução é reinstalá-lo, o que faz uma limpeza completa:\n☐*Desinstale* o nosso aplicativo do seu iPhone.\n☑ Reinicie o celular.\n☑ Acesse a App Store e instale o aplicativo novamente.\nPor favor, realize o procedimento e me informe se o problema foi resolvido.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Alterar Data de Vencimento)",
+    "text": "☐ 1 No app, vá em *Financeiro > Alterar Vencimento*.\n☑ Escolha a nova data desejada e confirme a alteração.\nA nova data de vencimento só será válida a partir da sua próxima fatura*. Faturas em aberto permanecem com o vencimento original.\n*Importante*: Na primeira fatura com a nova data, o valor poderá vir um pouco maior ou menor que o normal. Isso acontece porque o sistema faz um cálculo proporcional para se ajustar ao novo período de cobrança, cobrando pelos dias a mais (ou a menos) de uso entre o vencimento antigo e o novo. Após essa primeira fatura, o valor volta ao normal.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Ativar Débito Automático)",
+    "text": "1 No app Brisa Cliente, acesse a aba *\"Financeiro\"*.\n☑ 2 Clique em *\"Minhas Faturas\"*.\n3 Selecione a opção *\"Débito em Conta\"* e siga as instruções na tela para configurar.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Primeiro Acesso - Geral)",
+    "text": "O login é o mesmo que você já usa no app *Brisacliente*.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Primeiro Acesso - Web)",
+    "text": "Pela Web (Computador)\n1 Acesse www.brisaplay.com.br.\n2 Clique em *'ENTRAR'* e, na tela seguinte, selecione o ícone da Brisanet.\n☑ ☑ Use seu usuário e senha do *Brisacliente* para entrar.\nNo primeiro acesso, o sistema cria um perfil padrão com o seu código de cliente. Você pode selecioná-lo e depois editar ou criar new perfs.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Primeiro Acesso - App)",
+    "text": "Pelo Celular (Aplicativo)\n☐ Abra o aplicativo Brisaplay e toque no ícone da Brisanet.\n☑ 2 Use seu usuário e senha do *Brisacliente* para entrar.\n☑ No primeiro acesso, o sistema cria um perfil padrão com o seu código de cliente. Você pode selecioná-lo e depois editar ou criar novos perfis.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Ativando Novo Dispositivo)",
+    "text": "☐ No seu dispositivo, o app Brisaplay mostrará um *código de ativação*. Anote.\n☑ Acesse o Brisa Play pelo celular ou computador.\n☑ No menu, vá para a opção \"Meus Dispositivos\".\n4 Verifique se você tem espaço disponível (o limite é de 3 aparelhos cadastrados).\n☑ Clique em \"Adicionar\", insira o código que apareceu na sua TV e valide. Pronto!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Gerenciando Perfis)",
+    "text": "Após o login, vá para a tela inicial, expanda o menu de opções e clique em Gerenciar Perfis. Lá, você pode alterar o nome, a foto do perfil ou definir um perfil como Kids (infantil).",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Controle Parental)",
+    "text": "No menu, vá para Minha Conta > Código Parental. O código padrão inicial é \"1234\". Você deverá alterá-lo para uma senha pessoal de 4 dígitos. Essa senha será exigida para assistir a conteúdos com classificação indicativa restrita.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Erro - Tela Login TV)",
+    "text": "A tela de login não aparece na minha TV\nIsso geralmente indica um problema de conexão. Verifique se o cabo de rede está bem conectado e tente reiniciar o aparelho da TV/receptor e o seu roteador.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Erro - Código Ativação)",
+    "text": "O código de ativação não funciona\nProvavelmente você atingiu o limite de 3 aparelhos cadastrados. Acesse \"Meus Dispositivos\" pelo celular ou computador, exclua um dos aparelhos antigos para liberar uma vaga e tente ativar o novo novamente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisaplay (Erro - Limite Excedido)",
+    "text": "Não consigo assistir, diz que o limite foi excedido!\nIsso acontece porque o limite de transmissões simultâneas é de 2 telas. Verifique se outra pessoa na sua casa está assistindo ao mesmo tempo.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisamusic (Primeiro Acesso)",
+    "text": "Para acessar o Brisamusic, basta utilizar as mesmas informações de login que você usa para o Brisacliente.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - SVA's - Bebanca (Primeiro Acesso)",
+    "text": "Para acessar o Bebanca, utilize as mesmas credenciais de login que você usa para o Brisacliente. Além disso, certifique-se de selecionar a operadora da Brisanet.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - SVA's - Bebanca (Erro Login IOS)",
+    "text": "O aplicativo Bebanca ainda não suporta o login através da operadora no iOS. Nesse momento, essa funcionalidade está disponível apenas para dispositivos Android devido a essa limitação. Os desenvolvedores do Bebanca já está cientes do problema.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - SVA's - GoRead (Primeiro Acesso)",
+    "text": "Para acessar o GoRead, utilize as mesmas credenciais de login que você usa para o Brisacliente. Além disso, certifique-se de selecionar a operadora da Brisanet.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - SVA's - Qualifica Cursos (Primeiro Acesso)",
+    "text": "Para realizar o primeiro acesso, faça o seguinte procedimento:\n1. Acesse o brisacliente.\n2. Clique em \"planos\" e selecione \"Qualifica\".\n3. Uma nova aba se abrirá no navegador do seu celular, levando você para a página de cadastro no Qualifica.\n4. Complete um breve cadastro, escolhendo um login e uma senha segura de sua preferência.\n5. Após o cadastro, suas informações serão salvas e você poderá usar a plataforma.\n6. Para acessar o Qualifica no seu celular, baixe o aplicativo nas lojas Google Play (Android) ou App Store (iOS).\n7. Faça login com o e-mail e senha cadastrados na primeira vez.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - SVA's - Skeelo (Primeiro Acesso)",
+    "text": "Pode baixá-lo na Google Play Store (Android) ou na App Store (iOS). Após instalá-lo, faça seu cadastro usando seu CPF/CNPJ e número de celular. Assim, saberemos que você é cliente Brisanet, e você poderá desfrutar de todo o conteúdo oferecido!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Alteração de Senha da Rede Wi-Fi (Sondagem)",
+    "text": "[NOMEDOCLIENTE], gostaria de gerar uma senha aleatória ou prefere criar uma senha?",
+    "isFavorite": false,
+    "requiredData": [
+      "NOMEDOCLIENTE"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "T - Alteração de Senha (Aleatória)",
+    "text": "A nova senha é uma mistura de letras e números, gerada aleatoriamente pelo nosso sistema para sua segurança. Posso criar essa senha agora?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Alteração de Senha (Personalizar via App)",
+    "text": "Para personalizar a senha:\n1. Entre no aplicativo BrisaCliente.\n2. Clique em \"Planos\" na parte inferior.\n3. Encontre \"Internet Fibra\" e toque em \"Configuração de Wi-Fi\".\n4. Selecione \"Alterar Senha\".\n5. Toque em \"Alterar Senha Manualmente\".\n6. Insira sua nova senha!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Visualizar Senha Wi-Fi)",
+    "text": "A senha atual de sua rede Wi-Fi só pode ser visualizada pelo aplicativo brisacliente no menu de acesso rápido na opção 'Acessar Meu Wi-Fi'.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Rede Unificada (Mensagem Técnica)",
+    "text": "Foi instalado um roteador em sua casa que utiliza uma tecnologia inteligente chamada 'Band Steering' para combinar as redes 2.4 GHz (normal) e 5.8 GHz (turbo). Com isso, não é mais necessário se preocupar em escolher manualmente entre essas frequências, pois o roteador faz isso automaticamente para garantir que você sempre desfrute da melhor conexão sem fio possível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Rede Unificada (App Não Mostra Rede Turbo)",
+    "text": "O aplicativo Brisacliente está passando por uma atualização. Como parte desse processo, a opção de alterar a senha e de canais da rede turbo (5.8 GHz) foi removida devido a conflitos que causaram quedas de conexão ao modificar a senha da rede \"turbo\" em dispositivos conectados a uma rede unificada. No entanto, a rede \"turbo\" permanece ativa e unificada. Alterar a senha da rede comum resultará automaticamente na alteração da senha da rede \"turbo\" devido à natureza unificada da rede.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Personalizar SSID (Procedimento)",
+    "text": "Você pode alterar o nome da rede, mas ela seguirá o padrão 'brisa-' e o restante do nome fica à sua escolha. Também não pode ter caracteres especiais. Deseja alterar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Personalizar SSID (Teste de Resolução)",
+    "text": "Perfeito! O nome de sua rede foi alterado com sucesso. Em até 15 minutos, a nova rede com o nome atualizado deverá aparecer.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Portas LAN (Modem ONU Fibrehome)",
+    "text": "O modem FiberHome na sua casa tem apenas a porta lan1 disponível para internet. As outras são destinadas a serviços da Brisanet como TV a cabo e telefonia fixa.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Portas LAN (TP-Link)",
+    "text": "As quatro portas LAN do seu roteador TP-Link estão disponíveis para a internet e são identificadas pela cor laranja.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Alcance da Rede Wi-Fi (Sondagem)",
+    "text": "A que distância, em média, você está enfrentando o problema de conexão?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - WPS (Desativado/Segurança)",
+    "text": "O recurso WPS foi desabilitado no nosso modem/roteador devido a preocupações com a segurança. Para conectar dispositivos por esse recurso, sugerimos adquirir um roteador particular para essa finalidade.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - Sondagem (Geral)",
+    "text": "Quais são os os jogos com problemas?\nQual é o problema específico que você está enfrentando? Por exemplo: Ping alto, perdas de pacotes, desconexões durante partidas, impossibilidade de login no jogo ou no lançador.\nQual é a média do ping agora? Como era antes do problema?\nO servidor do jogo está localizado no Brasil ou internacionalmente?\nVocê fez testes semelhantes em outros jogos?\nEm que plataforma você joga? Por exemplo: Xbox, PlayStation, Switch, celular ou computador.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - Rede Cabeada (Importância)",
+    "text": "Escolher usar um cabo de rede (Ethernet) assegura uma transmissão mais ágil e estável dos dados do jogo, comparado ao uso de Wi-Fi. Isso minimiza a ocorrência de atrasos, conhecidos como \"lag\", garantindo movimentos e ações mais rápidos e precisos durante o jogo. Além disso, as redes Wi-Fi podem sofrer interferências de diversos fatores, como outros aparelhos eletrônicos na sua casa e obstáculos físicos, como paredes! Optando por uma conexão de rede com fio, você consegue evitar muitos desses problemas e desfrutar a melhor experiência de jogo possível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - Nat em Consoles (Tipos de NAT)",
+    "text": "Existem três tipos de NAT: tipo 1 (Aberta), tipo 2 (Moderada) e tipo 3 (Estrita). O tipo 1 é raro em redes domésticas, permite conexões livres tanto de entrada quanto de saída para servidores, enquanto o tipo 2, comum em redes caseiras, controla portas e evita vulnerabilidades de segurança. Já o tipo 3 restringe conexões de entrada e afeta o funcionamento de jogos online e servidores.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - Ping (Servidores Inter/Nacionais)",
+    "text": "Em geral, servidores nacionais costumam ter menor latência, já que a distância física percorrida pelas informações é menor. Isso se traduz em respostas mais rápidas do jogo às suas ações. Os servidores fora do país sofrem com instabilidades devido a questões como congestionamento de rede, problemas na infraestrutura e a distância física. Esses problemas podem causar desconexões, atrasos no jogo (lags) e um aumento na latência (ping).",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - Ping (Garantia Brisanet)",
+    "text": "O ping não depende da velocidade da internet ou do plano contratado, mas sim da geolocalização do cliente e do servidor. Não é possível manter uma média constante; ocorrerão picos de ping elevado. Nesta região, a média de ping é de 50 MS a 120 MS, considerando a localização do servidor em São Paulo ou Rio de Janeiro. Em jogos mobile, as médias de ping não são garantidas, e nenhum provedor pode oferecer ping mais baixo, a menos que você viva em uma das cidades com o servidor do jogo em questão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - IP Banido (Explicação)",
+    "text": "A situação é resultado de um jogador que compartilha a mesma faixa de IP recebendo uma punição, impactando sua conexão atual. Para resolver é necessário alterar a faixa de IP ou a aquisição de um IP exclusivo para o seu uso.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - IP Banido (Alterar Faixa Automaticamente)",
+    "text": "A mudança na faixa de IP ocorrerá automaticamente após alguns dias, durante a atualização do modem e roteador. Se preferir, pode tentar acelerar o processo desligando os equipamentos de internet durante o seu horário de dormir e ligando novamente ao acordar.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "J - IP Banido (Alterar Faixa com IP Exclusivo)",
+    "text": "No caso do IP exclusivo, disponível mediante aquisição junto ao nosso setor Comercial Digital SAC, pelo valor de R$50,00 mensais. Esse IP permanece constante. Se você possui um roteador TP-Link da Brisanet, será necessário removê-lo para permitir que o IP fixo seja gerenciado pelo seu roteador particular, uma vez que o primeiro não é compatível com esse tipo de IP.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Sites - Sondagem",
+    "text": "Quais são os sites com problemas?\nQual é o problema específico que você está enfrentando? Por exemplo: demorando a carregar, perdas de pacotes, desconexões durante o uso, impossibilidade de login no site.\nQual é a média do ping agora? Como era antes do problema?\nVocê tentou acessá-lo por outra rede?\nVocê tentou acessá-lo usando dados móveis?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Sites - Tratativas (Acesso Remoto)",
+    "text": "É possível disponibilizar um computador para que eu possa acessá-lo remotamente e realizar alguns testes?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - VPN - Sondagem",
+    "text": "Quais são os sites com problemas?\nQual é o problema específico que você está enfrentando? Por exemplo: demorando a carregar, perdas de pacotes, desconexões durante o uso, impossibilidade de login no site.\nQual o protocolo da VPN?\nQual é a média do ping agora? Como era antes do problema?\nVocê tentou acessá-lo por outra rede?\nVocê tentou acessá-lo usando dados móveis?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - VPN - Tratativas (Acesso Remoto)",
+    "text": "É possível disponibilizar um computador para que eu possa acessá-lo remotamente e realizar alguns testes?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Redirecionamento (IP Fixo)",
+    "text": "Para redirecionar ou abrir uma porta lógica, é preciso um IP fixo, visível fora da rede interna. Você pode obter o seu através do Comercial Digital SAC por R$50,00 por mês.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Redirecionamento (Bridge)",
+    "text": "Para direcionar/abrir portas lógicas, o modem deve estar em modo bridge, e é preciso um roteador particular para que você configure.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Redirecionamento (Com TP-Link)",
+    "text": "Se tiver um roteador TP-Link da Brisanet, é preciso enviar uma equipe para remover, já que ele não gerencia o IP fixo. Use seu roteador particular para isso.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Por que IP Fixo é Pago?",
+    "text": "Com a escassez dos blocos IPv4 em 2009/2010, muitos provedores começaram a oferecer o IP público/fixo como serviço adicional.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Autenticação PPPoE (Aviso IPv6)",
+    "text": "Ao autenticar via PPPoE, você perde o suporte a IPv6, pois o PPPoE só funciona com IPv4.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Autenticação na ONU (Bridge)",
+    "text": "Se quiser, eu mudo o modem para bridge e te passo os dados do PPPoE para configurar o seu equipamento.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - Autenticação no TP-Link",
+    "text": "Vi que você tem um roteador TP-Link da Brisanet no sistema. Por isso, será necessário enviar uma equipe técnica para tirar o equipamento e as configurações, já que ele não suporta PPPoE. Eles também vão passar os dados do PPPoE para poder usar no seu roteador particular.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "S - Portas Lógicas - DVR",
+    "text": "Para usar o seu DVR na rede Brisanet, precisa de um roteador particular autenticado na nossa rede (ONU em modo bridge + roteador próprio com PPPoE). E se precisar redirecionar portas, é necessário ter um IP Fixo.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Chaves (Sondagem Marca)",
+    "text": "Preciso saber qual é a marca do seu telefone. Você pode informar se está usando um aparelho Elgin ou Intelbras?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Chaves (Elgin)",
+    "text": "Verifique se a chave lateral do seu telefone está em T e se há outra chave apontando para H. Na parte inferior do seu telefone, a seta está apontando para um ponto vermelho?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Chaves (Intelbras)",
+    "text": "Na parte inferior do seu telefone, encontra-se duas chaves. Mova ambas totalmente para a esquerda.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo Chiando (Sondagem)",
+    "text": "O telefone ou seus cabos foram removidos por algum motivo?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo Chiando (Tratativa)",
+    "text": "Por favor, desconecte e reconecte as duas pontas do cabo do telefone nas mesmas entradas. Por estar chiando, provavelmente há um problema no gancho ou na fiação. Nesse caso, é necessário enviar uma equipe técnica para verificar e solucionar o problema.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo Mudo (Sondagem)",
+    "text": "Consegue realizar a ligação, mas não consegue ouvir o que a outra pessoa está falando? O telefone ou seus cabos foram removidos por algum motivo?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo Mudo (Tratativa)",
+    "text": "Por favor, desconecte e reconecte as duas pontas do cabo do telefone nas mesmas entradas. Por estar mudo, provavelmente há um problema no gancho ou na fiação. Nesse caso, é necessário enviar uma equipe técnica para verificar e solucionar o problema.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Problema com Operadora Específica",
+    "text": "Atualmente, enfrentamos um problema com a operadora [OPERADORA], afetando tanto ligações feitas quanto recebidas. A operadora estimou um prazo de 24 horas para a normalização.",
+    "isFavorite": false,
+    "requiredData": [
+      "OPERADORA"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Não Completa Ligações (Sondagem)",
+    "text": "O problema ocorre ao receber ligações ou ao efetuar ligações?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Não Completa (Sondagem Efetuando)",
+    "text": "Está tentando ligar para um número de qual operadora? Consegue realizar ligações para números de outras operadoras?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Não Completa (Sondagem Recebendo)",
+    "text": "Está tentando receber ligações de um número de qual operadora? Consegue receber chamadas de outros números? Vou realizar uma chamada para o seu telefone fixo para teste, está bem?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Não Completa (Tratativa Setor Telefonia)",
+    "text": "Vou encaminhar seu caso para o setor de telefonia para verificar e resolver quaisquer problemas, tudo bem? A previsão padrão é de até 48 horas.\nPara isso, precisamos que informe o(s) número(s) usado(s) para testar.\nPor favor, informe um número para contato. Esse número serve para que posteriormente eu entre em contato com você e informe a conclusão do setor de telefonia.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Como Discar (Código Longa Distância)",
+    "text": "Você pode usar qualquer um dos códigos 015, 031 ou 041.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Como Discar (Local)",
+    "text": "Ligação local: Apenas número do telefone.\nLigação local (Celular): Apenas 9+ número do celular",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Como Discar (Interurbano/Internacional)",
+    "text": "Ligação interurbano: 0 + código DDD da localidade de destino (Estado) + número do telefone\nLigação interurbano (Celular): 0 + código da operadora (Celular) + código DDD da localidade de destino (Estado) + número do telefone\nLigação internacional a partir do: 00 + Cód. da operadora (Fixo) + Cód. DDI do País de destino + Cód. de área (se houver) + n.º do fixo/celular.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Histórico de Ligações (Sondagem)",
+    "text": "Gostaria do histórico de ligações realizadas ou efetuadas?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Histórico (Efetuadas)",
+    "text": "No aplicativo Brisacliente, é possível visualizar o histórico de ligações efetuadas. É importante destacar que ligações com menos de 3 segundos e não atendidas não entram na contagem.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Histórico (Recebidas)",
+    "text": "O setor de telefonia pode demorar até 10 dias para reunir as informações do histórico e enviar. Por favor, informe um e-mail para receber o histórico e o período histórico desejado. É importante destacar que ligações com menos de 3 segundos e não atendidas não entram na contagem. Pode fornecer um número para contato? Este será utilizado para confirmar o recebimento do e-mail com o histórico.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Bloqueio de Números (Motivo/Número)",
+    "text": "Qual o motivo para solicitar o bloqueio desse número? Para bloquear um número, precisamos do número completo com o DDD em mãos. Pode informar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Bloqueio de Números (Contato)",
+    "text": "Pode fornecer um número para contato? Este será utilizado para confirmar o bloqueio do número.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Desbloqueio de Números",
+    "text": "Para desbloquear um número, precisamos do número completo com o DDD em mãos. Pode informar? Pode fornecer um número para contato? Este será utilizado para confirmar o desbloqueio do número.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Alteração de Número (Motivo/Prazo)",
+    "text": "Qual é o motivo para querer alterar o número do fixo? A alteração do número pode levar até 48 horas.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Alteração de Número (Contato)",
+    "text": "Pode fornecer um número para contato? Este será utilizado para informar o novo número.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Bloqueio por Limite (Explicação)",
+    "text": "Essa é uma maneira de permitir que o cliente controle o uso do seu telefone. O limite padrão do nosso serviço é R$70,00, mas pode ser ajustado para mais ou menos, com o mínimo de R$10,00. Ao atingir o limite estabelecido, o serviço será parcialmente suspenso, impossibilitando a efetuação de novas chamadas, mas permitindo o recebimento.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Alterar Limite (Valor/Prazo)",
+    "text": "Qual valor de limite deseja definir? Pode ser um valor menor (até R$10,00) ou maior. A alteração do limite pode levar até 48 horas, mas é normalmente resolvido em até 24 horas. O processo de alteração do limite pode demorar até 48 horas, mas é geralmente concluído em até 24 horas.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Alterar Limite (Contato)",
+    "text": "Pode fornecer um número para contato? Este será utilizado para informar que o processo foi concluído.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Ligações 4004",
+    "text": "Os números 4004 são destinados a regiões metropolitanas. Certifique-se de que o número atende à sua região ou procure outro número para ligar.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - Plano Fale Mais Fit SA (Sem Aparelho)",
+    "text": "Seu plano de telefonia fixa não inclui o aparelho, sendo de responsabilidade do cliente. Posso transferir seu atendimento para o setor responsável pela alteração plano, para verificar um que inclua o aparelho. Deseja ser transferido para o setor de SAC?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Sondagem (Foto/Vídeo)",
+    "text": "Pode enviar uma foto ou vídeo da tela e do receptor para analisar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Cabo na Porta Errada (Sondagem LAN 2)",
+    "text": "O cabo que conecta o receptor de TV ao modem FiberHome de internet está plugado na porta LAN 2?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Cabo na Porta Errada (Instrução LAN 2)",
+    "text": "Por favor, desconecte o cabo da porta LAN atual e conecte-o à porta LAN2, por gentileza.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Configurar o DHCP do STB",
+    "text": "Outra opção para tentar resolver é utilizar o botão OK do controle. Selecione NET, depois IP, e verifique se a opção DHCP está marcada. Se sim, pressione o botão vermelho com a letra A, seguido pelo verde com a letra B. Após isso, aperte duas vezes o botão SAIR do controle. Caso não esteja marcada, selecione e reinicie o STB. (Net IP DHCP Botão Vermelho(A) 1x, Botão sair 2x).",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Restauração para Configurações de Fábrica",
+    "text": "Por gentileza, pressione o botão menu do controle remoto. Em seguida, aperte o botão verde para acessar a janela de configuração padrão. Pressione o botão verde novamente e confirme. O receptor será atualizado e reiniciará automaticamente. Após a conclusão do procedimento, verifique se normalizou e me informe sobre o resultado.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Receptor Bloqueado (Sistema)",
+    "text": "Identifiquei que o receptor foi bloqueado devido a um erro no sistema. Por favor, aguarde um momento enquanto solicito a liderança para efetuar o desbloqueio.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Receptor Bloqueado (Teste Pós-Desbloqueio)",
+    "text": "Pronto! O comando de desbloqueio foi executado. Agora, é necessário aguardar 3 minutos e, em seguida, desligar e ligar o receptor da TV.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Canal em Manutenção (Prazo 24h)",
+    "text": "O canal está passando por uma manutenção para aprimorar a qualidade e a entrega do serviço. A previsão inicial é de 24 horas para conclusão.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "TV - Canais Quadriculando/Travando",
+    "text": "Por gentileza, digite 500 no controle remoto do receptor da Brisanet. O cabo de rede que vai do modem para o receptor está devidamente conectado? Se sim, pode desconectar e conectá-los no mesmo local?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Conectar a Rede Manualmente",
+    "text": "Podemos tentar adicionar a rede manualmente? Seguem as informações necessárias para se conectar à rede:\nIP: 192.168.1.35\nGateway: 192.168.1.1\nMáscara: 255.255.255.0\nDNS Primário: 177.37.220.17\nDNS Secundário: 8.8.8.8",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Alterar DNS (Aviso)",
+    "text": "Lembre-se de que alterar essas configurações pode gerar problemas na conexão de internet, especialmente se você tiver configurações de rede específicas para outras finalidades. Pode ser necessário voltar às configurações antigas, então salve qualquer informação importante antes de fazer as alterações",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Alterar DNS (Windows)",
+    "text": "Para alterar o DNS no Windows:\nAbra o Painel de Controle. Acesse clicando no menu Iniciar do Windows e procurando por 'Painel de Controle'.\n• Clique em 'Rede e Internet' e, em seguida, em 'Central de Rede e Compartilhamento'.\nClique com o botão direito sobre a conexão de internet (Wi-Fi ou Ethernet) e escolha 'Propriedades'.\nNa janela, selecione 'Protocolo TCP/IP versão 4 (TCP/IPV4)' e clique em 'Propriedades'.\nEscolha 'Usar os seguintes endereços de servidor DNS' e insira o endereço IP do servidor DNS desejado, como o do seu provedor ou Google DNS (8.8.8.8 ou 8.8.4.4).\n• Clique 'OK' para salvar.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Roteador Secundário Sem Funcionar (Info)",
+    "text": "Os equipamentos da brisanet estão funcionando normalmente. Esse problema em seu roteador particular pode estar sendo ocasionado por diversos motivos, tais como configurações incorretas, interferências de outros dispositivos eletrônicos, falhas de hardware ou até mesmo problemas na conexão com a energia elétrica. Recomendamos verificar as configurações do seu roteador, garantir que todos os cabos estejam corretamente conectados e, se o problema persistir, entrar em contato com o suporte técnico particular para obter assistência personalizada.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Roteador Secundário (Tratativa Modem)",
+    "text": "Infelizmente, não consigo fazer ajustes no seu roteador, apenas no modem. Posso tentar reconfigurar o modem e, depois, você reinicia seu roteador, está bem?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Roteador Secundário (Sem Solução Remota)",
+    "text": "Como o acesso do seu roteador não retornou, será necessário que você verifique nas configurações dele ou que contrate um técnico para fazer isso.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - TV sem Sinal (Porta Incorreta)",
+    "text": "Pode verificar se a TV está configurada para a porta de vídeo correta? Por gentileza, poderia enviar uma foto do controle remoto da sua TV?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - TV sem Sinal (Aviso Visita Técnica)",
+    "text": "O problema de falta de sinal na TV pode ser causado por um cabo HDMI danificado, conectado de maneira incorreta ou pela TV configurada para uma porta HDMI sem cabo. Vou enviar uma equipe para verificar. Se o problema estiver na configuração da TV, será cobrada uma taxa de R$20,00. Se for identificado que o problema é no cabo HDMI e resultado de mau uso, será avaliada a cobrança pela troca do cabo.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - IPTV (Info - Travamentos/Cabo)",
+    "text": "Em diversas situações, mesmo com uma conexão excelente, é possível enfrentar travamentos no IPTV. Para garantir uma conexão mais estável, sugiro conectar este equipamento por meio de um cabo de rede e reiniciar o IPTV sempre que ocorrerem falhas.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - IPTV (Info - Servidores/Suporte)",
+    "text": "O sinal Wi-Fi pode perder qualidade e apresentar oscilações devido aos servidores internacionais dos serviços de IPTV. Alguns servidores de IPTV não mantêm uma qualidade adequada, pois frequentemente operam além de sua capacidade máxima. Isso pode causar uma conexão limitada e travamentos no próprio IPTV. Se todos os outros dispositivos em sua residência têm acesso normal, mas apenas o IPTV está com problemas, sugiro procurar uma assistência técnica especializada para esse equipamento.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Problema em Aparelho Particular (Sem Suporte)",
+    "text": "Conforme mencionado durante o atendimento, o problema parece estar restrito ao seu [APARELHO_ESPECIFICO]. A empresa, e principalmente o suporte técnico, prestam suporte exclusivamente aos serviços essenciais, como fibra óptica, TV a cabo, telefonia fixa e aplicativos próprios da empresa ou parceiros. Como não há problemas relacionados a esses serviços, recomenda-se contratar um técnico particular para realizar a manutenção em seu equipamento.",
+    "isFavorite": false,
+    "requiredData": [
+      "APARELHO_ESPECIFICO"
+    ],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Geolocalização (Correção MaxMind)",
+    "text": "Esse procedimento não está sob controle da provedora, pois a regulamentação do serviço de geolocalização de IPs é de responsabilidade da IANA (Internet Assigned Authority). Sendo assim, o cliente deve acessar o site https://www.maxmind.com/en/geoip-location-correction e solicitar a correção da geolocalização para o serviço.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "EQ - Instalação Segundo Roteador (Info)",
+    "text": "A Brisanet disponibiliza apenas um roteador por residência, sendo necessário que o cliente adquira o seu próprio dispositivo em uma loja de informática local. Para instalar o seu próprio roteador, você pode contratar um técnico da Brisanet ou um técnico privado de sua escolha.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Desconto (20%)",
+    "text": "Posso conceder um desconto de 20% para esse serviço. Está de acordo?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Desconto (40%)",
+    "text": "Posso aumentar o desconto para 40%. Essa é a minha margem máxima como atendente. Aceita?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Desconto (50%)",
+    "text": "Após consultar um líder, conseguimos aprovar um desconto de 50%. Gostaria de solicitar a troca do equipamento agora?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Conecta+ (Segundo Cabeamento - Pago)",
+    "text": "O Conecta+ cobre apenas uma visita técnica gratuita para cabeamento. Se for necessário enviar outra equipe para realizar um cabeamento estruturado adicional, serão aplicadas as tarifas correspondentes a essa configuração.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Conecta+ (Configuração Estruturada - R$90)",
+    "text": "O serviço de Configuração Estruturada tem um custo de R$90,00, podendo ser parcelado em até 3 vezes. Oferecemos 20 metros de cabo gratuitos, mas se a distância ultrapassar, será cobrado R$1,30 por metro extra. Importante: o cabo adicional só será fornecido se usado pelo cliente. Gostaria de solicitar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Alteração de Cômodo (Taxa R$30)",
+    "text": "Para a alteração de cômodo, cobramos uma taxa de R$30,00, mais R$0,60 por metro de cabo de fibra utilizado, se necessário. Importante notar que, se o cabo atual não for suficiente, será usado um novo cabo, sem reaproveitamento. Se precisar de cabo de rede adicional, será cobrado R$1,30 por metro. Gostaria de solicitar?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Alteração de Cômodo (Desconto R$20)",
+    "text": "Recebi aprovação da liderança para realizar o serviço pelo valor de R$20,00. Adicionalmente, em casos de necessidade de utilização ou troca de cabo de fibra, será cobrado um valor adicional de 60 centavos por metro, medido do poste até a casa. Concorda com essas condições?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Alteração de Cômodo (Desconto - Sem Locomoção)",
+    "text": "Após uma nova negociação com a liderança, conseguimos autorização para a visita técnica sem custos de locomoção da equipe. Em casos de necessidade de cabo de fibra, será cobrado apenas R$0,60 por metro, e se for cabo de rede, R$1,30 por metro. Essas condições foram estabelecidas visando proporcionar uma solução acessível e eficaz. Está de acordo com essas atualizações?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Alteração de Parede (Taxa R$20)",
+    "text": "Caso deseje reposicionar o equipamento no mesmo cômodo, alterando a parede ou sua posição na mesma parede, ficaremos felizes em realizar essa mudança por uma taxa de visita do técnico de apenas R$20,00, mais a metragem de cabo de fibra a R$0,60 ou de cabo de rede a R$1,30, se necessários. Está de acordo com essas atualizações?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Controle do STB (Revisão/Taxa R$26)",
+    "text": "Vou encaminhar uma equipe técnica para realizar uma revisão física no controle. Se for identificado mau uso, será aplicada uma taxa de R$26,00, que será adicionada à sua fatura do próximo mês. No entanto, se não houver problemas, a troca será gratuita. Esta abordagem visa garantir transparência e oferecer a melhor solução. Concorda com essas condições?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Equipamento Danificado (Comodato/Revisão/Taxa R$20)",
+    "text": "O equipamento fornecido está em regime de comodato, sendo cedido temporariamente sem custo adicional. Nossa equipe técnica realizará uma revisão no local para assegurar o perfeito funcionamento. Em situações de dano ou problemas, entraremos em contato com o setor financeiro para discutir a melhor solução de troca. Caso seja possível realizar o reparo com o mesmo equipamento, será gerado um custo de R$20,00. Essa abordagem visa garantir a eficiência e transparência. Concorda com essas condições?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Manutenção do Revan (Encerramento - 3h)",
+    "text": "Olá, tudo bem? Atualmente, enfrentamos uma instabilidade em nosso sistema interno, impossibilitando a realização de procedimentos e aberturas de protocolos. Estimamos que a normalização ocorra em até 3 horas. Pedimos desculpas pelo transtorno e agradecemos sua compreensão. Caso necessite de assistência após esse período, entre em contato conosco pelo 10517.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Manutenção do Revan (Aguardar - 1h)",
+    "text": "Atualmente, estamos enfrentando uma instabilidade em nosso sistema interno, o que está impossibilitando a realização de procedimentos. Estimamos que a normalização ocorra em até 1 horas. Pedimos desculpas pelo transtorno e agradecemos sua compreensão. Caso prefira, pode aguardar, e assim que normalizar, retomaremos o atendimento. Alternativamente, se desejar, pode solicitar o encerramento do atendimento para entrar em contato posteriormente",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade com Roteadores TP-Link (1h)",
+    "text": "Atualmente, enfrentamos uma instabilidade em nosso sistema que afeta todos os roteadores da marca TP-Link, impossibilitando qualquer procedimento. A previsão é que tudo volte ao normal em até 1 hora, mas pode ser que seja antes. Se quiser tentar alguma configuração no seu equipamento, posso te ajudar, mas não tenho certeza se vai resolver.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade na Rede Brisanet (6h)",
+    "text": "Estamos com alguns problemas nos nossos serviços no momento, mas já estamos resolvendo! A previsão é que tudo volte ao normal em até 6 horas, mas pode ser que seja antes. Se desejar, posso tentar reconfigurar sua rede, mas não é garantido que irá normalizar.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade (Downdetector)",
+    "text": "Verificamos no site de acompanhamento de instabilidades, o Downdetector, e ele informa que o Instagram, Caixa, WhatsApp e alguns outros serviços estão passando por problemas no momento. (Você pode acompanhar a normalização deles no site: https://downdetector.com.br). Se quiser, posso tentar fazer alguns procedimentos, mas não posso garantir que os serviços nos aplicativos listados no site anterior vão normalizar, ok?",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade (Estados CE, RN, PB, PE, BA, AL, PI, SE - 5h)",
+    "text": "Atualmente, estamos enfrentando instabilidades nos estados CE, RN, PB, PE, BA, AL, PI, SE, o que pode causar problemas ou indisponibilidade nos serviços de Internet. A previsão para conclusão é de até 5 horas, podendo ser alterada conforme a complexidade do problema. A Brisanet pede desculpas pelo transtorno. Você pode acompanhar a situação da manutenção pela nossa URA eletrônica no início deste atendimento ou ligando para o nosso 10517.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade (Cidades - Timon - 8h)",
+    "text": "No momento, estamos cientes de instabilidades em algumas cidades, incluindo Timon. O que pode causar problemas ou indisponibilidade nos serviços de Internet. A previsão para conclusão é de até 8 horas, podendo ser alterada conforme a complexidade do problema. A Brisanet pede desculpas pelo transtorno. Você pode acompanhar a situação da manutenção pela nossa URA eletrônica no início deste atendimento ou ligando para o nosso 10517.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Ouvidoria (Tratativa 3ª Estância)",
+    "text": "Essa tratativa é realizada pela nossa ouvidoria no número 0800 281 4000. Por ser uma tratativa mais delicada, é realizada somente por eles. Nós do suporte não temos permissão para realizá-las.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Ouvidoria (Contato)",
+    "text": "Nossa Ouvidoria está aqui para ouvir você! Queremos tornar sua experiência ainda melhor. Ligue para 0800 281 4000 para compartilhar elogios, sugestões ou denúncias. Garantimos sigilo e confidencialidade. Sua opinião é vital para aprimorar nosso relacionamento.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "Brisamóvel (Contato)",
+    "text": "O suporte para o Brisamóvel é pelo número *3018 para números da Brisamóvel e *1058 para números de outras operadoras. Por este canal, estamos aqui para atender você nos serviços de Internet, TV e Telefonia fixa.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - WiFiman (Visualizar Aparelhos Conectados)",
+    "text": "Tem um aplicativo para android e IOS chamado WiFiman que permite visualizar os aparelhos conectados na rede.\nPode ser baixado para android pelo link: https://play.google.com/store/apps/details?id=com.ubnt.usurvey&hl=pt BR&gl=US\nPode ser baixado para IOS pelo link: https://apps.apple.com/br/app/ubiquiti-wifiman/id1385561119\nNa opção \"Dispositivos\" (encontrada na parte inferior do aplicativo) irá aparecer todos os aparelhos conectados na sua rede Wi-Fi.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade (Google - 5h)",
+    "text": "Atualmente, enfrentamos uma instabilidade em nossa rede afetando alguns serviços da Google. Nossa equipe responsável está trabalhando para resolver o problema, e a previsão é de normalização em até 5 horas. Importante ressaltar que a situação pode se normalizar a qualquer momento.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Manutenção (Cadastro - 1h)",
+    "text": "Infelizmente, estamos realizando uma manutenção programada em nossos sistemas no momento. Isso significa que algumas alterações nos cadastros dos clientes estão indisponíveis. Pedimos desculpas por qualquer inconveniente e estimamos que o sistema esteja normalizado em até 1 hora.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "PIS - Instabilidade (PPPoE - 4h)",
+    "text": "Atualmente, enfrentamos uma instabilidade em nosso sistema que afeta todos os clientes que usam PPPOE, pedimos desculpas por qualquer inconveniente e estimamos que o sistema esteja normalizado em até 4 hora.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "SV - Troca de Fonte (Taxa R$50)",
+    "text": "A troca da fonte de alimentação do roteador/modem tem um custo de R$50,00, caso seja constatado que o problema não foi causado por defeito de fabricação.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "C - Contato Alternativo (WhatsApp/10517)",
+    "text": "Caso não esteja conseguido contato pelo brisacliente, pode entrar em contato pelo número (84) 98111-8525, é o nosso WhatsApp ou se preferir, tempos 10517 para ligações.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "T - Fixo - BA (Boletim Anormalidade - Outra Operadora)",
+    "text": "O nosso setor de telefonia já analisou o problema e verificou que a origem não está na nossa rede, mas sim na rede de outra operadora. Por conta disso, entramos em contato com as operadoras responsáveis e estamos aguardando o retorno deles para a correção. Agradecemos pela paciência e estamos monitorando a situação para garantir que tudo seja resolvido o mais rápido possível.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "C - Aguarde um Momento (Estou aguardando)",
+    "text": "Fique à vontade, estou aguardando!",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  },
+  {
+    "title": "APP - Brisacliente (Funções Indisponíveis TP-Link)",
+    "text": "As funções para visualizar dispositivos conectados, alterar a visibilidade da rede e desativar a rede Wi-Fi em roteadores da marca TP-Link estão temporariamente indisponíveis. Nossa equipe responsável está trabalhando para restaurá-las o mais rápido possível, mas não temos uma previsão exata.",
+    "isFavorite": false,
+    "requiredData": [],
+    "hotkey": null
+  }
+]

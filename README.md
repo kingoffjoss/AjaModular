@@ -69,3 +69,7 @@ Não houve login no Genesys, teste real com chave Gemini, uso de microfone nem v
 GitHub Pages: branch `main`, pasta `/ (root)`. A raiz contém `.nojekyll`. O runtime e os dados JSON são publicados neste repositório. O AjaExtension mantém seu próprio carregador, publicação e favoritos.
 
 Na versão 1.1.2, os botões de tema do Gerenciador e de Config & Histórico alternam entre claro e escuro e salvam a preferência.
+
+## Versão 1.1.3
+
+CAR usa campo de mensagem com expansão vertical. Configurações do corretor têm layout próprio e tema claro/escuro. Protocolos e Respostas incluem os catálogos dentro do código gerado, sem buscar dados de links. Fonte dos catálogos: kingoffjoss/Meus-Scripts. Preferências e listas personalizadas existentes têm prioridade. Gerenciar Protocolos oferece restaurar padrão, importar e exportar JSON.
