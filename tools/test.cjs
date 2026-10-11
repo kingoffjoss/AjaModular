@@ -14,15 +14,16 @@ function check(name,fn){fn();checks.push(name);}
  check('Module dependency graph, contracts and complete tool coverage',()=>require('./check-modules.cjs')(JSON.parse(read('build-order.json'))));
  const registryErrors=[];const registryEnv={window:{},console:{error:(...x)=>registryErrors.push(x)},document:{documentElement:{dataset:{}}}};
  vm.createContext(registryEnv);vm.runInContext(read('src/core/module-registry.js'),registryEnv);
- const registry=registryEnv.window.AjaModular;let live=1,started=0;
+ const registry=registryEnv.window.AjaModular;let live=1,started=0,shouldFail=true;
  registry.register('shared',[],ctx=>({read:()=>ctx.live}));
- registry.register('broken',[],()=>{throw Error('Fixture failure')});
- registry.register('dependent',['broken'],()=>{throw Error('Should not initialize')});
+ registry.register('broken',[],()=>{if(shouldFail)throw Error('Fixture failure');return {}});
+ registry.register('dependent',['broken'],()=>({}));
  registry.register('healthy',['shared'],ctx=>{started++;return{open:()=>ctx.live}});
  registry.start({get live(){return live}});live=2;
  check('Module failure is contained and shared values remain live',()=>{assert.equal(registry.get('shared').read(),2);assert.equal(registry.open('healthy'),2);assert.equal(registry.status().find(x=>x.id==='dependent').ready,false);assert.equal(registryErrors.length,2);});
  registry.start({get live(){return live}});
  check('Module setup does not duplicate on repeated initialization',()=>assert.equal(started,1));
+ shouldFail=false;registry.retry();check('Retry loads recovered dependencies without restarting healthy modules',()=>{assert.ok(registry.status().every(x=>x.ready));assert.equal(started,1);});
  check('One extractor implementation and one F2 owner',()=>{const bundle=read('runtime/content.bundle.js');assert.equal((bundle.match(/window.executarExtracaoDocumento = function/g)||[]).length,1);assert.ok(!bundle.includes('validarCPF_Ext'));});
  const values=new Map();const storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};
  let calls=[];let responses=[];
@@ -51,6 +52,7 @@ function check(name,fn){fn();checks.push(name);}
  pending[1](response(200,{matches:[{offset:0,length:6,message:'latest'}]}));await second;pending[0](response(200,{matches:[{offset:0,length:5,message:'stale'}]}));await first;assert.equal(checker.errosEncontrados[0].message,'latest');checks.push('Checker discards responses arriving out of order');
  let listener;const bg={URL,Set,Error,String,Object,chrome:{runtime:{onMessage:{addListener:fn=>listener=fn}}},fetch:()=>{throw Error('Unexpected network')}};vm.createContext(bg);vm.runInContext(read('background.js'),bg);let result;listener({action:'fetchAPI',url:'https://evil.example',options:{}},{},r=>result=r);assert.equal(result.success,false);checks.push('Background rejects unlisted hosts');
  checks.push(...require('./test-clock.cjs')());
+ checks.push(...await require('./test-maintenance.cjs')());
  checks.push(...await require('./test-catalogs.cjs')());
  checks.push(...require('./test-tool-visibility.cjs')());
  const report={passed:true,checks,sourceCommit:JSON.parse(read('source-inventory.json')).commit,liveGenesysTest:false,liveGeminiTest:false};fs.writeFileSync(path.join(root,'validation.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
