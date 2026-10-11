@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const prefix='ajamodular:', reserved=prefix+'maintenance:', recovery=reserved+'recovery';
-const arrays=new Set(['quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
+const arrays=new Set(['bau_commandDatabase_v1','quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
 const objects=new Set(['hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
 const extensionKeys=['car_data_v8_master','car_theme_v8','agentName','IA_THEME','geminiHistory','ajamodular_enabled','SHOW_AGENT_TOOLS','MOD_CRONOMETROS','MOD_PAUSAS','MOD_PROTOCOLOS','MOD_RESPOSTAS','MOD_BAR','MOD_IA','MOD_CAR','MOD_ID','MOD_MENU','MOD_CALC'];
 const secret=k=>/api.?key|geminikey|token|password|senha|credential/i.test(k);
@@ -11,6 +11,7 @@ function valid(key,value){
  let parsed;
  if(arrays.has(name)||objects.has(name)){parsed=JSON.parse(value);if(arrays.has(name)&&!Array.isArray(parsed))throw Error('Lista inválida: '+name);if(objects.has(name)&&(!parsed||Array.isArray(parsed)||typeof parsed!=='object'))throw Error('Configuração inválida: '+name);}
  if(name==='pr_protocolos'||name==='qr_quickReplies') {if(parsed.some(x=>!x||typeof x.title!=='string'||typeof x.text!=='string'))throw Error('Catálogo inválido: '+name);}
+ if(name==='bau_commandDatabase_v1'&&parsed.some(group=>!group||typeof group.title!=='string'||!Array.isArray(group.commands)||group.commands.some(c=>!c||typeof c.id!=='string'||typeof c.label!=='string'||!c.os||typeof c.os!=='object'||Array.isArray(c.os)||!Object.keys(c.os).length||Object.entries(c.os).some(([os,cmd])=>!['win','mac','linux'].includes(os)||typeof cmd!=='string'))))throw Error('Catálogo de comandos inválido');
  if(name==='gerenciadorPausas_horarios'&&parsed.some(x=>!x||!/^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora)||typeof x.status!=='string'))throw Error('Horário inválido');
  if(name==='dailyAnalytics_v2_data'&&parsed.conversations!==undefined&&!Array.isArray(parsed.conversations))throw Error('Histórico de conversas inválido');
  if(name==='encerramentoCounters_v4_balao'&&parsed.balao!==undefined&&!Array.isArray(parsed.balao))throw Error('Contadores inválidos');
