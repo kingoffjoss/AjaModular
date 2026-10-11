@@ -1,14 +1,18 @@
 {
-  "version": "1.1.4",
+  "version": "1.2.0",
   "passed": true,
+  "environment": "isolated browser fixture; simulated external services",
   "checks": [
-    "CAR textarea resizes vertically; panel clientWidth equals scrollWidth",
-    "328 embedded protocols render and populate settings",
-    "423 embedded replies populate settings; appearance tab opens",
-    "Checker settings fit dialog and both themes work",
-    "No errors recorded in isolated browser fixture",
-    "Checker settings removed after X and Escape; reopens correctly",
-    "Agent tools remain visible on repeated open and close/reopen correctly"
+    "Backup import, invalid-file rejection and prior-state recovery",
+    "CAR width equals scroll width, vertical textarea resize",
+    "Protocols: 328 items; responses: 46 initial favorites",
+    "Escape closes CAR while the monitor remains visible",
+    "Close/Escape in assistant, central, BAR, agent tools and checker",
+    "Checker settings X removes the dialog",
+    "Agent notes retained after close and reopen",
+    "Monitor styles do not change a platform button with the same close-btn class",
+    "All 32 modules report ready; no current fixture errors",
+    "Unified backup downloaded successfully; no API keys or tokens in exported keys"
   ],
   "liveGenesysTest": false
 }

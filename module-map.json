@@ -305,5 +305,11 @@
     "file": "src/tools/simulacao-desligar.js",
     "after": [],
     "shared": []
+  },
+  {
+    "id": "manutencao",
+    "file": "src/tools/manutencao.js",
+    "after": [],
+    "shared": []
   }
 ]

@@ -89,3 +89,14 @@ Removido o módulo do botão X. AjaModular não acrescenta botão de encerrament
 ## Versão 1.1.7
 
 Botão de simulação de desligar no menu, em módulo separado. Exibe apenas uma mensagem; não encerra conversas e não intercepta requisições.
+
+
+## Versão 1.2.0 — manutenção e recuperação
+
+No menu, abra **Manutenção (⚙️)** para exportar/importar um backup de configurações, catálogos, favoritos, horários e anotações. Chaves de API não são exportadas. A importação valida o arquivo inteiro antes de alterar dados, mantém entradas ausentes e preserva uma cópia do estado anterior. Use “Recuperar antes da última importação” e recarregue a página para aplicar. Dados do CAR salvos pela extensão também são incluídos; importe esses backups pela extensão.
+
+Dados inválidos conhecidos são preservados separadamente e podem ser exportados para revisão. O diagnóstico mostra quais módulos carregaram e permite tentar novamente os que falharam, mantendo os módulos saudáveis.
+
+Os estilos das ferramentas são delimitados às próprias janelas. Esc fecha a janela em primeiro plano por seu controle de fechamento; redimensionar a tela reposiciona janelas fora dos limites. Os cronômetros das conversas são atualizados ao retornar à aba e não mostram duração negativa.
+
+Arquivos de manutenção: `src/core/data-safety.js`, `src/tools/manutencao.js`, `src/ui/window-service.js` e `src/core/module-registry.js`. Execute `npm run build` e `npm test` antes de publicar. O teste de interface usa `tests/fixture.html`; a validação em atendimento real continua necessária.
