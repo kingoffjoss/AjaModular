@@ -12,6 +12,7 @@ const catalogs = {
 for (const [name, items] of Object.entries(catalogs)) {
  if (!Array.isArray(items) || !items.length || items.some(item => typeof item.title !== 'string' || typeof item.text !== 'string')) throw new Error('Invalid or empty catalog: '+name);
 }
+catalogs.bau = ['legacy','windows','linux','macos'].flatMap(name => JSON.parse(read('src/catalogs/bau/'+name+'.json')));
 const readModule = item => read(item.file).replace(/\/\* bundled-defaults:(\w+) \*\/ \[\]/g, (_, name) => JSON.stringify(catalogs[name]));
 // Tool factories are independently scoped; only shared core fragments retain lexical scope.
 const code = '(function(){ if(window.__AJA_MODULAR_RUNTIME__) return; window.__AJA_MODULAR_RUNTIME__=true;\n' + read('src/core/data-safety.js') + '\n' + read('src/core/module-registry.js') + '\n' + read('src/corretor/services.js') + '\n' + order.modules.map(readModule).join('\n') + '\n' + order.core.map(read).join('\n') + '\n' + order.enhancements.map(read).join('\n') + '\n' + read('src/ui/layout.js') + '\n' + read('src/ui/window-service.js') + '\n})();';

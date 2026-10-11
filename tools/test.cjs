@@ -54,6 +54,8 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...require('./test-clock.cjs')());
  checks.push(...await require('./test-maintenance.cjs')());
  checks.push(...await require('./test-catalogs.cjs')());
+ checks.push(...require('./test-bau.cjs')());
  checks.push(...require('./test-tool-visibility.cjs')());
  const report={passed:true,checks,sourceCommit:JSON.parse(read('source-inventory.json')).commit,liveGenesysTest:false,liveGeminiTest:false};fs.writeFileSync(path.join(root,'validation.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
