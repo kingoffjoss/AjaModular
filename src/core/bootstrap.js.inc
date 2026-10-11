@@ -1,6 +1,6 @@
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.7)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.2.0)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -16,13 +16,13 @@
 
 (function () {
     'use strict';
-const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
-const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
+const ajaStorage = window.AjaModularData.adapter(window.localStorage);
+const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.1.7';
+    const SCRIPT_VERSION = 'AjaModular_1.2.0';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {

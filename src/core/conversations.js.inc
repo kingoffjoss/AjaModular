@@ -13,6 +13,7 @@
     function updateTimerDisplay(timerData) {
         if (!timerData.div?.isConnected || !timerData.numDiv?.isConnected || !timerData.bubblesContainer?.isConnected) { return; }
         let currentElapsed; if (timerData.isPaused) { currentElapsed = timerData.pausedAt - timerData.startTime; } else { currentElapsed = Date.now() - timerData.startTime; }
+        currentElapsed = Math.max(0, currentElapsed);
         const secs = Math.floor(currentElapsed / 1000); timerData.div.textContent = `${formatTime(Math.floor(secs / 60))}:${formatTime(secs % 60)}`;
         timerData.div.classList.remove('paused-alert', 'inactive-client-alert', 'normal-timer', 'inactive-operator-alert'); timerData.div.style.removeProperty('animation');
 
@@ -50,8 +51,11 @@
 
     const timerManager = {
         globalIntervalId: null,
+        refreshAll() { conversationTimers.forEach(updateTimerDisplay); },
         startGlobalTimer() {
             if (!this.globalIntervalId) {
+                document.addEventListener('visibilitychange', () => { if (!document.hidden) this.refreshAll(); });
+                window.addEventListener('pageshow', () => this.refreshAll());
                 this.globalIntervalId = setInterval(() => {
                     conversationTimers.forEach((tData) => {
                         updateTimerDisplay(tData);
