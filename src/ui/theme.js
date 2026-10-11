@@ -1,7 +1,7 @@
 (function aplicarTemaBrisanetGlobal() {
     'use strict';
-const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
-const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
+const ajaStorage = window.AjaModularData.adapter(window.localStorage);
+const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
 
     const STYLE_ID = 'aja-brisanet-theme-patch';
