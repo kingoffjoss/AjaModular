@@ -1,0 +1,42 @@
+{
+  "core": [
+    "src/core/bootstrap.js.inc",
+    "src/core/lifecycle.js.inc",
+    "src/core/effects.js.inc",
+    "src/core/configuration.js.inc",
+    "src/core/storage-analytics.js.inc",
+    "src/core/dom.js.inc",
+    "src/core/templates.js.inc",
+    "src/tools/analytics.js.inc",
+    "src/core/chat.js.inc",
+    "src/core/conversations.js.inc",
+    "src/core/toolbar.js.inc",
+    "src/core/interface.js.inc",
+    "src/ui/styles.js.inc",
+    "src/core/styles.js.inc",
+    "src/core/sync-initialization.js.inc",
+    "src/tools/compatibility.js.inc",
+    "src/tools/bar.js.inc",
+    "src/tools/extrator.js.inc",
+    "src/tools/espelho.js.inc",
+    "src/tools/protocolos.js.inc",
+    "src/tools/respostas.js.inc",
+    "src/tools/pausas.js.inc",
+    "src/tools/car.js.inc",
+    "src/tools/ia.js.inc",
+    "src/tools/monitor.js.inc",
+    "src/tools/corretor.js.inc",
+    "src/tools/ferramentas.js.inc",
+    "src/tools/central.js.inc",
+    "src/tools/menu.js.inc",
+    "src/tools/gerente.js.inc",
+    "src/core/closure.js.inc",
+    "src/ui/windows.js.inc"
+  ],
+  "enhancements": [
+    "src/corretor/panel.js",
+    "src/corretor/interaction.js",
+    "src/corretor/dictionary.js",
+    "src/ui/theme.js"
+  ]
+}

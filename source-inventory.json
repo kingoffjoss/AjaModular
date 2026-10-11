@@ -1,0 +1,203 @@
+{
+  "commit": "e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b",
+  "modules": [
+    {
+      "module": "core/bootstrap",
+      "start": 1,
+      "end": 66,
+      "sha256": "98ec4b16fbca72602f1db6aef3294968dfa42fd5cf4ea3cda8d4a7e46c0b99d5"
+    },
+    {
+      "module": "core/lifecycle",
+      "start": 67,
+      "end": 77,
+      "sha256": "d105afbb41f762bef17ccb1e6d71424928a402b12ed49cc7f5272a8e20047170"
+    },
+    {
+      "module": "core/effects",
+      "start": 78,
+      "end": 132,
+      "sha256": "8287e05b76dc48e12ef86fe55933b8e0b12765d2a5a89e8387531b6b768d0f3a"
+    },
+    {
+      "module": "core/configuration",
+      "start": 133,
+      "end": 206,
+      "sha256": "bd806255d17eeddf5a2d48048572ca0314c1e7811e23aec0a429c81365de45fe"
+    },
+    {
+      "module": "core/storage-analytics",
+      "start": 207,
+      "end": 287,
+      "sha256": "dd29e5792f60174a7cd0166e0e10eb4aa35976550418b7e4fcc3e8b33248013f"
+    },
+    {
+      "module": "core/dom",
+      "start": 288,
+      "end": 336,
+      "sha256": "7cc779faee375e71079543bf38737a002fb10642ba2d216c8942f0e233b32916"
+    },
+    {
+      "module": "core/templates",
+      "start": 337,
+      "end": 468,
+      "sha256": "0ee817cc2af3bcdb89c2091994cf16f814f1cb4de9eb6eb24323a9ea699ebeda"
+    },
+    {
+      "module": "tools/analytics",
+      "start": 469,
+      "end": 519,
+      "sha256": "fe00f804f548425e9a5be3993e40a774d04ee1dd54405bf561023c3da7259e0e"
+    },
+    {
+      "module": "core/chat",
+      "start": 520,
+      "end": 574,
+      "sha256": "011d551b4585fed61ae61905ffe532a469669ce9588cc7df4bb3bd5f517ef63a"
+    },
+    {
+      "module": "core/conversations",
+      "start": 575,
+      "end": 717,
+      "sha256": "c5036e2780b4ece8940c77d9c77e7164239488e38a105823d39f1d92e91d2c7b"
+    },
+    {
+      "module": "core/toolbar",
+      "start": 718,
+      "end": 736,
+      "sha256": "396ef50b868bd5ab7e0ef6b9bbb464b3b0cff7f5502ef8b354cd7f7e9af8201e"
+    },
+    {
+      "module": "core/interface",
+      "start": 737,
+      "end": 1232,
+      "sha256": "953339722cd76244d092aa9c2c6d5bce4bba28f77d5f2a86a1221df1fe2f0e2e"
+    },
+    {
+      "module": "ui/styles",
+      "start": 1233,
+      "end": 1433,
+      "sha256": "9aa89d0eac87654f106ccd9dcee8aaf997981c92764bd4ffaac9b6314ae4b75a"
+    },
+    {
+      "module": "core/styles",
+      "start": 1434,
+      "end": 1459,
+      "sha256": "318a8ae41cf4f8153a74ddaff45ca07409a70f42686f3c4c3af6b7e46fe58d2a"
+    },
+    {
+      "module": "core/spell-legacy",
+      "start": 1460,
+      "end": 1656,
+      "sha256": "d566bf33f64bdb0773e0ea17edd94f163ea116393bb26b6dcda273525a520898"
+    },
+    {
+      "module": "core/sync-initialization",
+      "start": 1657,
+      "end": 1745,
+      "sha256": "3d7433a9c8d035613935fd21299db7fb57a8bd8b4a93e44a7c4ae842eb22b154"
+    },
+    {
+      "module": "tools/compatibility",
+      "start": 1746,
+      "end": 1827,
+      "sha256": "491a6ff005393ba53b0d64f8ededc58e1c2391df0bfe33c44fa9d907e519fe41"
+    },
+    {
+      "module": "tools/bar",
+      "start": 1828,
+      "end": 3293,
+      "sha256": "3192dbc2c6e686b83e74175f19519fd7b0ef91a847a0c92e2467edd76eeb277e"
+    },
+    {
+      "module": "tools/extrator",
+      "start": 3294,
+      "end": 3491,
+      "sha256": "d6c653ee4f697ecf7c21cda5a19be8f6c67f40d4e23b0c4ee98dd514a257e3ba"
+    },
+    {
+      "module": "tools/espelho",
+      "start": 3492,
+      "end": 3589,
+      "sha256": "c5c58057a6addf0f39b6314a8de72f42d6e307227d123350cbb793891eea9156"
+    },
+    {
+      "module": "tools/protocolos",
+      "start": 3590,
+      "end": 4363,
+      "sha256": "a74634deec2f8dee95abb1e6cfa0476992541b34b2a9a557c7d4e3ef1a3fe4d2"
+    },
+    {
+      "module": "tools/respostas",
+      "start": 4364,
+      "end": 4923,
+      "sha256": "57676e4cd29b4f1081c52758077fe758daaa827ca87ad7b6a45a1b747c028cd2"
+    },
+    {
+      "module": "tools/pausas",
+      "start": 4924,
+      "end": 6229,
+      "sha256": "a7ed46ac1261632105588994313f8ab9cdb50acfd6d4e7fda8fd3c567886be56"
+    },
+    {
+      "module": "tools/car",
+      "start": 6230,
+      "end": 6629,
+      "sha256": "733b5c65b12e2de179e7cd96fb859dc8b3329b32a21fa9c3cbc2f15b0d292313"
+    },
+    {
+      "module": "tools/ia",
+      "start": 6630,
+      "end": 7563,
+      "sha256": "8179b00e8235358147845de98b118d2319fce573b47656246816cd46ff804a85"
+    },
+    {
+      "module": "tools/monitor",
+      "start": 7564,
+      "end": 7881,
+      "sha256": "a5830c0ea814961a5939af32bf2c8c9a78232d2ffd3e4587adb4b1d7029cc5f3"
+    },
+    {
+      "module": "tools/corretor",
+      "start": 7882,
+      "end": 8344,
+      "sha256": "025decce46af895e944dbaaafa9561fb170e681e103c7df7c18b00ba0c87ceb0"
+    },
+    {
+      "module": "tools/ferramentas",
+      "start": 8345,
+      "end": 8757,
+      "sha256": "a5184a187e024c6ad23109a0df3a872d2d8e35d1354ac64bb7ae67aa68faec42"
+    },
+    {
+      "module": "tools/central",
+      "start": 8758,
+      "end": 9152,
+      "sha256": "8c0796ea7097478ee4d46882bac775ca81b2af678667eb0675ba0d6e8eb7016b"
+    },
+    {
+      "module": "tools/menu",
+      "start": 9153,
+      "end": 9681,
+      "sha256": "831f376deaa1668aad1478aa2fce4eb8e473a852886a1ce7a8b0d3b567097a70"
+    },
+    {
+      "module": "tools/gerente",
+      "start": 9682,
+      "end": 9751,
+      "sha256": "0da0283d6daa9c4e86479ca6be7b49dc173b8ca0c147e9ed703472ebe919a225"
+    },
+    {
+      "module": "core/closure",
+      "start": 9752,
+      "end": 9753,
+      "sha256": "5117ac9929d3c6690b9b6d55b6d3b6fad6fd495f9b267dd4e95d8032c20505fa"
+    },
+    {
+      "module": "ui/windows",
+      "start": 9754,
+      "end": 9787,
+      "sha256": "806eae993fd5580331c1c1c6042398ca2fcf37475a62c36712c39c4a292b5c31"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AjaModular</title>
+    <style>
+        body { width: 250px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; margin: 0; background: #0F2742; color: #fff; text-align: center; }
+        h3 { margin-top: 0; color: #0057B8; }
+        p { font-size: 13px; color: #aaa; margin-bottom: 20px; }
+        button { background: #0057B8; color: white; border: none; padding: 10px 15px; width: 100%; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; margin-bottom: 10px; transition: 0.2s; }
+        button:hover { background: #003B7A; }
+        .danger { background: #FF8200; }
+        .danger:hover { background: #D96B00; }
+        .success { background: #FF8200; }
+        .success:hover { background: #D96B00; }
+        #status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #0057B8; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h3><span id="status-indicator"></span>AjaModular</h3>
+    <p>Suite de Produtividade Genesys</p>
+    
+    <button id="btn-toggle">Desativar Temporariamente</button>
+    <button id="btn-admin" class="success">Acessar Admin Dashboard</button>
+    <button id="btn-reload" class="danger">Recarregar Genesys</button>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
