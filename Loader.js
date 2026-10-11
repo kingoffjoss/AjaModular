@@ -17,7 +17,7 @@
             documents.add(doc);
             const script = doc.createElement('script');
             script.id = 'ajamodular-runtime';
-            script.src = base + 'runtime/content.bundle.js?v=1.2.0';
+            script.src = base + 'runtime/content.bundle.js?v=1.3.0';
             script.onerror = () => {
                 documents.delete(doc); failures.set(doc,(failures.get(doc)||0)+1); script.remove();
                 console.warn('[AjaModular] Falha no carregamento. Verifique rede, publicação e CSP.');

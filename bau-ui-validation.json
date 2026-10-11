@@ -1,0 +1,18 @@
+{
+  "version": "1.3.0",
+  "passed": true,
+  "isolatedFixture": true,
+  "commandsExecutedOnClient": false,
+  "checks": [
+    "33 módulos carregados sem erros",
+    "Busca Windows: dns ipv6 retorna 2 de 154 comandos",
+    "Cópia AAAA corresponde exatamente ao comando exibido",
+    "Busca sem acento: sincronizacao funciona em Linux e macOS",
+    "Pesquisa preservada ao trocar o sistema",
+    "Filtro macOS Acesso remoto e segurança: 11 de 145",
+    "Pesquisa sem resultados mostra mensagem",
+    "Importação do formato antigo validada e preservada após recarregar",
+    "Restauração recupera 154 comandos padrão Windows",
+    "154 modelos PowerShell analisados pelo Parser sem executar"
+  ]
+}

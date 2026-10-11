@@ -133,10 +133,17 @@
     ]
   },
   {
+    "id": "bau-catalogo",
+    "file": "src/tools/bau-catalogo.js",
+    "after": [],
+    "shared": []
+  },
+  {
     "id": "bar",
     "file": "src/tools/bar.js",
     "after": [
-      "compatibility"
+      "compatibility",
+      "bau-catalogo"
     ],
     "shared": [
       "ajaStorage",

@@ -100,3 +100,25 @@ Dados inválidos conhecidos são preservados separadamente e podem ser exportado
 Os estilos das ferramentas são delimitados às próprias janelas. Esc fecha a janela em primeiro plano por seu controle de fechamento; redimensionar a tela reposiciona janelas fora dos limites. Os cronômetros das conversas são atualizados ao retornar à aba e não mostram duração negativa.
 
 Arquivos de manutenção: `src/core/data-safety.js`, `src/tools/manutencao.js`, `src/ui/window-service.js` e `src/core/module-registry.js`. Execute `npm run build` e `npm test` antes de publicar. O teste de interface usa `tests/fixture.html`; a validação em atendimento real continua necessária.
+
+
+### Baú: catálogo de comandos (1.3.0)
+
+A aba **Comandos** reúne 154 comandos Windows, 144 Linux e 145 macOS. Foram acrescentados 100, 103 e 106, respectivamente. Cada item informa finalidade, resultado esperado, terminal, requisitos e efeitos relevantes. O catálogo é incorporado ao bundle: não precisa buscar arquivos externos para aparecer.
+
+Use Win/Mac/Lin no cabeçalho e pesquise por nome, comando, finalidade ou resultado, com ou sem acento. O filtro por categoria combina com a busca. O Baú só copia o comando: substitua os campos HOST, PORTA, CAMINHO, INTERFACE, SERVICO etc. antes de colar no terminal remoto. As saídas descritas são esperadas, não resultados de uma execução no computador do cliente.
+
+Manutenção:
+
+- `src/catalogs/bau/windows.json`, `linux.json`, `macos.json`: comandos novos organizados por categoria.
+- `src/catalogs/bau/legacy.json`: comandos anteriores revisados, com metadados por sistema.
+- `src/catalogs/bau/review.json`: registro das principais substituições na revisão.
+- `src/tools/bau-catalogo.js`: validação e pesquisa.
+- `src/tools/bar.js`: interface, cópia, importação/exportação e filtros.
+- `tools/test-bau.cjs`: contagens, unicidade, metadados, busca e validação.
+
+A importação continua aceitando o formato antigo `{title,commands:[{id,label,desc,os:{win,linux,mac}}]}` e passa a validar registros e guardar o catálogo no navegador. A opção Restaurar catálogo padrão remove a personalização importada; o backup geral inclui o catálogo salvo. Importações antigas sem metadados mostram explicitamente que finalidade ou resultado não foram informados.
+
+Na revisão, consultas WMIC foram substituídas por CIM, a limpeza de DNS Linux usa resolvectl, ferramentas privadas/legadas do macOS deram lugar às alternativas descritas em cada item, e a definição de velocidade no Windows usa Set-NetAdapterAdvancedProperty. Os valores de velocidade dependem do driver e precisam ser obtidos pelas propriedades da própria placa. A variante macOS de liberar IP foi removida porque repetia a renovação DHCP.
+
+Referências de revisão: [comandos Windows](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands), [NetAdapter](https://learn.microsoft.com/en-us/powershell/module/netadapter/set-netadapteradvancedproperty), [NetworkManager](https://networkmanager.dev/docs/api/latest/nmcli.html), [systemd](https://www.freedesktop.org/software/systemd/man/255/journalctl.html), [curl](https://curl.se/docs/manpage.html), [OpenSSH](https://man.openbsd.org/ssh), [Terminal Apple](https://support.apple.com/guide/terminal/welcome/mac), [network_cmds Apple](https://github.com/apple-oss-distributions/network_cmds) e [system_cmds Apple](https://github.com/apple-oss-distributions/system_cmds). Ferramentas opcionais, edições Windows, distribuições Linux, drivers e permissões variam; os requisitos de cada item explicitam esses casos. Nenhum comando de manutenção foi executado em computadores reais durante a validação do catálogo.
