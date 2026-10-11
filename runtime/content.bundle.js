@@ -122,6 +122,7 @@ window.AjaModular = Object.freeze({register, start, get, open, status});
         style.textContent = `
             #ajamodular-settings {z-index:2147483647;position:fixed;inset:0;margin:auto;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;border:1px solid #ff8200;border-radius:14px;padding:0;background:#102a47;color:#fff;font:14px/1.5 'Segoe UI',sans-serif;box-shadow:0 20px 60px #0008;}
             #ajamodular-settings::backdrop {background:#00152d66;}
+            #ajamodular-settings:not([open]) {display:none!important;}
             #ajamodular-settings, #ajamodular-settings * {box-sizing:border-box;}
             #ajamodular-settings header {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:linear-gradient(110deg,#0057b8,#ff8200);color:#fff;}
             #ajamodular-settings h2 {margin:0;color:inherit;font:700 17px 'Segoe UI',sans-serif;}
@@ -144,7 +145,9 @@ window.AjaModular = Object.freeze({register, start, get, open, status});
         const status = modal.querySelector('#am-status');
         modal.querySelector('#am-save').onclick = () => { storage.setItem(key('aja_voice_gemini_api_key'), input.value.trim()); storage.removeItem(key('aja_voice_gemini_model')); status.textContent='Chave salva.'; };
         modal.querySelector('#am-remove').onclick = () => { input.value=''; storage.removeItem(key('aja_voice_gemini_api_key')); storage.removeItem(key('aja_voice_gemini_model')); status.textContent='Chave removida.'; };
-        modal.querySelector('#am-close').onclick = () => modal.close();
+        const closeSettings = () => { modal.close(); modal.remove(); };
+        modal.querySelector('#am-close').onclick = event => { event.preventDefault(); event.stopPropagation(); closeSettings(); };
+        modal.addEventListener('cancel', event => { event.preventDefault(); closeSettings(); });
         const setTheme = theme => {
             storage.setItem(key('aja_voice_panel_theme'), theme); modal.dataset.theme = theme;
             const panel = document.getElementById('spell-main-panel');
@@ -369,7 +372,7 @@ ctx.UI.createSettingsPanel = implementation.createSettingsPanel;
 
 window.AjaModular.register('ui-createAgentToolsPanel', [], function(ctx) {
     ctx.UI.createAgentToolsPanel = function() {
-        if (!ctx.CONFIG.TOOLS_VISIBLE) { document.getElementById('purecloud-script-tools-panel')?.remove(); return; }
+        if (!ctx.CONFIG.TOOLS_VISIBLE) { return window.AjaModular.get('ferramentas')?.close(); }
         return window.AjaModular.open('ferramentas');
     };
 });
@@ -7236,7 +7239,7 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
 return { open() { window.AjaModularSetupSpell?.(); return window.toggleCorretorAja?.(); } };
 });
 
-// Shared dependencies: ajaStorage
+// Shared dependencies: ajaStorage, CONFIG, saveData
 window.AjaModular.register("ferramentas", ["compatibility","notepad","extrator","historico-documentos","links-uteis","lembretes"], function(ctx) {
     /* --- MÓDULO ANEXADO: FERRAMENTAS.JS --- */
     try {
@@ -7419,8 +7422,7 @@ window.AjaModular.register("ferramentas", ["compatibility","notepad","extrator",
                         panel.style.left = '100px';
 
                         panel.querySelector('#closeToolsBtn').onclick = () => { 
-                            panel.style.display = 'none'; 
-                            if (window.spellCheckerModule) window.spellCheckerModule.ocultarTudo();
+                            window.AjaModular.get('ferramentas').close();
                         };
 
                         const USEFUL_LINKS = [
@@ -7444,8 +7446,9 @@ const switchToolsTab = (tabId) => {
 window.AjaModular.get('links-uteis').mount(panel, USEFUL_LINKS);
 window.AjaModular.get('lembretes').mount(panel, notify);
                     } else {
-                        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+                        panel.style.display = 'flex';
                     }
+                    return panel;
                 }
             };
         })();
@@ -7454,7 +7457,13 @@ window.AjaModular.get('lembretes').mount(panel, notify);
 
 
 
-return { open() { return window.UI_tools.createAgentToolsPanel(); } };
+function setVisible(visible) {
+    if (ctx.CONFIG.TOOLS_VISIBLE !== visible) { ctx.CONFIG.TOOLS_VISIBLE = visible; ctx.saveData(); }
+}
+return {
+    open() { setVisible(true); return window.UI_tools.createAgentToolsPanel(); },
+    close() { setVisible(false); const panel = document.getElementById('purecloud-script-tools-panel'); if (panel) panel.style.display = 'none'; }
+};
 });
 
 // Shared dependencies: ajaStorage
@@ -8501,7 +8510,7 @@ window.AjaModular.register('relogio', [], function() {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.3)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.4)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8523,7 +8532,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.1.3';
+    const SCRIPT_VERSION = 'AjaModular_1.1.4';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
