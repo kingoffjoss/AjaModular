@@ -637,7 +637,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
             let dragStartX = 0, dragStartY = 0, previousUserSelect = '', previousDragTransition = '';
             function dragMouseDown(e) {
-                if(e.button !== 0 || e.target.closest('button, input, textarea, select, a, [id^="btn-"]')) return;
+                if(e.button !== 0 || e.target.closest('button, input, textarea, select, a, [id^="btn-"], #config-btn-theme')) return;
                 const panel=e.target.closest('#pausa-script-container, #pausa-script-config-container');
                 if(!panel || !e.target.closest('#pausa-script-header, #pausa-script-config-header, #pausa-script-icone')) return;
                 const rect=panel.getBoundingClientRect();
@@ -917,7 +917,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
                 c.addEventListener('click', function (e) {
                     if (isDragging) { isDragging = false; return; }
-                    const t = e.target.closest('button'), n = e.target.closest('span#btn-minimizar, span#btn-abrir-config'), o = e.target.closest('div#pausa-script-icone'); let l = t || n || o; if (!l) return;
+                    const t = e.target.closest('button'), n = e.target.closest('span#btn-minimizar, span#btn-abrir-config, span#btn-tema-gerenciador'), o = e.target.closest('div#pausa-script-icone'); let l = t || n || o; if (!l) return;
                     const d = document.getElementById('pausa-script-conteudo');
                     if (o && d && d.style.display === 'none') { toggleVisibilidade(); return; }
                     const a = document.getElementById('pausa-script-header');
@@ -1187,6 +1187,15 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
         `;
 
                 const hC = cC.querySelector('#pausa-script-config-header'); if (hC) hC.onmousedown = dragMouseDown;
+                const configThemeButton = cC.querySelector('#config-btn-theme');
+                if (configThemeButton) configThemeButton.onclick = () => {
+                    const isLight = cC.classList.toggle('local-light-mode');
+                    cC.classList.toggle('cc-escurinho', !isLight);
+                    cC.classList.remove('gcp-tema-escuro');
+                    ctx.ajaStorage.setItem('GERCONFIG_THEME', isLight ? 'light' : 'dark');
+                    configThemeButton.textContent = isLight ? '☀️' : '🌗';
+                    configThemeButton.title = isLight ? 'Mudar para Tema Escuro' : 'Mudar para Tema Claro';
+                };
                 const bF = cC.querySelector('#btn-fechar-config'); if (bF) bF.onclick = toggleVisibilidadeConfig;
                 const bV = cC.querySelector('#btn-verificar-seletores'); if (bV) bV.onclick = verificarSeletoresEAtualizarUI;
                 const bA = cC.querySelector('#btn-adicionar-horario'); if (bA) bA.onclick = adicionarNovoHorario;
