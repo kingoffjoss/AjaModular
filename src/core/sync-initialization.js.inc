@@ -78,7 +78,7 @@
         }
     }
 
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initialize); } else { initialize(); }
+    // Shared initialization runs after module setup.
 
 
     /* ============================================================== 
