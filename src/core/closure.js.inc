@@ -1,0 +1,2 @@
+    } // Fim startScript()
+})();
