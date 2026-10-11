@@ -25,7 +25,6 @@
         },
         openSettings: () => UI.createSettingsPanel(),
         toggleMiniDashboard: () => { const dashboard = document.getElementById('purecloud-script-mini-dashboard'); if (dashboard) { clearInterval(dashboard._updateInterval); dashboard.remove(); CONFIG.MINI_DASHBOARD_VISIBLE = false; saveData(); } else { CONFIG.MINI_DASHBOARD_VISIBLE = true; saveData(); UI.createMiniDashboard(); } },
-        toggleLock: () => { const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP); if (!selectedConvEl) { UI.createNotification("Selecione uma conversa para destravar.", "warn"); return; } conversationLockManager.toggleLock(selectedConvEl); },
         toggleDarkMode: () => {
             CONFIG.DARK_MODE = !CONFIG.DARK_MODE;
             saveData();

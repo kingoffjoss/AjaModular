@@ -1,4 +1,4 @@
-    const LOCKDOWN_CONFIG = { REQUIRED_CLICKS: 5, END_CHAT_BUTTON_SELECTOR: ['#call-control-end-sms-button', 'button[aria-label="Mensagens de término"]'], BALAO_BUTTON_SELECTOR_V4: 'button[aria-label="Mensagens de término"]' };
+    const LOCKDOWN_CONFIG = { END_CHAT_BUTTON_SELECTOR: ['#call-control-end-sms-button', 'button[aria-label="Mensagens de término"]'], BALAO_BUTTON_SELECTOR_V4: 'button[aria-label="Mensagens de término"]' };
 
     // --- VARIÁVEIS E LINKS ÚTEIS ---
     const initialQuickReplies = [
@@ -55,7 +55,7 @@
         SOUND_ALERTS_ENABLED: ajaStorage.getItem('soundAlertsEnabled') !== 'false',
         QUICK_REPLIES: JSON.parse(ajaStorage.getItem('quickReplies')) || initialQuickReplies,
         // --- NOVOS ATALHOS ADICIONADOS AQUI ---
-        HOTKEYS: JSON.parse(ajaStorage.getItem('hotkeys')) || { copyInteraction: "Control+Shift+I", openSettings: "Control+Shift+S", toggleMiniDashboard: "Control+Shift+J", toggleLock: "Control+Shift+L", toggleDarkMode: "Control+Shift+D", quickGreeting: "Control+Shift+Q", exportData: "Control+Shift+E", toggleZenMode: "Control+Shift+Z", formatText: "Control+Shift+M" },
+        HOTKEYS: JSON.parse(ajaStorage.getItem('hotkeys')) || { copyInteraction: "Control+Shift+I", openSettings: "Control+Shift+S", toggleMiniDashboard: "Control+Shift+J", toggleDarkMode: "Control+Shift+D", quickGreeting: "Control+Shift+Q", exportData: "Control+Shift+E", toggleZenMode: "Control+Shift+Z", formatText: "Control+Shift+M" },
         THEME_COLORS: JSON.parse(ajaStorage.getItem('gcp_themeColors_v2')) || JSON.parse(ajaStorage.getItem('timerColors')) || defaultThemeColors,
         LAST_SCRIPT_VERSION: ajaStorage.getItem('lastScriptVersion') || '0', POPUP_POSITIONS: JSON.parse(ajaSessionStorage.getItem('popupPositions') || '{}'),
         MINI_DASHBOARD_VISIBLE: ajaSessionStorage.getItem('miniDashboardVisible') !== 'false', MINI_DASHBOARD_MAXIMIZED: ajaSessionStorage.getItem('miniDashboardMaximized') === 'true', TOOLS_VISIBLE: ajaSessionStorage.getItem('toolsVisible') === 'true',
@@ -67,7 +67,7 @@
     };
 
     const featureDescriptions = {
-        copyInteraction: { title: "Copiar Interação", description: "Copia nome, telefone e link.", hotkey: CONFIG.HOTKEYS.copyInteraction }, openSettings: { title: "Configurações", description: "Abre o painel de configurações.", hotkey: CONFIG.HOTKEYS.openSettings }, toggleMiniDashboard: { title: "Alternar Dashboard", description: "Oculta ou mostra o dashboard.", hotkey: CONFIG.HOTKEYS.toggleMiniDashboard }, toggleLock: { title: "Trava de Encerramento", description: "Adiciona escudo contra encerramento.", hotkey: CONFIG.HOTKEYS.toggleLock }, toggleDarkMode: { title: "Modo Escuro (Script)", description: "Ativa o tema escuro nos cronômetros.", hotkey: CONFIG.HOTKEYS.toggleDarkMode }, quickGreeting: { title: "Saudação Rápida", description: "Cola sua primeira Resposta Rápida.", hotkey: CONFIG.HOTKEYS.quickGreeting }, exportData: { title: "Exportar Atendimentos", description: "Baixa os dados do dia.", hotkey: CONFIG.HOTKEYS.exportData },
+        copyInteraction: { title: "Copiar Interação", description: "Copia nome, telefone e link.", hotkey: CONFIG.HOTKEYS.copyInteraction }, openSettings: { title: "Configurações", description: "Abre o painel de configurações.", hotkey: CONFIG.HOTKEYS.openSettings }, toggleMiniDashboard: { title: "Alternar Dashboard", description: "Oculta ou mostra o dashboard.", hotkey: CONFIG.HOTKEYS.toggleMiniDashboard }, toggleDarkMode: { title: "Modo Escuro (Script)", description: "Ativa o tema escuro nos cronômetros.", hotkey: CONFIG.HOTKEYS.toggleDarkMode }, quickGreeting: { title: "Saudação Rápida", description: "Cola sua primeira Resposta Rápida.", hotkey: CONFIG.HOTKEYS.quickGreeting }, exportData: { title: "Exportar Atendimentos", description: "Baixa os dados do dia.", hotkey: CONFIG.HOTKEYS.exportData },
         toggleZenMode: { title: "Modo Foco (Zen)", description: "Escurece a tela e foca apenas no chat atual.", hotkey: CONFIG.HOTKEYS.toggleZenMode }, formatText: { title: "Mágico Anti-Caps Lock", description: "Corrige texto MAIÚSCULO para Minúsculo.", hotkey: CONFIG.HOTKEYS.formatText }
     };
 

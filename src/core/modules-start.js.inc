@@ -17,7 +17,7 @@ Object.defineProperties(moduleContext, {
 "applyGenesysDarkMode": { get: () => applyGenesysDarkMode },
 "autoRestoreFromCloud": { get: () => autoRestoreFromCloud },
 "buildSpellOverlayHTML": { get: () => buildSpellOverlayHTML },
-"conversationLockManager": { get: () => conversationLockManager },
+"conversationListenerManager": { get: () => conversationListenerManager },
 "conversationTimers": { get: () => conversationTimers },
 "copyTextToClipboard": { get: () => copyTextToClipboard },
 "createToolbarUI": { get: () => createToolbarUI },
