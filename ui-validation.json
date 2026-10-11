@@ -1,0 +1,18 @@
+{
+  "environment": "Chromium in-app browser, isolated local fixture, simulated fetch responses",
+  "passed": [
+    "Repeated runtime script produces a single spell panel",
+    "Menu opens after clock initialization, without overlap",
+    "Spell panel opens from menu",
+    "Personal word can be added and removed",
+    "Removed dictionary word returns to spelling results",
+    "Error counter and Fix All enablement reflect current results",
+    "Single settings dialog opens and closes",
+    "Voice tab opens with editable transcript",
+    "CAR command can be saved and expands after Space",
+    "Assistant setup opens",
+    "Queue monitor opens",
+    "BAR command interface opens"
+  ],
+  "not_tested": ["Production Genesys DOM", "Real Gemini key", "Microphone permission and speech recognition", "All legacy workflows"]
+}

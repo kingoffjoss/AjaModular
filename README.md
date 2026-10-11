@@ -50,7 +50,7 @@ Não há captura de tokens Genesys nem ocultação de auditoria na nova implemen
 
 `validation.json` registra verificações de sintaxe, referências do manifesto, unicidade de corretor/configurações, isolamento, dicionário, seleção de modelos Gemini e restrição de hosts do background. `tests/fixture.html` permite testar a interface com respostas simuladas, sem conta Genesys ou chamadas externas.
 
-Também foram verificados no navegador: menu, janela do corretor, adicionar palavra ao dicionário, configurações e aba de voz. O runtime foi carregado duas vezes no teste, mantendo uma única janela.
+Também foram verificados no navegador: menu após iniciar o relógio, janela do corretor, adicionar/remover palavra e retornar alertas, configurações, aba de voz, criação e expansão de atalho CAR, abertura do Assistant e monitor de filas. O runtime foi carregado duas vezes no teste, mantendo uma única janela. `ui-validation.json` registra esses cenários.
 
 Não houve login no Genesys, teste real com chave Gemini, uso de microfone nem validação completa contra o DOM de produção. Faça uma rodada de aceite no seu ambiente com esta versão em uma aba separada antes de adotá-la diariamente.
 

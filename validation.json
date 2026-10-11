@@ -14,6 +14,7 @@
     "Personal dictionary suppresses spelling only",
     "Gemini uses compatible ListModels and header authentication",
     "Gemini rejects access failure without guessed models",
+    "Checker discards responses arriving out of order",
     "Background rejects unlisted hosts"
   ],
   "sourceCommit": "e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b",
