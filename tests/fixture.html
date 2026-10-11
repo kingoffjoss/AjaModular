@@ -1,0 +1,7 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>AjaModular — Teste isolado</title><style>body{font:16px system-ui;margin:30px}textarea{width:550px;height:100px}#test-errors{color:red;white-space:pre-wrap}</style><h1>Teste isolado de AjaModular</h1><p>Sem conta Genesys e sem chamadas externas. O corretor recebe respostas simuladas.</p><textarea aria-label="Mensagem de teste">Brisanet</textarea><pre id="test-errors"></pre><script>
+const errors=[]; const originalError=console.error;
+console.error=(...args)=>{errors.push(args.map(String).join(' '));document.getElementById('test-errors').textContent=errors.join('\n');originalError(...args)};
+addEventListener('error',event=>console.error(event.message));addEventListener('unhandledrejection',event=>console.error(event.reason));
+window.fetch=async(url,options)=>({ok:true,status:200,json:async()=>String(url).includes('languagetool')?{matches:[{offset:0,length:8,context:{text:'Brisanet',offset:0,length:8},message:'Palavra desconhecida',replacements:[{value:'Internet'}],rule:{issueType:'misspelling',category:{id:'TYPOS',name:'Ortografia'}}}]}:[],text:async()=>'[]'});
+window.chrome=undefined;
+</script><script src="../runtime/content.bundle.js"></script><script src="../runtime/content.bundle.js"></script></html>
