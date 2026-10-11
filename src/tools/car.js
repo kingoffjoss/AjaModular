@@ -88,8 +88,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 
                 .car-body { flex: 1; display: flex; flex-direction: column; padding: 15px; gap: 10px; overflow: hidden; background: var(--bg-panel); border-radius: 0 0 15px 15px; }
                 
-                .info-box { display: none; background: var(--box-bg); border: 1px solid var(--box-border); color: var(--box-text); padding: 12px; border-radius: 8px; font-size: 12px; margin-bottom: 5px; animation: fadeIn 0.3s; flex-shrink: 0; }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+                .info-box { display: none; background: var(--box-bg); border: 1px solid var(--box-border); color: var(--box-text); padding: 12px; border-radius: 8px; font-size: 12px; margin-bottom: 5px; animation: carFadeIn 0.3s; flex-shrink: 0; }
+                @keyframes carFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         
                 #car-panel, #car-panel * { box-sizing: border-box; }
                 #car-panel { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
@@ -145,7 +145,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
 
                 const styleSheet = document.createElement("style");
                 styleSheet.innerText = styles;
-                document.head.appendChild(styleSheet);
+                document.head.appendChild(styleSheet); window.AjaModular.scopeStyle('car',styleSheet);
 
                 const container = document.createElement('div');
                 container.id = 'car-panel';
@@ -402,7 +402,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
             console.log("[CAR v3.1] Módulo Híbrido Carregado.");
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo car.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo car.js:', e); throw e; }
 
 
 

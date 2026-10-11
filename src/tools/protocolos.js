@@ -770,12 +770,12 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
             .pr-quick-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; margin-top: 8px; }
             .pr-quick-filters label { display: flex; align-items: center; gap: 6px; font-size: 0.85em; font-weight: 500; color: var(--pr-text-primary); cursor: pointer; }
         `;
-                    const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+                    const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('protocolos',style);
                 };
 
                 const initialize = async () => {
                     await loadData(); injectCss();
-                    setTimeout(() => { UI.createTriggerButton(); document.addEventListener('keydown', keyboardEventHandler); }, 2000);
+                    UI.createTriggerButton(); document.addEventListener('keydown', keyboardEventHandler);
                 };
 
                 if (window.self === window.top) {
@@ -783,7 +783,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                 }
             }
         })();
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo protocolos.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo protocolos.js:', e); throw e; }
 
 
 

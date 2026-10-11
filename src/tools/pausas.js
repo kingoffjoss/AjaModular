@@ -1248,7 +1248,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
         })(); // Fim do IIFE
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo pausas.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo pausas.js:', e); throw e; }
 
 
 });

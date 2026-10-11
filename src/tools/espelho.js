@@ -96,7 +96,7 @@ window.AjaModular.register("espelho", ["compatibility"], function(ctx) {
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo espelho.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo espelho.js:', e); throw e; }
 
 
 

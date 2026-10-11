@@ -436,11 +436,11 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                 window.log("[CORRETOR PRO] Iniciando tracker do corretor...");
                 spellCheckerModule.init();
                 window.AjaModularSetupSpell?.();
-            }, 2000);
+            }, 0);
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo corretor.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo corretor.js:', e); throw e; }
 
 
 

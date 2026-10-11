@@ -68,7 +68,7 @@ window.AjaModular.register("gerente", ["compatibility"], function(ctx) {
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo gerente.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo gerente.js:', e); throw e; }
 
 
 });

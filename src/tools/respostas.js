@@ -496,7 +496,7 @@ let publicApi;
              .qr-script-popup .settings-group-inline { display: flex; align-items: center; gap: 8px; margin-left: auto; } .qr-script-popup .settings-group-inline.appearance-toggle { margin-left: 0; margin-bottom: 10px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 10px;} .qr-script-popup .settings-group-inline label { margin-bottom: 0; font-size: 0.8em; color: var(--cor-texto-primario); font-weight: 500; letter-spacing: 0.2px; } .qr-script-popup .switch { position: relative; display: inline-block; width: 36px; height: 18px; } .qr-script-popup .switch input { opacity: 0; width: 0; height: 0; } .qr-script-popup .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--cor-fundo-terciario); border: 1px solid var(--cor-borda); transition: .4s; } .qr-script-popup .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); } body.rr-escurinho .qr-script-popup .slider:before { background-color: var(--cor-texto-desabilitado); } .qr-script-popup input:checked + .slider { background-color: var(--cor-acento-primario); border-color: var(--cor-acento-primario); box-shadow: 0 0 3px var(--cor-acento-primario)88; } body.rr-escurinho .qr-script-popup input:checked + .slider:before { /*bg-removido*/; } .qr-script-popup input:focus + .slider { box-shadow: 0 0 1px var(--cor-acento-primario); } .qr-script-popup input:checked + .slider:before { transform: translateX(18px); } .qr-script-popup .slider.round { border-radius: 18px; } .qr-script-popup .slider.round:before { border-radius: 50%; }
              .qr-script-popup ::-webkit-scrollbar { width: 6px; height: 6px; } .qr-script-popup ::-webkit-scrollbar-track { background: var(--cor-fundo-secundario); } .qr-script-popup ::-webkit-scrollbar-thumb { background: var(--cor-borda); border-radius: 3px; border: 1px solid var(--cor-fundo-secundario); } .qr-script-popup ::-webkit-scrollbar-thumb:hover { background: var(--cor-texto-desabilitado); }
         `;
-                if (typeof GM_addStyle !== "undefined") { GM_addStyle(css); } else { let style = document.getElementById('qr-script-injected-style'); if (!style) { style = document.createElement('style'); style.id = 'qr-script-injected-style'; document.head.appendChild(style); } style.textContent = css; }
+                if (typeof GM_addStyle !== "undefined") { const style=GM_addStyle(css); window.AjaModular.scopeStyle('respostas',style); } else { let style = document.getElementById('qr-script-injected-style'); if (!style) { style = document.createElement('style'); style.id = 'qr-script-injected-style'; document.head.appendChild(style); } style.textContent = css; window.AjaModular.scopeStyle('respostas',style); }
             };
 
             // --- Inicialização (MODIFICADA V2.4.9) ---
@@ -530,7 +530,7 @@ let publicApi;
 
         })(); // --- FIM DO ISOLAMENTO (V5) ---
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo respostas.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo respostas.js:', e); throw e; }
 
 
 

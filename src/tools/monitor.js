@@ -130,9 +130,11 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
                 return { isOpen: false, text: `FECHADO (Abre ${startStr})`, color: "#ef4444", badge: "Fechado", timeStr: `${startStr} - ${endStr}` };
             }
 
+            let monitorIntervals=[];
+            function closeMonitor(){monitorIntervals.forEach(clearInterval);monitorIntervals=[];document.querySelector('.queue-monitor-container')?.remove();}
             function createInterface() {
                 const existing = document.querySelector('.queue-monitor-container');
-                if (existing) { existing.remove(); return; }
+                if (existing) { closeMonitor(); return; }
 
                 const container = document.createElement("div");
                 container.className = 'queue-monitor-container';
@@ -160,7 +162,7 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
                 document.body.appendChild(container);
                 makeDraggable(container, container.querySelector('.monitor-header'));
 
-                container.querySelector('.close-btn').onclick = () => container.remove();
+                container.querySelector('.close-btn').onclick = closeMonitor;
                 const tabs = container.querySelectorAll('.tab-btn');
                 tabs.forEach(tab => {
                     tab.onclick = () => {
@@ -173,7 +175,7 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
                 document.getElementById('monitor-search').addEventListener('input', renderQueues);
 
                 const update = () => { if (!document.body.contains(container)) return; updateTime(); renderQueues(); };
-                update(); setInterval(update, 10000); setInterval(updateTime, 1000);
+                update(); monitorIntervals=[setInterval(update,10000),setInterval(updateTime,1000)];
             }
 
             function updateTime() {
@@ -309,14 +311,14 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
             .q-body { margin-bottom: 10px; } .q-title { font-weight: 600; color: #f1f5f9; font-size: 14px; margin-bottom: 3px; } .q-desc { font-size: 12px; color: #64748b; line-height: 1.3; font-style: italic; }
             .q-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding-top: 8px; border-top: 1px solid #334155; } .status-pill { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; } .q-time { color: #cbd5e1; font-family: 'JetBrains Mono', monospace; }
         `;
-                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('monitor',style);
             }
 
             injectCss();
             createTriggerButton();
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo monitor.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo monitor.js:', e); throw e; }
 
 
 

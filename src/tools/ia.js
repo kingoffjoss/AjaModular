@@ -184,7 +184,7 @@ window.AjaModular.register("ia", ["compatibility"], function(ctx) {
             .chat-ai { align-self: flex-start; background-color: var(--ia-card); border: 1px solid var(--ia-border); }
         `;
 
-                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('ia',style);
 
                 // --- 3. HTML (Com Blindagem Anti-Autofill) ---
                 const widgetHTML = `
@@ -904,7 +904,7 @@ Telecine	Telecine filmes erros APP app.
             }
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ia.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ia.js:', e); throw e; }
 
 
 

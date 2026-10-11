@@ -374,7 +374,7 @@ window.AjaModular.register("central", ["compatibility"], function(ctx) {
             .wiki-body { margin-top: 10px; } .wiki-body ul, .wiki-body ol { margin-left: 20px; margin-top: 5px; padding-left: 0; }
 
         `;
-                document.head.appendChild(style);
+                document.head.appendChild(style); window.AjaModular.scopeStyle('central',style);
             }
 
             // Injeção de CSS
@@ -393,7 +393,7 @@ window.AjaModular.register("central", ["compatibility"], function(ctx) {
             createTriggerButton();
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo central.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo central.js:', e); throw e; }
 
 
 

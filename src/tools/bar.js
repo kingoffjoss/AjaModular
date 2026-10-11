@@ -950,7 +950,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
             const styleSheet = document.createElement("style");
             styleSheet.id = "bau-rede-styles";
             styleSheet.innerText = styles;
-            document.head.appendChild(styleSheet);
+            document.head.appendChild(styleSheet); window.AjaModular.scopeStyle('bar',styleSheet);
             document.body.appendChild(bauElement);
 
             // --- 5. ATIVAR A LÓGICA V20.1 ---
@@ -966,6 +966,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
             // O closeBtn ainda precisa da sua própria função para fechar diretamente.
             closeBtn.onclick = function () {
                 bauElement.style.display = 'none';
+                const triggerBtn = document.getElementById('bau-trigger-button');
                 if (triggerBtn && getComputedStyle(triggerBtn).opacity !== '0') { // VERIFICACAO NOVA
                     triggerBtn.style.display = 'flex';
                 }
@@ -1464,7 +1465,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
         }
     })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo bar.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo bar.js:', e); throw e; }
 
 
 

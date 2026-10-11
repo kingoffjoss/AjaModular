@@ -212,7 +212,7 @@ window.AjaModular.get('lembretes').mount(panel, notify);
             };
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ferramentas.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ferramentas.js:', e); throw e; }
 
 
 

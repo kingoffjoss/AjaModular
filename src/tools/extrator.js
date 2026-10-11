@@ -198,7 +198,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo extrator.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo extrator.js:', e); throw e; }
 
 
 

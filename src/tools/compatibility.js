@@ -23,6 +23,7 @@ window.AjaModular.register("compatibility", [], function(ctx) {
             const style = document.createElement('style');
             style.textContent = css;
             (document.head || document.body).appendChild(style);
+            return style;
         };
 
         window.GM_setClipboard = function (text) {
@@ -80,7 +81,7 @@ window.AjaModular.register("compatibility", [], function(ctx) {
 
         window.unsafeWindow = window;
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo compatibility.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo compatibility.js:', e); throw e; }
 
 
 });
