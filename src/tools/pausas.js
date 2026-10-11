@@ -1,5 +1,5 @@
 // Shared dependencies: ajaStorage
-window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
+window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) {
     /* --- MÓDULO ANEXADO: PAUSAS.JS --- */
     try {
         // =================================================================
@@ -173,7 +173,7 @@ window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
                 atualizarUI();
             }
 
-            function adicionarAtalho() { document.addEventListener('keydown', function (e) { const c = e.ctrlKey || e.metaKey, s = e.shiftKey, o = e.key === '1'; if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return; if (c && s && o) { e.preventDefault(); toggleVisibilidade() } }) }
+            function adicionarAtalho() { document.addEventListener('keydown', function (e) { const c = e.ctrlKey || e.metaKey, s = e.shiftKey, o = e.code === 'Digit1' || e.key === '1'; if (document.activeElement && (document.activeElement.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName))) return; if (c && s && o) { e.preventDefault(); toggleVisibilidade() } }) }
 
             // --- Funções de Agendamento ---
 
@@ -635,34 +635,38 @@ window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
             // FUNÇÕES DE VISIBILIDADE, ARRASTE E UI
             // ----------------------------------------------------
 
+            let dragStartX = 0, dragStartY = 0, previousUserSelect = '', previousDragTransition = '';
             function dragMouseDown(e) {
-                dragElement = e.target.closest('#pausa-script-container, #pausa-script-config-container');
-                if (!dragElement) return;
-                const isHeaderMain = e.target.closest('#pausa-script-header');
-                const isHeaderConfig = e.target.closest('#pausa-script-config-header');
-                const isIcon = e.target.closest('#pausa-script-icone');
-                if (!isHeaderMain && !isHeaderConfig && !isIcon) { dragElement = null; return; }
-                e = e || window.event; if (e.button === 0) e.preventDefault(); else return;
-                isDragging = false;
-                offsetX = e.clientX - dragElement.offsetLeft; offsetY = e.clientY - dragElement.offsetTop;
-                if (dragElement.style.bottom || dragElement.style.right) { const t = dragElement.getBoundingClientRect(); dragElement.style.left = t.left + 'px'; dragElement.style.top = t.top + 'px'; dragElement.style.right = ''; dragElement.style.bottom = '' }
-                document.body.style.userSelect = 'none'; document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
+                if(e.button !== 0 || e.target.closest('button, input, textarea, select, a, [id^="btn-"]')) return;
+                const panel=e.target.closest('#pausa-script-container, #pausa-script-config-container');
+                if(!panel || !e.target.closest('#pausa-script-header, #pausa-script-config-header, #pausa-script-icone')) return;
+                const rect=panel.getBoundingClientRect();
+                dragElement=panel; isDragging=false; dragStartX=e.clientX; dragStartY=e.clientY;
+                offsetX=e.clientX-rect.left;offsetY=e.clientY-rect.top;
+                previousUserSelect=document.body.style.userSelect;previousDragTransition=panel.style.transition;
+                document.addEventListener('mousemove',elementDrag);
+                document.addEventListener('mouseup',closeDragElement);
+                window.addEventListener('blur',closeDragElement);
             }
-
-            function elementDrag(e) { if (!dragElement) return; isDragging = true; e = e || window.event; e.preventDefault(); let t = e.clientY - offsetY, l = e.clientX - offsetX; const n = window.innerWidth - dragElement.offsetWidth, o = window.innerHeight - dragElement.offsetHeight; l = Math.max(0, Math.min(l, n)); t = Math.max(0, Math.min(t, o)); dragElement.style.top = t + "px"; dragElement.style.left = l + "px"; dragElement.style.cursor = 'grabbing'; }
-
+            function elementDrag(e) {
+                if(!dragElement) return;
+                if(!isDragging && Math.hypot(e.clientX-dragStartX,e.clientY-dragStartY)<5) return;
+                isDragging=true;dragElement.style.transition='none';e.preventDefault();document.body.style.userSelect='none';
+                const pos=window.AjaModular.get('relogio').clampPosition(e.clientX-offsetX,e.clientY-offsetY,dragElement.offsetWidth,dragElement.offsetHeight,window.innerWidth,window.innerHeight);
+                dragElement.style.left=pos.left+'px';dragElement.style.top=pos.top+'px';
+                dragElement.style.right='auto';dragElement.style.bottom='auto';dragElement.style.cursor='grabbing';
+            }
             function closeDragElement() {
-                document.body.style.userSelect = '';
-                if (dragElement) {
-                    if (dragElement.id === 'pausa-script-container') salvarPosicaoPainelLocalStorage(STORAGE_KEY_POS_MAIN, dragElement);
-                    else if (dragElement.id === 'pausa-script-config-container') salvarPosicaoPainelLocalStorage(STORAGE_KEY_POS_CONFIG, dragElement);
-                    const t = document.getElementById('pausa-script-conteudo');
-                    if (dragElement.id === 'pausa-script-container' && t && t.style.display === 'none') dragElement.style.cursor = 'grab';
-                    else { const e = dragElement.querySelector('#pausa-script-header') || dragElement.querySelector('#pausa-script-config-header'); if (e) e.style.cursor = 'move'; dragElement.style.cursor = 'default' }
+                document.removeEventListener('mousemove',elementDrag);
+                document.removeEventListener('mouseup',closeDragElement);
+                window.removeEventListener('blur',closeDragElement);
+                document.body.style.userSelect=previousUserSelect;
+                if(dragElement) {
+                    if(isDragging) salvarPosicaoPainelLocalStorage(dragElement.id==='pausa-script-container'?STORAGE_KEY_POS_MAIN:STORAGE_KEY_POS_CONFIG,dragElement);
+                    dragElement.style.cursor='';dragElement.style.transition=previousDragTransition;
                 }
-                document.onmouseup = null; document.onmousemove = null;
-                setTimeout(() => { isDragging = false; }, 50);
-                dragElement = null;
+                dragElement=null;
+                setTimeout(()=>{isDragging=false;},50);
             }
 
             // ATUALIZADA V47.0
@@ -688,15 +692,12 @@ window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
                     const h = c.querySelector('#pausa-script-header');
                     if (h) h.style.cursor = 'move';
 
-                    if (c.style.top && c.style.left) { let cT = parseInt(c.style.top, 10), cL = parseInt(c.style.left, 10); setTimeout(() => { const hE = c.offsetHeight; const wE = c.offsetWidth; const mL = window.innerWidth - wE - m; if (cL > mL) { c.style.left = mL + 'px' } if (cL < m) { c.style.left = m + 'px' } const mT = window.innerHeight - hE - m; if (cT > mT) { c.style.top = mT + 'px' } if (cT < m) { c.style.top = m + 'px' } }, 10) }
-                    else {
-                        const r = c.getBoundingClientRect(); c.style.left = r.left + 'px'; c.style.top = r.top + 'px';
-                        c.style.bottom = ''; c.style.right = '';
-                    }
+                    window.AjaModular.get('relogio').keepOnScreen(c);
+
                 }
             }
 
-            function toggleVisibilidadeConfig() { const c = document.getElementById('pausa-script-config-container'); if (!c) { console.error("UI Config não encontrada."); return } isConfigPainelAberto = !isConfigPainelAberto; c.style.display = isConfigPainelAberto ? 'block' : 'none'; if (isConfigPainelAberto) { renderizarAgendamentos(); renderizarHistoricoLog(); renderizarEstatisticas() } }
+            function toggleVisibilidadeConfig() { const c = document.getElementById('pausa-script-config-container'); if (!c) { console.error("UI Config não encontrada."); return } isConfigPainelAberto = !isConfigPainelAberto; c.style.display = isConfigPainelAberto ? 'block' : 'none'; if (isConfigPainelAberto) { renderizarAgendamentos(); renderizarHistoricoLog(); renderizarEstatisticas(); window.AjaModular.get('relogio').keepOnScreen(c); } }
             function renderizarAgendamentos() { const l = document.getElementById('agendamento-lista'); if (!l) return; l.innerHTML = ''; if (PAUSAS_AGENDADAS.length === 0) { l.innerHTML = '<p style="color:#999;margin:5px 0;font-size:11px;text-align:center;">Nenhum horário agendado.</p>' } else { const r = document.createDocumentFragment(); PAUSAS_AGENDADAS.forEach((p, idx) => { const i = document.createElement('div'); i.style.cssText = `display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #ffffff15;padding:4px 2px;font-size:11px;`; const tD = document.createElement('div'); tD.style.flexGrow = '1'; tD.innerHTML = `<strong>${p.hora}</strong>: ${p.status}`; const bD = document.createElement('div'); bD.style.flexShrink = '0'; bD.style.marginLeft = '10px'; const bE = document.createElement('button'); bE.innerHTML = '✏️'; bE.title = `Editar ${p.hora} - ${p.status}`; bE.style.cssText = `background:0 0;border:none;color:#ffc107;cursor:pointer;font-size:14px;padding:0 4px;opacity:.7;transition:opacity .2s;`; bE.onmouseover = function () { this.style.opacity = '1' }; bE.onmouseout = function () { this.style.opacity = '.7' }; bE.onclick = () => carregarHorarioParaEdicao(idx); const bR = document.createElement('button'); bR.innerHTML = '❌'; bR.title = `Remover ${p.hora} - ${p.status}`; bR.style.cssText = `background:0 0;border:none;color:#ff6b6b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:5px;opacity:.7;transition:opacity .2s;`; bR.onmouseover = function () { this.style.opacity = '1' }; bE.onmouseout = function () { this.style.opacity = '.7' }; bR.onclick = () => removerHorario(idx); bD.appendChild(bE); bD.appendChild(bR); i.appendChild(tD); i.appendChild(bD); r.appendChild(i) }); l.appendChild(r) } }
             function renderizarHistoricoLog() { const l = document.getElementById('historico-log'); if (!l) return; l.innerHTML = ''; if (historicoPausas.length === 0) { l.innerHTML = '<p style="color:#999;margin:5px 0;font-size:11px;">Nenhum registro.</p>'; return } const f = document.createDocumentFragment(); historicoPausas.slice().reverse().forEach(p => { const i = document.createElement('div'); i.style.cssText = `border-bottom:1px dashed #ffffff15;padding:4px 0;font-size:11px;line-height:1.4;`; i.innerHTML = `<strong>${p.tipo}</strong>: ${p.inicio} às ${p.fim} <span style="color:#00b0ff;">(Dur: ${p.duracao})</span>`; f.appendChild(i) }); l.appendChild(f); }
             function renderizarEstatisticas() { const s = document.getElementById('estatisticas-pausas'); if (!s) return; s.innerHTML = ''; if (historicoPausas.length === 0) { s.innerHTML = '<p style="color:#999;font-style:italic;margin:5px 0;font-size:11px;">Sem estatísticas.</p>'; return } const r = {}; historicoPausas.forEach(p => { const t = p.tipo; if (!r[t]) r[t] = { c: 0, s: 0 }; r[t].c++; r[t].s += converterDuracaoParaSegundos(p.duracao) }); const d = document.createElement('details'); d.style.marginTop = '10px'; d.open = !0; const m = document.createElement('summary'); m.style.cssText = 'cursor:pointer;color:#00b0ff;font-weight:700;margin-bottom:5px;'; m.textContent = 'Estatísticas'; d.appendChild(m); const c = document.createElement('div'); c.style.cssText = `/*bg-removido*/;padding:8px;border-radius:8px;font-size:11px;`; const f = document.createDocumentFragment(); const k = Object.keys(r).sort(); k.forEach((t, x) => { const o = r[t]; const u = formatarDuracao(o.s); const i = document.createElement('div'); i.style.cssText = `display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #ffffff15;line-height:1.4;`; if (x === k.length - 1) i.style.borderBottom = 'none'; i.innerHTML = `<strong>${t} (x${o.c})</strong> <span style="color:#00b0ff;">${u}</span>`; f.appendChild(i) }); c.appendChild(f); d.appendChild(c); s.appendChild(d); }
@@ -981,7 +982,7 @@ window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
 
                 registrarPausa(estadoAtual.tipo);
                 adicionarAtalho();
-                setInterval(atualizarUI, 1000);
+                window.AjaModular.get('relogio').start(atualizarUI);
             }
 
             // --- CRIAR UI CONFIGURAÇÕES (ATUALIZADA REDESIGN) ---
@@ -1201,73 +1202,7 @@ window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
 
             // ATUALIZADA V48.4 (Controla o novo relógio do cabeçalho)
             function atualizarUI() {
-                const a = new Date, h = a.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                // Relógio minimizado
-                const tFlutuante = document.getElementById('top-bar-time');
-                const tDot = document.getElementById('pausa-script-clock-dot'); // V48.0
-
-                // --- INÍCIO DA MODIFICAÇÃO V48.4 ---
-                // Novo relógio do cabeçalho
-                const tHeader = document.getElementById('pausa-script-header-clock');
-                // --- FIM DA MODIFICAÇÃO V48.4 ---
-
-
-                if (tFlutuante) {
-                    tFlutuante.textContent = h;
-                    // Lógica da Cor do Relógio
-                    if (estadoAtual.tipo === 'Disponível' || estadoAtual.tipo === 'Na fila') tFlutuante.style.color = '#50fa7b';
-                    else if (estadoAtual.tipo === 'Logoff') tFlutuante.style.color = '#999';
-                    else tFlutuante.style.color = '#f1fa8c';
-                }
-
-                // --- INÍCIO DA MODIFICAÇÃO V48.4 ---
-                // Atualiza o novo relógio do cabeçalho e aplica a mesma lógica de cor
-                if (tHeader) {
-                    tHeader.textContent = h;
-                    if (estadoAtual.tipo === 'Disponível' || estadoAtual.tipo === 'Na fila') {
-                        tHeader.style.color = '#50fa7b';
-                        tHeader.style.textShadow = '0 0 5px rgba(80, 250, 123, 0.5)';
-                    }
-                    else if (estadoAtual.tipo === 'Logoff') {
-                        tHeader.style.color = '#999';
-                        tHeader.style.textShadow = 'none';
-                    }
-                    else {
-                        tHeader.style.color = '#f1fa8c'; // Cor de pausa
-                        tHeader.style.textShadow = '0 0 5px rgba(241, 250, 140, 0.5)';
-                    }
-                }
-                // --- FIM DA MODIFICAÇÃO V48.4 ---
-
-                // V48.0 - Lógica do Ponto Piscante
-                if (tDot) {
-                    if (estadoAtual.ativa) { // 'ativa' é true para tudo, exceto Logoff
-                        tDot.style.display = 'block';
-                        // Muda a cor do ponto para verde se estiver 'OK'
-                        if (estadoAtual.tipo === 'Disponível' || estadoAtual.tipo === 'Na fila') {
-                            tDot.className = 'status-ok';
-                        } else {
-                            tDot.className = ''; // Usa a cor amarela padrão
-                        }
-                    } else {
-                        tDot.style.display = 'none'; // Esconde o ponto (Ex: Logoff)
-                    }
-                }
-
-                const s = document.getElementById('current-status'); if (s) {
-                    let e = '';
-
-                    if (estadoAtual.ativa) {
-                        const o = a.getTime() - estadoAtual.inicio.getTime();
-                        const r = Math.max(0, Math.round(o / 1000));
-                        e = ` (${formatarDuracao(r)})`;
-                    }
-
-                    s.textContent = `${estadoAtual.tipo}${e}`;
-
-                    s.style.color = (estadoAtual.tipo === 'Disponível' || estadoAtual.tipo === 'Na fila') ? '#50fa7b' : '#f1fa8c';
-                }
+                window.AjaModular.get('relogio').render(estadoAtual, formatarDuracao);
             }
 
             // ----------------------------------------------------
@@ -1284,7 +1219,7 @@ window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
 
                     console.log("[GERENCIADOR] Solicitando permissão para notificações...");
                     if (configNotificacao.ativadas && "Notification" in window && Notification.permission === 'default') { Notification.requestPermission().then(p => { if (p === 'granted') { console.log("[Notificação] Permissão OK!"); new Notification("Gerenciador", { body: "Notificações Ativadas!" }) } else { console.warn("[Notificação] Permissão Negada."); ctx.ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); } }); }
-                    else if (Notification.permission === 'denied') { console.warn("[Notificação] Permissão Negada Anteriormente."); ctx.ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); }
+                    else if ('Notification' in window && Notification.permission === 'denied') { console.warn("[Notificação] Permissão Negada Anteriormente."); ctx.ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); }
 
                     console.log("[GERENCIADOR] Injetando UI...");
                     criarUI();
