@@ -1,5 +1,56 @@
 (function(){ if(window.__AJA_MODULAR_RUNTIME__) return; window.__AJA_MODULAR_RUNTIME__=true;
 (function () {
+'use strict';
+const definitions = new Map(), instances = new Map(), failures = new Map();
+let context;
+function register(id, dependencies, factory) {
+    if (definitions.has(id)) throw new Error('Módulo duplicado: ' + id);
+    if (!Array.isArray(dependencies) || typeof factory !== 'function') throw new TypeError('Contrato inválido: ' + id);
+    definitions.set(id, { dependencies, factory });
+}
+function start(shared) {
+    context = shared;
+    const active = new Set();
+    function load(id) {
+        if (instances.has(id)) return instances.get(id);
+        if (failures.has(id)) throw failures.get(id);
+        const definition = definitions.get(id);
+        if (!definition) throw new Error('Dependência ausente: ' + id);
+        if (active.has(id)) throw new Error('Dependência circular: ' + id);
+        active.add(id);
+        try {
+            definition.dependencies.forEach(load);
+            const instance = definition.factory(context) || {};
+            instances.set(id, instance);
+            return instance;
+        } catch (error) { failures.set(id, error); throw error; }
+        finally { active.delete(id); }
+    }
+    for (const id of definitions.keys()) {
+        try { load(id); }
+        catch (error) { console.error('[AjaModular] Falha no módulo ' + id, error); }
+    }
+    document.documentElement.dataset.ajaModules = JSON.stringify(status());
+}
+function get(id) {
+    if (!instances.has(id)) throw new Error('Módulo indisponível: ' + id);
+    return instances.get(id);
+}
+function open(id) {
+    document.documentElement.dataset.ajaLastAction = id;
+    try {
+        const instance = get(id);
+        if (typeof instance.open !== 'function') throw new Error('Módulo sem ação de abertura: ' + id);
+        return instance.open();
+    } catch (error) { console.error('[AjaModular] ' + id, error); }
+}
+function status() {
+    return Array.from(definitions.keys(), id => ({id, ready: instances.has(id), error: failures.get(id)?.message || null}));
+}
+window.AjaModular = Object.freeze({register, start, get, open, status});
+})();
+
+(function () {
     'use strict';
     const storage = window.localStorage;
     const key = name => 'ajamodular:' + name;
@@ -81,784 +132,84 @@
     };
 })();
 
-
-// ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.0.0)
-// @namespace    http://tampermonkey.net/
-// @version      1.0.28.9
-// @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
-// @author       Kingoffjoss Assess
-// @match        https://apps.mypurecloud.com/*
-// @match        https://apps.mypurecloud.de/*
-// @match        https://apps.mypurecloud.jp/*
-// @match        https://apps.mypurecloud.ie/*
-// @match        https://apps.mypurecloud.com.au/*
-// @grant        GM_xmlhttpRequest
-// @connect      api.languagetool.org
-// ==/UserScript==
-
-(function () {
-    'use strict';
-const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
-const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
-
-
-    // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
-    const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.0.0';
-
-    async function safeFetch(url, options = {}) {
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-            return new Promise((resolve, reject) => {
-                chrome.runtime.sendMessage({ action: "fetchAPI", url: url, options: options }, response => {
-                    if (chrome.runtime.lastError) {
-                        reject(new Error(chrome.runtime.lastError.message));
-                    } else if (!response || !response.success) {
-                        reject(new Error(response ? response.error : "Unknown error"));
-                    } else {
-                        resolve({
-                            status: response.status,
-                            ok: response.status >= 200 && response.status < 300,
-                            text: async () => response.text,
-                            json: async () => JSON.parse(response.text)
-                        });
-                    }
-                });
-            });
-        } else {
-            return fetch(url, options);
-        }
-    }
-
-    if (window[`PURECLOUD_SCRIPT_LOADED_FLAG_${SCRIPT_VERSION}`]) {
-        console.log(`[NOVO SCRIPT] Script V${SCRIPT_VERSION} já está carregado e em execução.`);
-        return;
-    }
-
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.get(['ajamodular_enabled'], function(result) {
-            if (result.ajamodular_enabled === false) {
-                console.log("[AJA ASSISTANT] Script desativado pelo usuário na extensão.");
-                return;
-            }
-            startScript();
-        });
-    } else {
-        startScript();
-    }
-
-    function startScript() {
-        window[`PURECLOUD_SCRIPT_LOADED_FLAG_${SCRIPT_VERSION}`] = true;
-
-
-    const DEBUG_MODE = true;
-    const log = (...args) => { if (DEBUG_MODE) console.log("[PURECLOUD SCRIPT]", ...args); };
-
-
-    // --- SISTEMA DE SOM E CONFETES (GAMIFICAÇÃO) ---
-    const effectsManager = {
-        audioContext: null,
-        init() {
-            if (!this.audioContext && (window.AudioContext || window.webkitAudioContext)) {
-                try { this.audioContext = new (window.AudioContext || window.webkitAudioContext)(); log("AudioContext inicializado."); } catch (e) { log("Erro ao inicializar AudioContext:", e); }
-            }
-        },
-        playBeep(type = 'inactive') {
-            if (!this.audioContext || !CONFIG.SOUND_ALERTS_ENABLED) return;
-            try {
-                const oscillator = this.audioContext.createOscillator(); const gainNode = this.audioContext.createGain();
-                let frequency = 440, duration = 0.1;
-                if (type === 'inactive_client') { frequency = 880; duration = 0.15; } else if (type === 'inactive_operator') { frequency = 660; duration = 0.1; }
-                else if (type === 'reminder') { frequency = 1046.50; duration = 0.3; } // Som específico para o lembrete
-                oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                oscillator.connect(gainNode); gainNode.connect(this.audioContext.destination);
-                oscillator.start(this.audioContext.currentTime); oscillator.stop(this.audioContext.currentTime + duration);
-            } catch (e) { }
-        },
-        playSuccess() {
-            if (!this.audioContext || !CONFIG.SOUND_ALERTS_ENABLED) return;
-            try {
-                [440, 554, 659, 880].forEach((freq, i) => {
-                    setTimeout(() => {
-                        const osc = this.audioContext.createOscillator(); const gain = this.audioContext.createGain();
-                        osc.type = 'sine'; osc.frequency.value = freq;
-                        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
-                        osc.connect(gain); gain.connect(this.audioContext.destination);
-                        osc.start(); osc.stop(this.audioContext.currentTime + 0.5);
-                    }, i * 100);
-                });
-            } catch (e) { }
-        },
-        triggerConfetti() {
-            const colors = ['#10b981', '#3b82f6', '#fbbf24', '#ef4444', '#6366f1', '#ec4899'];
-            for (let i = 0; i < 120; i++) {
-                const confetti = document.createElement('div');
-                confetti.style.position = 'fixed'; confetti.style.width = '10px'; confetti.style.height = '12px';
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.left = Math.random() * 100 + 'vw'; confetti.style.top = '-20px';
-                confetti.style.zIndex = '999999'; confetti.style.pointerEvents = 'none';
-                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                document.body.appendChild(confetti);
-                const duration = Math.random() * 3 + 2;
-                confetti.animate([
-                    { transform: `translate3d(0, 0, 0) rotate(0deg)`, opacity: 1 },
-                    { transform: `translate3d(${Math.random() * 300 - 150}px, 100vh, 0) rotate(${Math.random() * 1080}deg)`, opacity: 0 }
-                ], { duration: duration * 1000, easing: 'cubic-bezier(.37,0,.63,1)' });
-                setTimeout(() => confetti.remove(), duration * 1000);
-            }
-        }
-    };
-
-
-    const LOCKDOWN_CONFIG = { REQUIRED_CLICKS: 5, END_CHAT_BUTTON_SELECTOR: ['#call-control-end-sms-button', 'button[aria-label="Mensagens de término"]'], BALAO_BUTTON_SELECTOR_V4: 'button[aria-label="Mensagens de término"]' };
-
-    // --- VARIÁVEIS E LINKS ÚTEIS ---
-    const initialQuickReplies = [
-        { title: "👋 Saudação", text: "Olá, {primeiro_nome}! Tudo bem? Sou o agente e vou te ajudar hoje.", shortcut: "/oi" },
-        { title: "📝 Pedir Dados", text: "{primeiro_nome}, para prosseguirmos, poderia me confirmar seu CPF ou número do pedido, por favor?", shortcut: "/cpf" },
-        { title: "⏳ Aguardar", text: "Por favor, aguarde só um momento enquanto eu verifico essa informação, {primeiro_nome}.", shortcut: "/espera" },
-        { title: "🔄 Transferir", text: "Vou precisar transferir o seu atendimento para o setor responsável. Por favor, aguarde um instante.", shortcut: "/transf" },
-        { title: "⚠️ Cliente Inativo", text: "{primeiro_nome}, ainda está por aí? Como não tivemos mais retorno, encerrarei o atendimento em alguns minutos caso não haja resposta.", shortcut: "/inativo" },
-        { title: "❌ Encerramento", text: "Como não tivemos mais retorno, estou encerrando este atendimento. Qualquer dúvida, estamos à disposição!", shortcut: "/enc" },
-        { title: "✅ Resolução", text: "{primeiro_nome}, ficou mais alguma dúvida referente a este assunto ou posso te ajudar com algo mais?", shortcut: "/duvida" },
-        { title: "👋 Despedida", text: "Foi um prazer te atender, {primeiro_nome}! Tenha um excelente dia!", shortcut: "/tchau" }
-    ];
-
-    const USEFUL_LINKS = [
-        { title: "🌐 CRM Corporativo", url: "https://google.com", color: "#3b82f6" },
-        { title: "📚 Base de Conhecimento", url: "https://wikipedia.org", color: "#10b981" },
-        { title: "💳 Sistema de Faturamento", url: "https://yahoo.com", color: "#f59e0b" },
-        { title: "📦 Rastreio de Pedidos", url: "https://bing.com", color: "#6366f1" }
-    ];
-
-    const defaultThemeColors = { bgPrimary: '#f8fafc', bgSecondary: '#f1f5f9', textPrimary: '#0f172a', textSecondary: '#475569', borderColor: '#e2e8f0', accent: '#6366f1', accentText: '#ffffff', timerBg: '#2d3748', timerNormalText: '#ffffff', timerActiveText: '#4ade80', timerPausedText: '#f87171', timerInactiveClientText: '#fbbf24', timerInactiveOperatorText: '#fbbf24', timerCompletedBg: '#2d3748', timerCompletedText: '#ffffff', success: '#10b981', error: '#ef4444', warn: '#f59e0b', info: '#3b82f6', miniDashboardProgress: '#0ea5e9' };
-
-
-    function applyGenesysDarkMode() {
-        let s = document.getElementById('genesys-forced-dark-style');
-        if (typeof CONFIG === 'undefined' || !CONFIG.GENESYS_DARK_MODE) {
-            if (s) s.remove();
-            document.body.classList.remove('genesys-forced-dark');
-            return;
-        }
-        const styleStr = `
-        body.genesys-forced-dark { background-color: #121212 !important; color: #e2e8f0 !important; }
-        body.genesys-forced-dark .app-body, body.genesys-forced-dark .sidebar, body.genesys-forced-dark .interaction-content-wrapper, body.genesys-forced-dark .navbar, body.genesys-forced-dark .topbar, body.genesys-forced-dark #main-content { background-color: #121212 !important; color: #e2e8f0 !important; border-color: #334155 !important; }
-        body.genesys-forced-dark .interaction-list { background-color: #1a1a1a !important; }
-        body.genesys-forced-dark div, body.genesys-forced-dark span { border-color: #334155 !important; color: inherit; }
-        body.genesys-forced-dark input, body.genesys-forced-dark textarea { background-color: #1e1e1e !important; color: #e2e8f0 !important; border: 1px solid #334155 !important; }
-    `;
-        if (!s) { s = document.createElement('style'); s.id = 'genesys-forced-dark-style'; document.head.appendChild(s); }
-        s.textContent = styleStr;
-        document.body.classList.add('genesys-forced-dark');
-    }
-    window.applyGenesysDarkMode = applyGenesysDarkMode; // Ensure it's globally accessible just in case
-
-
-
-    let CONFIG = {
-        CHECKMARK_THRESHOLD_MS: 70 * 1000, TIMER_UPDATE_INTERVAL_MS: 500, MAIN_LOOP_THROTTLE_MS: 1000,
-        INACTIVITY_CLIENT_ALERT_SECONDS: parseInt(ajaStorage.getItem('inactivityClientAlertSeconds') || '70', 10),
-        INACTIVITY_OPERATOR_ALERT_SECONDS: parseInt(ajaStorage.getItem('inactivityOperatorAlertSeconds') || '30', 10),
-        LONG_CONVO_ALERT_MIN: parseInt(ajaStorage.getItem('longConvoAlertMin') || '15', 10),
-        CONVERSATION_TARGET: parseInt(ajaStorage.getItem('gcp_conversationTarget') || '45', 10),
-
-        DARK_MODE: ajaStorage.getItem('gcp_darkMode') === 'true',
-        SOUND_ALERTS_ENABLED: ajaStorage.getItem('soundAlertsEnabled') !== 'false',
-        QUICK_REPLIES: JSON.parse(ajaStorage.getItem('quickReplies')) || initialQuickReplies,
-        // --- NOVOS ATALHOS ADICIONADOS AQUI ---
-        HOTKEYS: JSON.parse(ajaStorage.getItem('hotkeys')) || { copyInteraction: "Control+Shift+I", openSettings: "Control+Shift+S", toggleMiniDashboard: "Control+Shift+J", toggleLock: "Control+Shift+L", toggleDarkMode: "Control+Shift+D", quickGreeting: "Control+Shift+Q", exportData: "Control+Shift+E", toggleZenMode: "Control+Shift+Z", formatText: "Control+Shift+M" },
-        THEME_COLORS: JSON.parse(ajaStorage.getItem('gcp_themeColors_v2')) || JSON.parse(ajaStorage.getItem('timerColors')) || defaultThemeColors,
-        LAST_SCRIPT_VERSION: ajaStorage.getItem('lastScriptVersion') || '0', POPUP_POSITIONS: JSON.parse(ajaSessionStorage.getItem('popupPositions') || '{}'),
-        MINI_DASHBOARD_VISIBLE: ajaSessionStorage.getItem('miniDashboardVisible') !== 'false', MINI_DASHBOARD_MAXIMIZED: ajaSessionStorage.getItem('miniDashboardMaximized') === 'true', TOOLS_VISIBLE: ajaSessionStorage.getItem('toolsVisible') === 'true',
-        MESSAGES: { COPIED_SUCCESS: "Copiado com sucesso!", COPY_ERROR: "Erro ao copiar.", NOT_FOUND_INTERACTION_DATA: "Dados não encontrados.", INTERACTION_COPIED: "Interação (Nome, Telefone e Link) copiada!" },
-        PURECLOUD_SELECTORS: {
-            TOOLBAR: ['div.interaction-controls-primary', 'div[data-qa-id="interaction-controls-primary"]', '.actions-container', 'div[role="toolbar"]'], PARTICIPANT_NAME_BADGE: ['h3.participant-name', 'div.interaction-name-wrapper div.participant-name > span', 'p.participant-name', 'span[data-qa-id="participant-name"]', 'h2.participant-name'], NATIVE_COPY_BUTTON: ['button[aria-label="Copiar link da interação"]', '.copy-interaction-url-btn', 'button[data-qa-id="copy-interaction-link"]', '.copy-action-button'], INTERACTION_ID_EL: 'span[data-qa-id="interaction-id"], [data-qa-id="detail-value-interactionId"]', CONVERSATION_ROOT: '.interaction-content', CONVERSATION_CONTENT_WRAPPER: ['.interaction-content-wrapper', '.interaction-content'], SCRIPT_IFRAME: '.interaction-script-container.no-headers.non-call iframe', MESSAGING_GADGET_IFRAME: 'iframe[src*="messaging-gadget.html"]', INTERACTION_GROUP: ['div.interaction-group', 'div[data-qa-id="interaction-group-list-item"]'], SELECTED_INTERACTION_GROUP: ['div.interaction-group.is-selected', 'div[data-qa-id="interaction-group-list-item"].is-selected'], TRANSFER_BUTTON_SELECTOR: ['button[aria-label*="Transferir"]', 'button[data-qa-id="interaction-control-transfer"]'], EVALUATION_BUTTON_SELECTOR: ['button[aria-label*="Enviar avaliação"]', 'button[aria-label*="Enviar pesquisa"]', 'button[data-qa-id="interaction-control-disconnect"]', 'button.btn-main.container-inner'], CONVERSATION_LIST_CONTAINER: ['div.infrg-1_medium.purecloud-grid-layout-grid-cell.interaction-list-column', 'div.interaction-list', 'div[data-qa-id*="interaction-list-column"]'], NATIVE_TIMER_SELECTORS: ['.message-timestamp', '.duration', '.chat-message-group > div:last-child > span', '.chat-message-group > div:last-child > div', 'span[class*="timestamp"]', 'div[class*="time"]', 'span[class*="datetime"]', 'span[class*="date-time"]'], ICON_SELECTOR_CALL: 'gux-icon[icon-name="phone"]', ICON_SELECTOR_CHAT: 'gux-icon[icon-name="comments"]'
-        },
-        LAST_ENDED_INTERACTIONS: new Map()
-    };
-
-    const featureDescriptions = {
-        copyInteraction: { title: "Copiar Interação", description: "Copia nome, telefone e link.", hotkey: CONFIG.HOTKEYS.copyInteraction }, openSettings: { title: "Configurações", description: "Abre o painel de configurações.", hotkey: CONFIG.HOTKEYS.openSettings }, toggleMiniDashboard: { title: "Alternar Dashboard", description: "Oculta ou mostra o dashboard.", hotkey: CONFIG.HOTKEYS.toggleMiniDashboard }, toggleLock: { title: "Trava de Encerramento", description: "Adiciona escudo contra encerramento.", hotkey: CONFIG.HOTKEYS.toggleLock }, toggleDarkMode: { title: "Modo Escuro (Script)", description: "Ativa o tema escuro nos cronômetros.", hotkey: CONFIG.HOTKEYS.toggleDarkMode }, quickGreeting: { title: "Saudação Rápida", description: "Cola sua primeira Resposta Rápida.", hotkey: CONFIG.HOTKEYS.quickGreeting }, exportData: { title: "Exportar Atendimentos", description: "Baixa os dados do dia.", hotkey: CONFIG.HOTKEYS.exportData },
-        toggleZenMode: { title: "Modo Foco (Zen)", description: "Escurece a tela e foca apenas no chat atual.", hotkey: CONFIG.HOTKEYS.toggleZenMode }, formatText: { title: "Mágico Anti-Caps Lock", description: "Corrige texto MAIÚSCULO para Minúsculo.", hotkey: CONFIG.HOTKEYS.formatText }
-    };
-
-    let v4_counters = { balao: [] }; const V4_STORAGE_KEY = 'encerramentoCounters_v4_balao';
-
-    function loadV4Counters() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const storedData = JSON.parse(ajaStorage.getItem(V4_STORAGE_KEY) || '{}'); if (storedData.date === today) { v4_counters.balao = storedData.balao || []; } else { v4_counters = { balao: [] }; } }
-    function saveV4Counters() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const dataToSave = { date: today, balao: v4_counters.balao }; try { ajaStorage.setItem(V4_STORAGE_KEY, JSON.stringify(dataToSave)); } catch (e) { } }
-
-    async function autoRestoreFromCloud() {
-        if (!GOOGLE_SCRIPT_URL) return;
-        const stats = analyticsManager.calculateStats();
-        // Se localmente está vazio e ainda não tentamos restaurar nesta sessão
-        if (stats.count === 0 && !ajaSessionStorage.getItem('pcs_auto_restored')) {
-            console.log("[PCS] Iniciando auto-restauração da nuvem...");
-            try {
-                const currentUserName = getAgentName();
-                if (currentUserName === "Usuário Anônimo") return;
-
-                const params = new URLSearchParams({ type: 'restore_agent', user: currentUserName });
-                const response = await safeFetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
-                if (!response.ok) return;
-                const res = await response.json();
-
-                if (res.status === 'success' && ((res.atendimentos && res.atendimentos.length > 0) || (res.encerrados && res.encerrados.length > 0))) {
-                    const storedData = analyticsManager.getData();
-                    storedData.conversations = [];
-                    
-                    if (res.atendimentos) {
-                        res.atendimentos.forEach(a => {
-                            const parts = a.horaFim.split(':');
-                            const dt = new Date();
-                            if (parts.length >= 2) dt.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
-                            storedData.conversations.push({
-                                timestamp: dt.getTime(),
-                                duration: (parseInt(a.duracaoSegundos) || 0) * 1000,
-                                activeDuration: (parseInt(a.tmeSegundos) || 0) * 1000,
-                                participantName: a.cliente || 'N/A',
-                                phoneNumber: 'N/A',
-                                isRecurrence: a.recorrencia === 'Sim',
-                                endedByAgent: a.tipo || 'unknown',
-                                interactionUrl: a.link || 'N/A',
-                                interactionType: 'unknown'
-                            });
-                        });
-                    }
-                    
-                    analyticsManager.saveData(storedData);
-                    
-                    if (res.encerrados && res.encerrados.length > 0) {
-                        const novosEncerrados = res.encerrados.map(e => ({ timestamp: e.timestamp, participantName: e.participantName, interactionUrl: e.interactionUrl }));
-                        v4_counters.balao = novosEncerrados;
-                        ajaStorage.setItem(V4_STORAGE_KEY, JSON.stringify({ date: getBrazilTime(new Date()).toLocaleDateString('pt-BR'), balao: novosEncerrados }));
-                    }
-                    
-                    ajaSessionStorage.setItem('pcs_auto_restored', 'true');
-                    console.log("[PCS] Dados restaurados automaticamente com sucesso!");
-                    UI.createNotification("🔄 Dados sincronizados com a nuvem!", "success", 4000);
-                    
-                    // Atualiza o dashboard se estiver visível
-                    if (document.getElementById('purecloud-script-mini-dashboard')) {
-                        document.getElementById('purecloud-script-mini-dashboard')._updateStatsInternal();
-                    }
-                }
-            } catch (e) {
-                console.error("[PCS] Erro na auto-restauração:", e);
-            }
-        }
-    }
-
-    const validateConfigValue = (key, value) => {
-        const parsed = parseInt(value, 10);
-        switch (key) {
-            case 'CONVERSATION_TARGET': return !isNaN(parsed) && parsed >= 1 ? parsed : 45; case 'INACTIVITY_CLIENT_ALERT_SECONDS': return !isNaN(parsed) && parsed >= 30 ? parsed : 70; case 'INACTIVITY_OPERATOR_ALERT_SECONDS': return !isNaN(parsed) && parsed >= 10 ? parsed : 30; case 'LONG_CONVO_ALERT_MIN': return !isNaN(parsed) && parsed >= 5 ? parsed : 15; case 'DARK_MODE': return value === true || value === 'true'; case 'SOUND_ALERTS_ENABLED': return value === true || value === 'true';
-            case 'THEME_COLORS': if (typeof value !== 'object' || value === null) { return defaultThemeColors; } const validatedColors = { ...defaultThemeColors }; for (const colorKey in defaultThemeColors) { if (value.hasOwnProperty(colorKey)) { if (typeof value[colorKey] === 'string' && value[colorKey].match(/^#[0-9a-f]{6}$/i)) { validatedColors[colorKey] = value[colorKey]; } } } return validatedColors;
-            case 'HOTKEYS': if (typeof value === 'object' && value !== null) { return { copyInteraction: value.copyInteraction || "Control+Shift+I", openSettings: value.openSettings || "Control+Shift+S", toggleMiniDashboard: value.toggleMiniDashboard || "Control+Shift+J", toggleLock: value.toggleLock || "Control+Shift+L", toggleDarkMode: value.toggleDarkMode || "Control+Shift+D", quickGreeting: value.quickGreeting || "Control+Shift+Q", exportData: value.exportData || "Control+Shift+E", toggleZenMode: value.toggleZenMode || "Control+Shift+Z", formatText: value.formatText || "Control+Shift+M" }; } return CONFIG.HOTKEYS;
-            default: return value;
-        }
-    };
-    const saveData = () => {
-        try {
-            const dataToSave = analyticsManager.getData();
-            ajaStorage.setItem('gcp_conversationTarget', validateConfigValue('CONVERSATION_TARGET', CONFIG.CONVERSATION_TARGET)); ajaStorage.setItem('gcp_darkMode', validateConfigValue('DARK_MODE', CONFIG.DARK_MODE)); ajaStorage.setItem('soundAlertsEnabled', validateConfigValue('SOUND_ALERTS_ENABLED', CONFIG.SOUND_ALERTS_ENABLED)); ajaStorage.setItem('inactivityClientAlertSeconds', validateConfigValue('INACTIVITY_CLIENT_ALERT_SECONDS', CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS)); ajaStorage.setItem('inactivityOperatorAlertSeconds', validateConfigValue('INACTIVITY_OPERATOR_ALERT_SECONDS', CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS)); ajaStorage.setItem('longConvoAlertMin', validateConfigValue('LONG_CONVO_ALERT_MIN', CONFIG.LONG_CONVO_ALERT_MIN)); ajaStorage.setItem('hotkeys', JSON.stringify(validateConfigValue('HOTKEYS', CONFIG.HOTKEYS))); ajaStorage.setItem('gcp_themeColors_v2', JSON.stringify(validateConfigValue('THEME_COLORS', CONFIG.THEME_COLORS))); ajaStorage.setItem('lastScriptVersion', SCRIPT_VERSION); ajaStorage.setItem('dailyAnalytics_v2_data', JSON.stringify(dataToSave)); ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS)); ajaSessionStorage.setItem('miniDashboardVisible', CONFIG.MINI_DASHBOARD_VISIBLE); ajaSessionStorage.setItem('miniDashboardMaximized', CONFIG.MINI_DASHBOARD_MAXIMIZED); ajaSessionStorage.setItem('toolsVisible', CONFIG.TOOLS_VISIBLE);
-            saveV4Counters();
-        } catch (e) { if (e.name === 'QuotaExceededError') { UI.createNotification("Erro: Espaço de armazenamento cheio.", 'error', 10000); } }
-    };
-
-    const findEl = (selectors, parent = document) => { if (!Array.isArray(selectors)) selectors = [selectors]; for (const selector of selectors) { let el = parent.querySelector(selector); if (el) return el; } return null; };
-
-    const throttle = (func, limit) => { let inThrottle; return function (...args) { if (!inThrottle) { func.apply(this, args); inThrottle = true; setTimeout(() => inThrottle = false, limit); } }; };
-    const formatTime = num => String(num).padStart(2, '0');
-    const getBrazilTime = (date) => { try { const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'America/Fortaleza' }; const formatter = new Intl.DateTimeFormat('en-US', options); const parts = formatter.formatToParts(date); const year = parseInt(parts.find(p => p.type === 'year').value); const month = parseInt(parts.find(p => p.type === 'month').value) - 1; const day = parseInt(parts.find(p => p.type === 'day').value); const hour = parseInt(parts.find(p => p.type === 'hour').value); const minute = parseInt(parts.find(p => p.type === 'minute').value); const second = parseInt(parts.find(p => p.type === 'second').value); const brazilDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`; return new Date(brazilDateString + '-03:00'); } catch (e) { return date; } };
-
-    // --- UTILIDADES GERAIS ---
-    const escapeHTML = (str) => {
-        if (!str || typeof str !== 'string') return str;
-        return str.replace(/[&<>'"]/g,
-            tag => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                "'": '&#39;',
-                '"': '&quot;'
-            }[tag] || tag)
-        );
-    };
-
-    const buildSpellOverlayHTML = (textoOriginal, errosEncontrados) => {
-        const texto = String(textoOriginal || '');
-        const errosOrdenados = [...(errosEncontrados || [])]
-            .sort((a, b) => (b.offset || 0) - (a.offset || 0));
-
-        if (errosOrdenados.length === 0) return escapeHTML(texto);
-
-        let htmlMarcado = '';
-        let cursor = texto.length;
-
-        errosOrdenados.forEach(err => {
-            let offsetVis = Number(err.offset) || 0;
-            let lengthVis = Number(err.length) || 0;
-            let classeCSS = 'spell-wavy-error';
-
-            if (lengthVis === 0 && offsetVis > 0) {
-                offsetVis -= 1;
-                lengthVis = 1;
-                classeCSS = 'spell-wavy-punct';
-            }
-
-            const start = Math.max(0, Math.min(offsetVis, cursor));
-            const end = Math.max(start, Math.min(start + lengthVis, cursor));
-            htmlMarcado = escapeHTML(texto.substring(end, cursor)) + htmlMarcado;
-            htmlMarcado = `<mark class="${classeCSS}">${escapeHTML(texto.substring(start, end))}</mark>` + htmlMarcado;
-            cursor = start;
-        });
-
-        return escapeHTML(texto.substring(0, cursor)) + htmlMarcado;
-    };
-
-
-    function getAgentName() {
-        const selectors = [
-            'div.user-info .name', 
-            '[data-qa-id="user-profile-name"]',
-            'span.user-name',
-            'div.name span.entry-value'
-        ];
-        for (let sel of selectors) {
-            let el = document.querySelector(sel);
-            if (el && el.innerText.trim()) {
-                const name = el.innerText.trim();
-                ajaStorage.setItem('purecloudScript_lastAgentName', name);
-                return name;
-            }
-        }
-        return ajaStorage.getItem('purecloudScript_lastAgentName') || "Usuário Anônimo";
-    }
-
-    // --- PROCESSADOR DE VARIÁVEIS (MÁGICAS) ---
-    const templateProcessor = {
-        process: (text) => {
-            if (!text.includes('{')) return text;
-            const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
-            let { participantName } = documentExtractor.getNameAndNumber(selectedConvEl);
-            if (!participantName || participantName === 'N/A') participantName = 'Cliente';
-            let primeiroNome = participantName.split(' ')[0];
-
-            const horaAtual = getBrazilTime(new Date()).getHours();
-            let saudacao = "Bom dia";
-            if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde";
-            else if (horaAtual >= 18 || horaAtual < 5) saudacao = "Boa noite";
-
-            // Aplica escapeHTML para segurança caso os nomes sejam usados em HTML posteriormente. 
-            // Para o chat de texto puro, escapeHTML pode injetar entities ampersand, 
-            // então o processador de chat apenas troca.
-            return text.replace(/{nome}/gi, participantName)
-                .replace(/{primeiro_nome}/gi, primeiroNome)
-                .replace(/{saudacao}/gi, saudacao);
-        }
-    };
-
-    const makeDraggable = (popup, header, popupName) => {
-        if (!header) header = popup;
-        let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
-
-        let enforceBounds = (top, left) => {
-            const vpW = window.innerWidth, vpH = window.innerHeight;
-            const pW = popup.offsetWidth || 300, pH = popup.offsetHeight || 300;
-            let safeT = Math.max(5, Math.min(vpH - pH - 5, top));
-            let safeL = Math.max(5, Math.min(vpW - pW - 5, left));
-            if (pW > vpW) safeL = 0; if (pH > vpH) safeT = 0;
-            return { top: safeT, left: safeL };
-        };
-
-        try {
-            if (typeof CONFIG === 'undefined') window.CONFIG = { POPUP_POSITIONS: {} };
-            if (!CONFIG.POPUP_POSITIONS) CONFIG.POPUP_POSITIONS = {};
-            let saved = ajaSessionStorage.getItem('qr_popupPositions') || ajaSessionStorage.getItem('popupPositions') || '{}';
-            CONFIG.POPUP_POSITIONS = JSON.parse(saved);
-        } catch (e) { }
-
-        popup.style.position = 'fixed';
-        popup.style.margin = '0';
-        popup.style.transform = 'none';
-
-        // Initial Positioning logic
-        if (popupName === 'quickReplyPopup') {
-            const dW = '650px', dH = '75vh';
-            popup.style.width = dW; popup.style.height = dH;
-            setTimeout(() => {
-                const safe = enforceBounds(Math.max(5, (window.innerHeight - popup.offsetHeight) / 2), Math.max(5, (window.innerWidth - popup.offsetWidth) / 2));
-                popup.style.top = safe.top + 'px'; popup.style.left = safe.left + 'px';
-            }, 50);
-        } else if (CONFIG && CONFIG.POPUP_POSITIONS && CONFIG.POPUP_POSITIONS[popupName]?.top && CONFIG.POPUP_POSITIONS[popupName]?.left) {
-            const safe = enforceBounds(parseFloat(CONFIG.POPUP_POSITIONS[popupName].top), parseFloat(CONFIG.POPUP_POSITIONS[popupName].left));
-            popup.style.top = safe.top + 'px'; popup.style.left = safe.left + 'px';
-            if (CONFIG.POPUP_POSITIONS[popupName].width) popup.style.width = CONFIG.POPUP_POSITIONS[popupName].width;
-            if (CONFIG.POPUP_POSITIONS[popupName].height) popup.style.height = CONFIG.POPUP_POSITIONS[popupName].height;
-        } else {
-            popup.style.top = '10%'; popup.style.left = '10%';
-        }
-
-        const savePos = () => {
-            if (popupName === 'quickReplyPopup' && !isDragging) return;
-            const rect = popup.getBoundingClientRect();
-            const safe = enforceBounds(rect.top, rect.left);
-            if (typeof CONFIG !== 'undefined' && CONFIG.POPUP_POSITIONS) {
-                CONFIG.POPUP_POSITIONS[popupName] = { top: safe.top + 'px', left: safe.left + 'px', width: popup.style.width, height: popup.style.height };
-                try {
-                    ajaSessionStorage.setItem('qr_popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
-                    ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
-                } catch (e) { }
-            }
-        };
-
-        header.addEventListener('mousedown', (e) => {
-            if (e.target.closest('button') || e.target.closest('.compact-btn') || e.target.closest('input') || e.target.classList.contains('os-btn') || e.button !== 0) return;
-            e.preventDefault();
-            isDragging = true;
-            popup.style.transition = 'none';
-
-            const rect = popup.getBoundingClientRect();
-            popup.style.left = rect.left + 'px';
-            popup.style.top = rect.top + 'px';
-            popup.style.bottom = 'auto';
-            popup.style.right = 'auto';
-
-            dragOffsetX = e.clientX - rect.left;
-            dragOffsetY = e.clientY - rect.top;
-        }, { passive: false });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const safe = enforceBounds(e.clientY - dragOffsetY, e.clientX - dragOffsetX);
-            popup.style.top = safe.top + 'px';
-            popup.style.left = safe.left + 'px';
-        }, { passive: false });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                savePos();
-            }
-        });
-
-        try {
-            const observer = new ResizeObserver(() => { if (!isDragging) savePos(); });
-            observer.observe(popup);
-        } catch (e) { }
-    };
-
-
-    const DataSyncer = {
-        QUEUE_KEY: 'genesys_offline_queue_v1',
-        async send(payload) { if (!GOOGLE_SCRIPT_URL) return; if (navigator.onLine) { try { await this._post(payload); } catch (e) { this._addToQueue(payload); } } else { this._addToQueue(payload); } this.updateIndicator(); },
-        async _post(payload) { 
-            return await safeFetch(GOOGLE_SCRIPT_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(payload) 
-            }); 
-        },
-        _addToQueue(payload) { let queue = JSON.parse(ajaStorage.getItem(this.QUEUE_KEY) || "[]"); payload._queuedAt = Date.now(); queue.push(payload); ajaStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue)); },
-        async processQueue() { if (!GOOGLE_SCRIPT_URL) return; if (!navigator.onLine) return; let queue = JSON.parse(ajaStorage.getItem(this.QUEUE_KEY) || "[]"); if (queue.length === 0) return; let failedQueue = []; for (let item of queue) { try { await this._post(item); await new Promise(r => setTimeout(r, 500)); } catch (e) { failedQueue.push(item); } } ajaStorage.setItem(this.QUEUE_KEY, JSON.stringify(failedQueue)); if (failedQueue.length === 0 && typeof UI !== 'undefined') { UI.createNotification("Sincronização offline concluída!", "success"); } this.updateIndicator(); },
-        updateIndicator() { let queue = JSON.parse(ajaStorage.getItem(this.QUEUE_KEY) || "[]"); let indicator = document.getElementById('offline-indicator'); if (queue.length > 0) { if (!indicator) { indicator = document.createElement('div'); indicator.id = 'offline-indicator'; indicator.style.cssText = "position:fixed; bottom:80px; right:20px; background:var(--purecloud-script-warn-color); color:#000; padding:8px 14px; border-radius:20px; font-size:12px; z-index:9999; box-shadow:0 4px 10px rgba(0,0,0,0.3); font-weight:bold; cursor:pointer;"; indicator.title = "Clique para tentar forçar o envio"; indicator.onclick = () => DataSyncer.processQueue(); document.body.appendChild(indicator); } indicator.innerText = `📡 ${queue.length} Pendentes`; indicator.style.display = 'block'; } else if (indicator) { indicator.style.display = 'none'; } }
-    };
-
-    const analyticsManager = {
-        getData() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const storedData = JSON.parse(ajaStorage.getItem('dailyAnalytics_v2_data') || '{}'); if (storedData.date !== today) { return { date: today, conversations: [], docCopies: 0, hotkeysUsed: [], baloonClicks: 0, transferClicks: 0, evaluatedClicks: 0, diagnosticRepliesUsed: 0 }; } storedData.conversations = (storedData.conversations || []).map(conv => ({ ...conv, activeDuration: conv.activeDuration || 0, isRecurrence: conv.isRecurrence || false, participantName: conv.participantName || 'N/A', phoneNumber: conv.phoneNumber || 'N/A', endedByAgent: conv.endedByAgent || 'HIBERNADO', interactionUrl: conv.interactionUrl || 'N/A', timestamp: typeof conv.timestamp === 'string' ? (new Date(conv.timestamp).getTime() || Date.now()) : conv.timestamp, interactionType: conv.interactionType || 'unknown' })); return storedData; },
-        saveData(data) { try { ajaStorage.setItem('dailyAnalytics_v2_data', JSON.stringify(data)); } catch (e) { log("Erro ao salvar dados:", e); } },
-        getAchievements() { return JSON.parse(ajaStorage.getItem('achievements_v2') || '{}'); },
-        logConversation(duration, activeDuration, participantName, phoneNumber, interactionUrl, classification, interactionType) {
-            const previousStats = this.calculateStats();
-            const data = this.getData();
-            const isRecurrence = phoneNumber !== 'N/A' && data.conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
-            data.conversations.push({ timestamp: Date.now(), duration: duration, activeDuration: activeDuration, participantName: participantName, phoneNumber: phoneNumber, isRecurrence: isRecurrence, endedByAgent: classification, interactionUrl: interactionUrl, interactionType: interactionType });
-            this.saveData(data); this._updateDashboard();
-
-            // --- CELEBRAÇÃO DE META VIRTUAL ---
-            const newStats = this.calculateStats();
-            if (previousStats.count < CONFIG.CONVERSATION_TARGET && newStats.count >= CONFIG.CONVERSATION_TARGET) {
-                effectsManager.triggerConfetti();
-                effectsManager.playSuccess();
-                UI.createNotification("🎉 Parabéns! Você atingiu sua meta diária de atendimentos!", "success", 8000);
-            }
-        },
-        logBaloonClick() { const data = this.getData(); data.baloonClicks = (data.baloonClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
-        logTransferClick() { const data = this.getData(); data.transferClicks = (data.transferClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
-        logEvaluatedClick() { const data = this.getData(); data.evaluatedClicks = (data.evaluatedClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
-        _updateDashboard() { if (document.getElementById('purecloud-script-mini-dashboard')) { document.getElementById('purecloud-script-mini-dashboard')._updateStatsInternal(); } },
-        calculateStats() { const data = this.getData(); const conversations = data.conversations; let completedConvos = conversations.filter(c => c.duration >= CONFIG.CHECKMARK_THRESHOLD_MS); const consolidatedConvos = completedConvos.filter(conv => !conv.isRecurrence); const uniqueCount = consolidatedConvos.length; const recurrenceCount = completedConvos.filter(conv => conv.isRecurrence).length; const baloonClicksCount = v4_counters.balao.length; if (completedConvos.length === 0) { return { count: 0, tma: '00:00', tme: '00:00', perHour: {}, first: 'N/A', last: 'N/A', docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, allConversations: conversations, endedByAgentCount: 0, recurrenceCount: 0, tmaSeconds: 0, tmeSeconds: 0 }; } const divisor = completedConvos.length > 0 ? completedConvos.length : 1; const totalDuration = completedConvos.reduce((sum, conv) => sum + conv.duration, 0); const tmaSeconds = Math.floor((totalDuration / divisor) / 1000); const totalActiveDuration = completedConvos.reduce((sum, conv) => sum + (conv.activeDuration || 0), 0); const tmeSeconds = Math.floor((totalActiveDuration / divisor) / 1000); const tma = `${formatTime(Math.floor(tmaSeconds / 60))}:${formatTime(tmaSeconds % 60)}`; const tme = `${formatTime(Math.floor(tmeSeconds / 60))}:${formatTime(tmeSeconds % 60)}`; const perHour = {}; for (let hour = 0; hour < 24; hour++) { perHour[hour] = 0; } completedConvos.forEach(conv => { const convDate = getBrazilTime(new Date(conv.timestamp)); const hour = convDate.getHours(); perHour[hour] = (perHour[hour] || 0) + 1; }); const sortedByTimestamp = [...completedConvos].sort((a, b) => b.timestamp - a.timestamp); const first = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[0].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; const last = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[sortedByTimestamp.length - 1].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; return { count: uniqueCount, tma, tme, perHour, first, last, docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, endedByAgentCount: 0, recurrenceCount: recurrenceCount, allConversations: conversations, tmaSeconds: tmaSeconds, tmeSeconds: tmeSeconds }; },
-        clearAllData() { ajaStorage.removeItem('dailyAnalytics_v2_data'); ajaStorage.removeItem('achievements_v2'); v4_counters = { balao: [] }; saveV4Counters(); UI.createMiniDashboard(); }
-    };
-
-
-    const documentExtractor = {
-        getNameAndNumber: (convEl = document) => { if (!convEl || convEl === document) { convEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP) || document; } const nameEl = findEl(CONFIG.PURECLOUD_SELECTORS.PARTICIPANT_NAME_BADGE, convEl); const rawText = nameEl?.textContent.trim() || 'N/A'; const match = rawText.match(/^(.*?)\s*\|\s*(\(\d{2}\)\s*\d{4,5}[-.\s]*\d{4,5}|\d{8,14})$/); let participantName = rawText; let phoneNumber = 'N/A'; if (match) { participantName = match[1].trim(); phoneNumber = match[2].replace(/\D/g, ''); } else { const numberMatch = rawText.match(/(\(\d{2}\)\s*\d{4,5}[-.\s]*\d{4,5}|\d{8,14})/); if (numberMatch) { phoneNumber = numberMatch[0].replace(/\D/g, ''); participantName = rawText.replace(numberMatch[0], '').replace(/|/g, '').trim() || 'N/A'; } } if (participantName.endsWith('|')) { participantName = participantName.slice(0, -1).trim(); } let formattedPhoneNumber = 'N/A'; if (phoneNumber.length === 11) { formattedPhoneNumber = `(${phoneNumber.substring(0, 2)}) ${phoneNumber.substring(2, 7)}-${phoneNumber.substring(7)}`; } else if (phoneNumber.length === 10) { formattedPhoneNumber = `(${phoneNumber.substring(0, 2)}) ${phoneNumber.substring(2, 6)}-${phoneNumber.substring(6)}`; } else if (phoneNumber !== 'N/A') { formattedPhoneNumber = phoneNumber; } return { participantName, phoneNumber: phoneNumber || 'N/A', formattedPhoneNumber: formattedPhoneNumber }; },
-        getInteractionId: (parentEl = document) => { const el = findEl(CONFIG.PURECLOUD_SELECTORS.INTERACTION_ID_EL, parentEl); return el?.textContent.trim().replace(/#/g, ''); },
-    };
-
-    async function copyTextToClipboard(text) { try { await navigator.clipboard.writeText(text); return true; } catch (err) { return false; } }
-    async function getNativeInteractionUrl() { const btn = findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON); if (!btn) return null; let originalClipboard = ''; try { originalClipboard = await navigator.clipboard.readText(); } catch (e) { } btn.click(); return new Promise(resolve => { setTimeout(async () => { let url = null; try { url = await navigator.clipboard.readText(); if (!url || !(url.includes('interactions/') || url.includes('conversations/'))) { url = null; } } catch (e) { url = null; } if (originalClipboard && url) { try { await navigator.clipboard.writeText(originalClipboard); } catch (e) { } } resolve(url); }, 200); }); }
-
-
-    // --- ENCONTRAR O CAMPO DE CHAT RAPIDAMENTE ---
-    function getChatInput() {
-        let chatInputField = null; const messagingIframe = document.querySelector(CONFIG.PURECLOUD_SELECTORS.MESSAGING_GADGET_IFRAME);
-        if (messagingIframe && messagingIframe.contentDocument) { chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]', messagingIframe.contentDocument); }
-        if (!chatInputField) { chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]'); }
-        return chatInputField;
-    }
-
-    const actions = {
-        copyInteraction: async () => {
-            const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
-            const { participantName, phoneNumber, formattedPhoneNumber } = documentExtractor.getNameAndNumber(selectedConvEl);
-            if (participantName === 'N/A' || !findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON)) { UI.createNotification(CONFIG.MESSAGES.NOT_FOUND_INTERACTION_DATA, 'error'); return; }
-            const url = await getNativeInteractionUrl();
-            if (url && (url.includes('interactions/') || url.includes('conversations/'))) {
-                const tData = conversationTimers.get(selectedConvEl);
-                if (tData) { tData.interactionUrl = url; tData.participantName = participantName; tData.phoneNumber = phoneNumber; UI.createNotification("Link salvo!", 'info', 1500); }
-                const nameAndPhone = formattedPhoneNumber !== 'N/A' ? `${participantName} | ${formattedPhoneNumber}` : (participantName !== 'N/A' ? participantName : 'Nome Indisponível');
-                const finalCopyText = `${nameAndPhone}\n${url}`;
-                if (await copyTextToClipboard(finalCopyText)) { UI.createNotification(CONFIG.MESSAGES.INTERACTION_COPIED, 'success'); } else { UI.createNotification(CONFIG.MESSAGES.COPY_ERROR, 'error'); }
-            } else {
-                UI.createNotification("Link não encontrado.", 'warn');
-                if (participantName !== 'N/A' && await copyTextToClipboard(participantName)) { UI.createNotification(`Nome (${participantName}) copiado.`, 'info'); }
-            }
-        },
-        openSettings: () => UI.createSettingsPanel(),
-        toggleMiniDashboard: () => { const dashboard = document.getElementById('purecloud-script-mini-dashboard'); if (dashboard) { clearInterval(dashboard._updateInterval); dashboard.remove(); CONFIG.MINI_DASHBOARD_VISIBLE = false; saveData(); } else { CONFIG.MINI_DASHBOARD_VISIBLE = true; saveData(); UI.createMiniDashboard(); } },
-        toggleLock: () => { const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP); if (!selectedConvEl) { UI.createNotification("Selecione uma conversa para destravar.", "warn"); return; } conversationLockManager.toggleLock(selectedConvEl); },
-        toggleDarkMode: () => {
-            CONFIG.DARK_MODE = !CONFIG.DARK_MODE;
-            saveData();
-        },
-        quickGreeting: () => { const chatInputField = getChatInput(); if (chatInputField) { chatInputField.value = templateProcessor.process(CONFIG.QUICK_REPLIES[0] ? CONFIG.QUICK_REPLIES[0].text : "Olá!"); chatInputField.dispatchEvent(new Event('input', { bubbles: true })); chatInputField.focus(); } else { UI.createNotification("Campo de chat não encontrado.", "warn"); } },
-        exportData: () => { const dataToExport = analyticsManager.getData().conversations; if (!dataToExport || dataToExport.length === 0) { UI.createNotification("Não há dados para exportar.", "warn"); return; } const filename = `purecloud_script_attendances_${getBrazilTime(new Date()).toISOString().split('T')[0]}.json`; const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification("Download iniciado!", "success"); },
-
-        // --- NOVAS AÇÕES: MODO FOCO E FORMATADOR DE TEXTO ---
-        toggleZenMode: () => {
-            document.body.classList.toggle('sys-zen-active');
-            const isActive = document.body.classList.contains('sys-zen-active');
-            UI.createNotification(`Modo Foco ${isActive ? 'Ativado 🧘' : 'Desativado'}`, "info");
-        },
-        formatText: () => {
-            const chatInputField = getChatInput();
-            if (chatInputField && chatInputField.value) {
-                // Transforma texto em minúsculo e capitaliza a primeira letra de cada frase
-                let txt = chatInputField.value.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
-                chatInputField.value = txt;
-                chatInputField.dispatchEvent(new Event('input', { bubbles: true }));
-                UI.createNotification("Texto formatado e corrigido! ✨", "success");
-            } else {
-                UI.createNotification("Nenhum texto para formatar no campo de chat.", "warn");
-            }
-        }
-    };
-
-
-    async function handleBalaoClick(e) { const endChatButton = findEl(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR); if (endChatButton && endChatButton.disabled) return; const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(document.body); let interactionUrl = 'N/A'; try { const urlFromButton = await getNativeInteractionUrl(); if (urlFromButton) { interactionUrl = urlFromButton; } else { const id = documentExtractor.getInteractionId(document.body); if (id && id !== 'N/A') { interactionUrl = `${window.location.origin}/directory/conversations/${id}`; } else { interactionUrl = window.location.href.includes('/conversations/') ? window.location.href : 'N/A'; } } } catch (error) { } v4_counters.balao.push({ timestamp: Date.now(), participantName: participantName, phoneNumber: phoneNumber, interactionUrl: interactionUrl }); saveV4Counters(); analyticsManager._updateDashboard(); }
-
-    const conversationLockManager = {
-        states: new Map(),
-        toggleLock: (selectedConvEl) => { const convState = conversationLockManager.states.get(selectedConvEl); if (!convState || !convState.isLocked) return; const lockButton = document.getElementById('purecloud-script-btn-toggleLock'); if (lockButton) { lockButton.classList.add('btn-feedback-click'); setTimeout(() => lockButton.classList.remove('btn-feedback-click'), 200); } convState.unlockClicks++; const clicksRemaining = LOCKDOWN_CONFIG.REQUIRED_CLICKS - convState.unlockClicks; if (clicksRemaining > 0) { UI.createNotification(`Mais ${clicksRemaining} vez(es) para destravar.`, "info", 1500); setTimeout(() => { conversationLockManager.updateLockButton(selectedConvEl); }, 0); } else { convState.isLocked = false; UI.createNotification("Conversa destravada!", "success"); setTimeout(() => { conversationLockManager.updateLockButton(selectedConvEl); }, 0); } },
-        updateLockButton: (conv) => { const currentConvState = conversationLockManager.states.get(conv); const endChatButton = findEl(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR); const lockButton = document.getElementById('purecloud-script-btn-toggleLock'); if (currentConvState && lockButton) { const ICON_SHIELD_LOCKED = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>'; const ICON_SHIELD_UNLOCKED = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path>'; lockButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${currentConvState.isLocked ? ICON_SHIELD_LOCKED : ICON_SHIELD_UNLOCKED}</svg>`; lockButton.disabled = !currentConvState.isLocked; lockButton.classList.toggle('lockdown-unlocked', !currentConvState.isLocked); lockButton.title = currentConvState.isLocked ? `Destravar Encerrar (Faltam ${LOCKDOWN_CONFIG.REQUIRED_CLICKS - currentConvState.unlockClicks} cliques)` : "Conversa Destravada."; if (endChatButton) { endChatButton.disabled = currentConvState.isLocked; endChatButton.classList.toggle('lockdown-disabled', currentConvState.isLocked); endChatButton.title = currentConvState.isLocked ? 'Bloqueado. Clique no escudo.' : 'Mensagens de término'; } } const getScriptIframeDoc = () => { const conversationRoot = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_ROOT); if (!conversationRoot) return null; const scriptIframe = findEl(CONFIG.PURECLOUD_SELECTORS.SCRIPT_IFRAME, conversationRoot); if (scriptIframe && scriptIframe.contentDocument) { return scriptIframe.contentDocument; } return null; }; const scriptDoc = getScriptIframeDoc(); const addAnalyticsListener = (btn, type) => { if (btn.dataset.gmListenerAdded || !currentConvState) return; btn.addEventListener('click', (e) => { if (btn.disabled) return; const id = documentExtractor.getInteractionId(); if (!id || id === 'N/A') return; if (type === 'TRANSFERIDO') { analyticsManager.logTransferClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'TRANSFERIDO', timestamp: Date.now() }); } else if (type === 'AVALIACAO') { analyticsManager.logEvaluatedClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'AVALIACAO', timestamp: Date.now() }); } }, { signal: currentConvState.controller.signal }); btn.dataset.gmListenerAdded = true; }; const addBalaoListener = (btn) => { if (btn.dataset.gmBalaoListenerAdded || !currentConvState) return; btn.addEventListener('click', handleBalaoClick, { signal: currentConvState.controller.signal }); btn.dataset.gmBalaoListenerAdded = true; }; document.querySelectorAll(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR.join(',')).forEach(btn => addBalaoListener(btn)); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.TRANSFER_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'TRANSFERIDO')); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); if (scriptDoc) { scriptDoc.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); } },
-        initLockState: (conv) => { if (!conversationLockManager.states.has(conv)) { conversationLockManager.states.set(conv, { isLocked: true, unlockClicks: 0, controller: new AbortController() }); } }
-    };
-
-    const conversationTimers = new Map();
-    let currentChatObserverInstance = null;
-    let currentChatInputField = null;
-
-    function updateTimerDisplay(timerData) {
-        if (!timerData.div?.isConnected || !timerData.numDiv?.isConnected || !timerData.bubblesContainer?.isConnected) { return; }
-        let currentElapsed; if (timerData.isPaused) { currentElapsed = timerData.pausedAt - timerData.startTime; } else { currentElapsed = Date.now() - timerData.startTime; }
-        const secs = Math.floor(currentElapsed / 1000); timerData.div.textContent = `${formatTime(Math.floor(secs / 60))}:${formatTime(secs % 60)}`;
-        timerData.div.classList.remove('paused-alert', 'inactive-client-alert', 'normal-timer', 'inactive-operator-alert'); timerData.div.style.removeProperty('animation');
-
-        if (timerData.isPaused) { timerData.div.classList.add('paused-alert'); } else {
-            const inactivityOperatorSeconds = (Date.now() - (timerData.lastOperatorActivityTimestamp || timerData.startTime)) / 1000;
-            const inactivityClientSeconds = (Date.now() - (timerData.lastCustomerReplyTimestamp || timerData.startTime)) / 1000;
-            if (inactivityOperatorSeconds >= CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS) {
-                timerData.div.classList.add('inactive-operator-alert'); if (!timerData.operatorAlertPlayed) { effectsManager.playBeep('inactive_operator'); timerData.operatorAlertPlayed = true; }
-            } else if (inactivityClientSeconds >= CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS) {
-                timerData.div.classList.add('inactive-client-alert'); if (!timerData.clientAlertPlayed) { effectsManager.playBeep('inactive_client'); timerData.clientAlertPlayed = true; }
-            } else { timerData.div.classList.add('normal-timer'); timerData.operatorAlertPlayed = false; timerData.clientAlertPlayed = false; }
-        }
-        if (currentElapsed >= CONFIG.CHECKMARK_THRESHOLD_MS) {
-            if (!timerData.completedVisual) {
-                if (!timerData.checkmarkDiv) {
-                    const existents = timerData.bubblesContainer.querySelectorAll('.injected-checkmark');
-                    existents.forEach(e => e.remove());
-                    timerData.checkmarkDiv = document.createElement('div');
-                    timerData.checkmarkDiv.className = 'injected-element injected-checkmark';
-                    timerData.checkmarkDiv.innerHTML = '✔️';
-                    timerData.bubblesContainer.appendChild(timerData.checkmarkDiv);
-                } timerData.checkmarkDiv.style.display = 'flex'; timerData.completedVisual = true;
-            }
-        } else { if (timerData.checkmarkDiv) { timerData.checkmarkDiv.style.display = 'none'; timerData.completedVisual = false; } }
-
-        const longConvoMs = CONFIG.LONG_CONVO_ALERT_MIN * 60000;
-        if (currentElapsed >= (longConvoMs - 60000) && currentElapsed < longConvoMs) {
-            if (!timerData.div.classList.contains('warning-pulse-alert')) timerData.div.classList.add('warning-pulse-alert');
-        } else {
-            timerData.div.classList.remove('warning-pulse-alert');
-        }
-
-        if (currentElapsed > longConvoMs && !timerData.longConvoNotified) { UI.createNotification(`A conversa com ${timerData.participantName || 'o cliente'} está longa (${CONFIG.LONG_CONVO_ALERT_MIN} min).`, 'warn', 5000); timerData.longConvoNotified = true; }
-    }
-
-    const timerManager = {
-        globalIntervalId: null,
-        startGlobalTimer() {
-            if (!this.globalIntervalId) {
-                this.globalIntervalId = setInterval(() => {
-                    conversationTimers.forEach((tData) => {
-                        updateTimerDisplay(tData);
-                    });
-                }, CONFIG.TIMER_UPDATE_INTERVAL_MS);
-            }
-        },
-        initTimer(convEl, index, total) {
-            let tData = conversationTimers.get(convEl); if (!tData) {
-                let bubblesContainer = convEl.querySelector('.injected-bubbles-container'); let tDiv = convEl.querySelector('.injected-conversation-timer'); let nDiv = convEl.querySelector('.injected-conversation-number'); let checkmarkDiv = convEl.querySelector('.injected-checkmark'); let recurrenceDiv = convEl.querySelector('.injected-recurrence-icon'); let iconDiv = convEl.querySelector('.injected-interaction-icon');
-                if (!bubblesContainer) { bubblesContainer = document.createElement('div'); bubblesContainer.className = 'injected-bubbles-container'; nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.appendChild(nDiv); iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '❔'; bubblesContainer.appendChild(iconDiv); tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); let contentWrapper = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_CONTENT_WRAPPER, convEl); if (contentWrapper) { contentWrapper.appendChild(bubblesContainer); } else { convEl.appendChild(bubblesContainer); } setTimeout(() => { if (contentWrapper && !contentWrapper.contains(bubblesContainer)) { contentWrapper.appendChild(bubblesContainer); } else if (!convEl.contains(bubblesContainer)) { convEl.appendChild(bubblesContainer); } }, 100); } else { if (!nDiv) { nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.prepend(nDiv); } if (!iconDiv) { iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '❔'; if (nDiv && nDiv.nextSibling) { bubblesContainer.insertBefore(iconDiv, nDiv.nextSibling); } else { bubblesContainer.appendChild(iconDiv); } } if (!tDiv) { tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); } }
-                const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(convEl); const interactionId = documentExtractor.getInteractionId(convEl);
-                const isRecurrence = phoneNumber !== 'N/A' && analyticsManager.getData().conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
-                if (isRecurrence) { if (!recurrenceDiv) { recurrenceDiv = document.createElement('div'); recurrenceDiv.className = 'injected-element injected-recurrence-icon'; recurrenceDiv.innerHTML = '🔁'; recurrenceDiv.title = 'Cliente recorrente hoje'; bubblesContainer.appendChild(recurrenceDiv); } recurrenceDiv.style.display = 'flex'; } else if (recurrenceDiv) { recurrenceDiv.style.display = 'none'; }
-                tData = { div: tDiv, numDiv: nDiv, iconDiv: iconDiv, checkmarkDiv: checkmarkDiv, recurrenceDiv: recurrenceDiv, bubblesContainer: bubblesContainer, element: convEl, creationTime: Date.now(), startTime: Date.now(), pausedAt: Date.now(), isPaused: true, completedVisual: false, tmaLogged: false, activeDuration: 0, activeSessionStart: null, lastOperatorActivityTimestamp: Date.now(), lastCustomerReplyTimestamp: Date.now(), longConvoNotified: false, operatorAlertPlayed: false, clientAlertPlayed: false, participantName: participantName, phoneNumber: phoneNumber, interactionUrl: 'N/A', interactionId: interactionId, isRecurrence: isRecurrence, interactionType: 'unknown' };
-                conversationTimers.set(convEl, tData);
-            }
-            tData.numDiv.textContent = total - index;
-            if (tData.isRecurrence && tData.recurrenceDiv) { tData.recurrenceDiv.style.display = 'flex'; }
-            return tData;
-        },
-        updateState(tData, isSelected) { if (isSelected) { if (tData.isPaused) { tData.startTime += (Date.now() - tData.pausedAt); tData.isPaused = false; tData.activeSessionStart = Date.now(); tData.lastOperatorActivityTimestamp = Date.now(); } } else { if (!tData.isPaused) { if (tData.activeSessionStart) { tData.activeDuration += (Date.now() - tData.activeSessionStart); tData.activeSessionStart = null; } tData.pausedAt = Date.now(); tData.isPaused = true; } } updateTimerDisplay(tData); },
-        cleanupTimers(activeConversationElements) {
-            const timersToDelete = []; const AGENT_END_WINDOW_MS = 5000;
-            conversationTimers.forEach((timerData, convEl) => {
-                if (!document.body.contains(convEl)) {
-                    // clearInterval(timerData.intervalId); -> agora usamos o Global Timer
-                    if (!timerData.tmaLogged) {
-                        if (!timerData.isPaused && timerData.activeSessionStart) { timerData.activeDuration += (Date.now() - timerData.activeSessionStart); timerData.activeSessionStart = null; }
-                        const duration = Date.now() - timerData.creationTime; const currentTime = Date.now();
-                        const clickData = CONFIG.LAST_ENDED_INTERACTIONS.get(timerData.interactionId); let classification = 'HIBERNADO';
-                        if (clickData && (currentTime - clickData.timestamp) < AGENT_END_WINDOW_MS) { if (clickData.type === 'BALAO') { classification = 'BALAO'; } else if (clickData.type === 'TRANSFERIDO') { classification = 'TRANSFERIDO'; } else if (clickData.type === 'AVALIACAO') { classification = 'AVALIACAO'; } CONFIG.LAST_ENDED_INTERACTIONS.delete(timerData.interactionId); }
-                        analyticsManager.logConversation(duration, timerData.activeDuration, timerData.participantName, timerData.phoneNumber, timerData.interactionUrl, classification, timerData.interactionType);
-                        timerData.tmaLogged = true; if (CONFIG.LAST_ENDED_INTERACTIONS.has(timerData.interactionId)) { CONFIG.LAST_ENDED_INTERACTIONS.delete(timerData.interactionId); }
-                    }
-                    timersToDelete.push(convEl); timerData.div?.remove(); timerData.numDiv?.remove(); timerData.iconDiv?.remove(); timerData.checkmarkDiv?.remove(); timerData.recurrenceDiv?.remove(); timerData.bubblesContainer?.remove();
-                }
-            });
-            timersToDelete.forEach(convEl => { conversationTimers.delete(convEl); const lockState = conversationLockManager.states.get(convEl); if (lockState && lockState.controller) lockState.controller.abort(); conversationLockManager.states.delete(convEl); });
-        }
-    }
-
-    function observeCurrentChatMessages(timerData) {
-        if (currentChatObserverInstance) { currentChatObserverInstance.disconnect(); currentChatObserverInstance = null; } if (currentChatInputField) { currentChatInputField.removeEventListener('input', handleOperatorActivity); currentChatInputField.removeEventListener('keypress', handleOperatorActivity); currentChatInputField = null; } let chatMessagesContainer = null; let chatInputField = null; const messagingIframe = document.querySelector(CONFIG.PURECLOUD_SELECTORS.MESSAGING_GADGET_IFRAME); if (messagingIframe && messagingIframe.contentDocument) { try { chatMessagesContainer = findEl('.chat-messages-container', messagingIframe.contentDocument); chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]', messagingIframe.contentDocument); } catch (e) { } } if (!chatMessagesContainer) { chatMessagesContainer = findEl('.chat-messages-container'); chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]'); }
-
-        const handleOperatorActivity = (e) => {
-            if (timerData.lastOperatorActivityTimestamp !== Date.now()) { timerData.lastOperatorActivityTimestamp = Date.now(); updateTimerDisplay(timerData); }
-
-            // --- LÓGICA DE SNIPPETS (AUTO-EXPANSÃO DE TEXTO) ---
-            if (e && e.type === 'input' && chatInputField) {
-                let val = chatInputField.value;
-                let replaced = false;
-                CONFIG.QUICK_REPLIES.forEach(qr => {
-                    // Verifica se o operador digitou o atalho com um espaço no final
-                    if (qr.shortcut && val.includes(qr.shortcut + ' ')) {
-                        val = val.replace(qr.shortcut + ' ', templateProcessor.process(qr.text) + ' ');
-                        replaced = true;
-                    }
-                });
-                if (replaced) {
-                    chatInputField.value = val;
-                    chatInputField.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
-        };
-
-        if (chatMessagesContainer) { if (chatMessagesContainer.dataset.observedByScript === 'true') { if (chatInputField && currentChatInputField !== chatInputField) { chatInputField.addEventListener('input', handleOperatorActivity); chatInputField.addEventListener('keypress', handleOperatorActivity); currentChatInputField = chatInputField; } return; } currentChatObserverInstance = new MutationObserver((mutations) => { for (const mutation of mutations) { if (mutation.type === 'childList' && mutation.addedNodes.length > 0) { const newClientMessages = Array.from(mutation.addedNodes).filter(node => node.nodeType === 1 && node.matches('.chat-message-group.remote')); if (newClientMessages.length > 0) { timerData.lastCustomerReplyTimestamp = Date.now(); updateTimerDisplay(timerData); } } } }); currentChatObserverInstance.observe(chatMessagesContainer, { childList: true, subtree: true }); chatMessagesContainer.dataset.observedByScript = 'true'; if (chatInputField) { chatInputField.addEventListener('input', handleOperatorActivity); chatInputField.addEventListener('keypress', handleOperatorActivity); currentChatInputField = chatInputField; } }
-    }
-
-    function mainLoop() {
-        const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }
-        let conversationsNodeList = document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', ')); const sortedConversationsArray = Array.from(conversationsNodeList).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-        const activeConversationElements = new Set(sortedConversationsArray); timerManager.cleanupTimers(activeConversationElements); const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
-        sortedConversationsArray.forEach((conv, index) => {
-            const nativeTimeElementsInConv = conv.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.NATIVE_TIMER_SELECTORS.join(', ')); nativeTimeElementsInConv.forEach(el => { if (el.classList.contains('injected-element') || el.classList.contains('injected-bubbles-container')) { return; } if (el.textContent.match(/\d+\s*(min|hr|seg|now|agora)/i) || el.matches('.duration, .message-timestamp')) { el.style.display = 'none'; } });
-            const tData = timerManager.initTimer(conv, index, sortedConversationsArray.length);
-            const isCall = conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CALL); const isChat = conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CHAT);
-            if (tData.iconDiv) { if (isCall) { tData.iconDiv.innerHTML = '📞'; tData.iconDiv.title = 'Ligação'; tData.interactionType = 'call'; } else if (isChat) { tData.iconDiv.innerHTML = '💬'; tData.iconDiv.title = 'Chat'; tData.interactionType = 'chat'; } else { tData.iconDiv.innerHTML = '❔'; tData.iconDiv.title = 'Interação'; tData.interactionType = 'unknown'; } }
-            const isSelected = conv === selectedConvEl; timerManager.updateState(tData, isSelected); conversationLockManager.initLockState(conv); if (isSelected) { observeCurrentChatMessages(tData); conversationLockManager.updateLockButton(conv); }
-        });
-        if (!selectedConvEl) { const pepperButton = document.getElementById('purecloud-script-btn-endCustomer'); if (pepperButton) pepperButton.title = 'Selecione uma conversa para encerrar'; }
-        if (CONFIG.MINI_DASHBOARD_VISIBLE) { UI.createMiniDashboard(); }
-        if (CONFIG.TOOLS_VISIBLE) { UI.createAgentToolsPanel(); }
-    }
-
-    const getHotkeyCombo = (e) => { const pressedKeys = []; if (e.ctrlKey) pressedKeys.push('Control'); if (e.shiftKey) pressedKeys.push('Shift'); if (e.altKey) pressedKeys.push('Alt'); const key = e.key === ' ' ? 'Space' : (e.key.length === 1 ? e.key.toUpperCase() : e.key); if (!['Control', 'Shift', 'Alt', 'Meta'].includes(key)) { pressedKeys.push(key); } const primaryKey = pressedKeys.pop(); pressedKeys.sort(); if (primaryKey) pressedKeys.push(primaryKey); return pressedKeys.join('+'); };
-    const keyboardEventHandler = (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) { return; } const currentCombo = getHotkeyCombo(e); if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) { return; } for (const actionName in CONFIG.HOTKEYS) { if (CONFIG.HOTKEYS[actionName] === currentCombo) { e.preventDefault(); if (actions[actionName]) { actions[actionName](); UI.createNotification(featureDescriptions[actionName]?.title || actionName, 'info', 1000); return; } } } };
-
-
-    function createToolbarUI(toolbar) {
-        if (toolbar.dataset.scriptVersion === SCRIPT_VERSION) { return; } toolbar.querySelectorAll('.purecloud-script-custom-btn, #purecloud-script-toolbar-counter, .purecloud-script-menu-container').forEach(el => el.remove()); toolbar.dataset.scriptVersion = SCRIPT_VERSION;
-        const createMainToolbarBtn = (id, title, svg, onClick) => { const btn = document.createElement("button"); btn.id = id; btn.className = 'purecloud-script-custom-btn'; btn.title = title; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${svg}</svg>`; btn.onclick = onClick; btn; toolbar.appendChild(btn); return btn; };
-        createMainToolbarBtn('purecloud-script-btn-copyInteraction', featureDescriptions.copyInteraction.title, '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/>', actions.copyInteraction);
-        createMainToolbarBtn('purecloud-script-btn-openSettings', featureDescriptions.openSettings.title, '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>', actions.openSettings);
-    }
-
-
-    const UI = {
-        createNotification(message, type = 'info', duration = 3000) {
+// Shared dependencies: none
+window.AjaModular.register("ui-createNotification", [], function(ctx) {
+const implementation = {createNotification(message, type = 'info', duration = 3000) {
             let c = document.getElementById('purecloud-script-notification-container');
             if (!c) { c = document.createElement('div'); c.id = 'purecloud-script-notification-container'; document.body.appendChild(c); }
             const n = document.createElement("div"); n.textContent = message; n.className = `purecloud-script-notification purecloud-script-notification-${type}`; c.prepend(n); const v = document.querySelectorAll('#purecloud-script-notification-container .purecloud-script-notification'); if (v.length > 5) { v[v.length - 1].remove(); } setTimeout(() => { n.style.opacity = '0'; n.style.transform = 'translateX(100%)'; setTimeout(() => n.remove(), 300); }, duration);
-        },
-        renderBarChart(container, perHourData) {
+        }};
+ctx.UI.createNotification = implementation.createNotification;
+});
+
+// Shared dependencies: none
+window.AjaModular.register("ui-renderBarChart", [], function(ctx) {
+const implementation = {renderBarChart(container, perHourData) {
             container.innerHTML = ''; if (Object.keys(perHourData).length === 0) { container.innerHTML = '<div class="chart-placeholder">Nenhuma conversa para exibir gráfico.</div>'; return; } const maxCount = Math.max(...Object.values(perHourData)); const chartWrapper = document.createElement('div'); chartWrapper.className = 'chart-bars-wrapper'; for (let hour = 0; hour < 24; hour++) { const count = perHourData[hour] || 0; const height = (count / (maxCount || 1)) * 90; const barWrapper = document.createElement('div'); barWrapper.className = 'chart-bar-wrapper'; barWrapper.title = `${count} conversas às ${String(hour).padStart(2, '0')}h`; barWrapper.style.height = '100%'; barWrapper.style.position = 'relative'; barWrapper.innerHTML = `<div class="chart-bar building-bar" style="height: ${height}%; position: absolute; bottom: 0; width: 90%;"><span class="bar-count">${count > 0 ? count : ''}</span></div><span class="bar-label">${String(hour).padStart(2, '0')}h</span>`; chartWrapper.appendChild(barWrapper); } container.innerHTML = `<div class="chart-scroll-container">${chartWrapper.outerHTML}</div>`;
-        },
-        renderAnalyticsContent(container) {
-            const stats = analyticsManager.calculateStats();
-            container.innerHTML = `<div class="stats-grid"><div class="stat-item"><span>Conversas (Únicas)</span><strong id="analytics-total-count">${stats.count}</strong></div><div class="stat-item"><span>TMA (Geral)</span><strong id="analytics-tma">${stats.tma}</strong></div><div class="stat-item"><span>TME (Ativo)</span><strong id="analytics-tme">${stats.tme}</strong></div><div class="stat-item"><span>Balão (Término)</span><strong id="analytics-balao-clicks">${stats.baloonClicks}</strong></div> <div class="stat-item"><span>Início</span><strong id="analytics-first">${stats.first}</strong></div><div class="stat-item"><span>Última</span><strong id="analytics-last">${stats.last}</strong></div><div class="stat-item"><span>Meta</span><strong id="analytics-target">${CONFIG.CONVERSATION_TARGET}</strong></div><div class="stat-item"><span>Transferidos</span><strong id="analytics-transfer-count">${stats.transferClicks}</strong></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 0.8em; color: var(--purecloud-script-text-secondary); margin-top: 5px;">* Balão (Término) usa o contador integrado (v4.0).</p><button id="export-shift-btn" class="purecloud-script-button" style="padding: 6px 12px; font-size: 0.85em;">📋 Copiar Resumo P/ Lua</button></div><h4>Conversas/Hora (Todas Completas)</h4><div class="analytics-chart-container-main"></div>`;
-            UI.renderBarChart(container.querySelector('.analytics-chart-container-main'), stats.perHour);
+        }};
+ctx.UI.renderBarChart = implementation.renderBarChart;
+});
+
+// Shared dependencies: CONFIG, UI, analyticsManager, copyTextToClipboard, getBrazilTime
+window.AjaModular.register("ui-renderAnalyticsContent", [], function(ctx) {
+const implementation = {renderAnalyticsContent(container) {
+            const stats = ctx.analyticsManager.calculateStats();
+            container.innerHTML = `<div class="stats-grid"><div class="stat-item"><span>Conversas (Únicas)</span><strong id="analytics-total-count">${stats.count}</strong></div><div class="stat-item"><span>TMA (Geral)</span><strong id="analytics-tma">${stats.tma}</strong></div><div class="stat-item"><span>TME (Ativo)</span><strong id="analytics-tme">${stats.tme}</strong></div><div class="stat-item"><span>Balão (Término)</span><strong id="analytics-balao-clicks">${stats.baloonClicks}</strong></div> <div class="stat-item"><span>Início</span><strong id="analytics-first">${stats.first}</strong></div><div class="stat-item"><span>Última</span><strong id="analytics-last">${stats.last}</strong></div><div class="stat-item"><span>Meta</span><strong id="analytics-target">${ctx.CONFIG.CONVERSATION_TARGET}</strong></div><div class="stat-item"><span>Transferidos</span><strong id="analytics-transfer-count">${stats.transferClicks}</strong></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 0.8em; color: var(--purecloud-script-text-secondary); margin-top: 5px;">* Balão (Término) usa o contador integrado (v4.0).</p><button id="export-shift-btn" class="purecloud-script-button" style="padding: 6px 12px; font-size: 0.85em;">📋 Copiar Resumo P/ Lua</button></div><h4>Conversas/Hora (Todas Completas)</h4><div class="analytics-chart-container-main"></div>`;
+            ctx.UI.renderBarChart(container.querySelector('.analytics-chart-container-main'), stats.perHour);
 
             container.querySelector('#export-shift-btn').onclick = () => {
-                const s = analyticsManager.calculateStats();
-                const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR');
+                const s = ctx.analyticsManager.calculateStats();
+                const today = ctx.getBrazilTime(new Date()).toLocaleDateString('pt-BR');
                 const text = `📊 RESUMO DE TURNO (${today})\nAtendimentos Únicos: ${s.count}\nTMA Geral: ${s.tma}\nTME Ativo: ${s.tme}\nTransferências: ${s.transferClicks}\nCliques Balão T.: ${s.baloonClicks}\nPrimeiro Chat: ${s.first}\nÚltimo Chat: ${s.last}`;
-                copyTextToClipboard(text).then(() => UI.createNotification("Resumo do turno copiado!", "success"));
+                ctx.copyTextToClipboard(text).then(() => ctx.UI.createNotification("Resumo do turno copiado!", "success"));
             };
-        },
-        renderDetailsContent(container) {
-            const stats = analyticsManager.calculateStats(); const conversations = stats.allConversations.filter(c => c.duration >= CONFIG.CHECKMARK_THRESHOLD_MS).sort((a, b) => b.timestamp - a.timestamp);
+        }};
+ctx.UI.renderAnalyticsContent = implementation.renderAnalyticsContent;
+});
+
+// Shared dependencies: CONFIG, actions, analyticsManager, escapeHTML, formatTime, getBrazilTime
+window.AjaModular.register("ui-renderDetailsContent", [], function(ctx) {
+const implementation = {renderDetailsContent(container) {
+            const stats = ctx.analyticsManager.calculateStats(); const conversations = stats.allConversations.filter(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS).sort((a, b) => b.timestamp - a.timestamp);
             let detailsList = container.querySelector('#details-list'); if (!detailsList) { detailsList = document.createElement('div'); detailsList.id = 'details-list'; container.appendChild(detailsList); }
             if (conversations.length === 0) { detailsList.innerHTML = '<p>Nenhum atendimento completo registrado hoje.</p>'; return; }
             const conversationsAsc = conversations.reverse(); const totalCount = conversationsAsc.length; const recurrenceCount = stats.recurrenceCount;
             detailsList.innerHTML = `
                 <div class="details-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h4 style="margin:0; color: var(--purecloud-script-text-primary);">Total de Atendimentos Completos: ${totalCount}</h4><h4 style="margin:0; color: var(--purecloud-script-warn-color); font-weight: bold;">Recorrências Hoje: ${recurrenceCount}</h4></div>
-                <table class="details-table"><thead><tr><th class="col-num">#</th><th class="col-type">Tipo</th><th>Hora Fim</th><th>Cliente</th><th>TME</th><th>Recorrência</th><th>Link</th></tr></thead><tbody>${conversationsAsc.map((conv, index) => { const time = getBrazilTime(new Date(conv.timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); const tmeSeconds = Math.floor(conv.activeDuration / 1000); const tme = `${formatTime(Math.floor(tmeSeconds / 60))}:${formatTime(tmeSeconds % 60)}`; const recurrenceLabel = conv.isRecurrence ? '<span class="recurrence-tag">Sim</span>' : '<span class="first-tag">Não</span>'; const urlLink = conv.interactionUrl && conv.interactionUrl !== 'N/A' ? `<a href="${escapeHTML(conv.interactionUrl)}" target="_blank" title="Abrir Interação">🔗</a>` : 'N/A'; let typeIcon = '❔'; if (conv.interactionType === 'call') { typeIcon = '📞'; } else if (conv.interactionType === 'chat') { typeIcon = '💬'; } return `<tr class="${conv.isRecurrence ? 'is-recurrence-row' : ''}"><td class="col-num">${index + 1}</td><td class="col-type" title="${conv.interactionType}">${typeIcon}</td><td>${time}</td><td>${escapeHTML(conv.participantName || 'N/A')}</td><td>${tme}</td><td>${recurrenceLabel}</td><td>${urlLink}</td></tr>`; }).join('')}</tbody></table><button id="export-details-btn" class="purecloud-script-button" style="margin-top: 15px;">Exportar Detalhes (JSON)</button>`;
-            const exportDetailsBtn = container.querySelector('#export-details-btn'); if (exportDetailsBtn) { exportDetailsBtn.onclick = () => actions.exportData(); }
-        },
-        renderClosedDetailsContent(container) {
-            const balaoRecords = v4_counters.balao.slice().reverse();
+                <table class="details-table"><thead><tr><th class="col-num">#</th><th class="col-type">Tipo</th><th>Hora Fim</th><th>Cliente</th><th>TME</th><th>Recorrência</th><th>Link</th></tr></thead><tbody>${conversationsAsc.map((conv, index) => { const time = ctx.getBrazilTime(new Date(conv.timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); const tmeSeconds = Math.floor(conv.activeDuration / 1000); const tme = `${ctx.formatTime(Math.floor(tmeSeconds / 60))}:${ctx.formatTime(tmeSeconds % 60)}`; const recurrenceLabel = conv.isRecurrence ? '<span class="recurrence-tag">Sim</span>' : '<span class="first-tag">Não</span>'; const urlLink = conv.interactionUrl && conv.interactionUrl !== 'N/A' ? `<a href="${ctx.escapeHTML(conv.interactionUrl)}" target="_blank" title="Abrir Interação">🔗</a>` : 'N/A'; let typeIcon = '❔'; if (conv.interactionType === 'call') { typeIcon = '📞'; } else if (conv.interactionType === 'chat') { typeIcon = '💬'; } return `<tr class="${conv.isRecurrence ? 'is-recurrence-row' : ''}"><td class="col-num">${index + 1}</td><td class="col-type" title="${conv.interactionType}">${typeIcon}</td><td>${time}</td><td>${ctx.escapeHTML(conv.participantName || 'N/A')}</td><td>${tme}</td><td>${recurrenceLabel}</td><td>${urlLink}</td></tr>`; }).join('')}</tbody></table><button id="export-details-btn" class="purecloud-script-button" style="margin-top: 15px;">Exportar Detalhes (JSON)</button>`;
+            const exportDetailsBtn = container.querySelector('#export-details-btn'); if (exportDetailsBtn) { exportDetailsBtn.onclick = () => ctx.actions.exportData(); }
+        }};
+ctx.UI.renderDetailsContent = implementation.renderDetailsContent;
+});
+
+// Shared dependencies: UI, escapeHTML, getBrazilTime, v4_counters
+window.AjaModular.register("ui-renderClosedDetailsContent", [], function(ctx) {
+const implementation = {renderClosedDetailsContent(container) {
+            const balaoRecords = ctx.v4_counters.balao.slice().reverse();
             container.innerHTML = `
                 <h4 style="margin-top:0;">Histórico de Cliques: Balão (Mensagens de Término)</h4><p style="font-size: 0.85em; color: var(--purecloud-script-text-secondary); margin-bottom: 15px;">Total de Cliques de Balão Hoje: <strong style="color: var(--purecloud-script-error-color);">${balaoRecords.length}</strong></p>
-                <div id="closed-interactions-list" class="details-table-wrapper" style="max-height: 400px; overflow-y: auto;">${balaoRecords.length === 0 ? '<p>Nenhum clique de Balão registrado hoje.</p>' : ''}<table class="details-table"><thead><tr><th style="width: 20%;">Hora</th><th style="width: 45%;">Cliente</th><th style="width: 25%;">Telefone</th><th style="width: 10%; text-align: center;">Link</th></tr></thead><tbody>${balaoRecords.map(item => { const time = getBrazilTime(new Date(item.timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); const urlLink = (item.interactionUrl && item.interactionUrl !== 'N/A') ? `<a href="${escapeHTML(item.interactionUrl)}" target="_blank" title="Abrir Interação">🔗</a>` : 'N/A'; return `<tr><td>${time}</td><td>${escapeHTML(item.participantName || 'N/A')}</td><td>${escapeHTML(item.phoneNumber || 'N/A')}</td><td style="text-align: center;">${urlLink}</td></tr>`; }).join('')}</tbody></table></div><button id="export-balao-details-btn" class="purecloud-script-button" style="margin-top: 15px;">Exportar Detalhes de Balão (JSON)</button>`;
-            const exportDetailsBtn = container.querySelector('#export-balao-details-btn'); if (exportDetailsBtn) { exportDetailsBtn.onclick = () => { const dataToExport = v4_counters.balao; const filename = `purecloud_script_balao_closures_${getBrazilTime(new Date()).toISOString().split('T')[0]}.json`; const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification("Dados exportados!", "success"); }; }
-        },
-        renderThemeContent(container, tempThemeColors) {
+                <div id="closed-interactions-list" class="details-table-wrapper" style="max-height: 400px; overflow-y: auto;">${balaoRecords.length === 0 ? '<p>Nenhum clique de Balão registrado hoje.</p>' : ''}<table class="details-table"><thead><tr><th style="width: 20%;">Hora</th><th style="width: 45%;">Cliente</th><th style="width: 25%;">Telefone</th><th style="width: 10%; text-align: center;">Link</th></tr></thead><tbody>${balaoRecords.map(item => { const time = ctx.getBrazilTime(new Date(item.timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); const urlLink = (item.interactionUrl && item.interactionUrl !== 'N/A') ? `<a href="${ctx.escapeHTML(item.interactionUrl)}" target="_blank" title="Abrir Interação">🔗</a>` : 'N/A'; return `<tr><td>${time}</td><td>${ctx.escapeHTML(item.participantName || 'N/A')}</td><td>${ctx.escapeHTML(item.phoneNumber || 'N/A')}</td><td style="text-align: center;">${urlLink}</td></tr>`; }).join('')}</tbody></table></div><button id="export-balao-details-btn" class="purecloud-script-button" style="margin-top: 15px;">Exportar Detalhes de Balão (JSON)</button>`;
+            const exportDetailsBtn = container.querySelector('#export-balao-details-btn'); if (exportDetailsBtn) { exportDetailsBtn.onclick = () => { const dataToExport = ctx.v4_counters.balao; const filename = `purecloud_script_balao_closures_${ctx.getBrazilTime(new Date()).toISOString().split('T')[0]}.json`; const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); ctx.UI.createNotification("Dados exportados!", "success"); }; }
+        }};
+ctx.UI.renderClosedDetailsContent = implementation.renderClosedDetailsContent;
+});
+
+// Shared dependencies: UI, defaultThemeColors
+window.AjaModular.register("ui-renderThemeContent", [], function(ctx) {
+const implementation = {renderThemeContent(container, tempThemeColors) {
             const colorGroups = { "Interface Geral": { bgPrimary: "Fundo Principal", bgSecondary: "Fundo Secundário", textPrimary: "Texto Principal", textSecondary: "Texto Secundário", borderColor: "Cor da Borda", }, "Timers e Números (Bolhas)": { timerBg: "Fundo Padrão", accent: "Fundo (Selecionado)", timerNormalText: "Texto (Novo/Completo)", timerActiveText: "Texto (Contando)", timerPausedText: "Texto (Pausado)", timerInactiveClientText: "Texto (Cliente Inativo)", timerInactiveOperatorText: "Texto (Operador Inativo)", }, "Cores de Alerta e Status": { success: "Sucesso (Verde)", error: "Erro (Vermelho)", warn: "Aviso (Amarelo)", info: "Informação (Azul)", }, "Outros": { miniDashboardProgress: "Progresso (Mini Dashboard)" } };
             container.innerHTML = `<h3>Configurações de Tema</h3><p>Altere as cores da interface. As alterações serão aplicadas após salvar.</p><div id="theme-color-sections"></div><button id="reset-theme-btn" class="purecloud-script-button button-danger" style="margin-top: 25px;">Resetar Cores Padrão</button>`;
             const sectionsContainer = container.querySelector('#theme-color-sections'); for (const groupName in colorGroups) { const section = document.createElement('div'); section.className = 'theme-section'; section.innerHTML = `<h4>${groupName}</h4><div class="settings-group color-grid"></div>`; const grid = section.querySelector('.color-grid'); for (const key in colorGroups[groupName]) { if (tempThemeColors.hasOwnProperty(key)) { const label = colorGroups[groupName][key]; const color = tempThemeColors[key]; const pickerGroup = document.createElement('div'); pickerGroup.className = 'color-picker-group'; pickerGroup.innerHTML = `<label for="theme-color-${key}">${label}</label><input type="color" id="theme-color-${key}" data-key="${key}" value="${color}">`; grid.appendChild(pickerGroup); } } sectionsContainer.appendChild(section); }
             container.querySelectorAll('input[type="color"]').forEach(input => { input.addEventListener('input', (e) => { tempThemeColors[e.target.dataset.key] = e.target.value; }); });
-            container.querySelector('#reset-theme-btn').onclick = () => { if (!confirm("Resetar todas as cores para o padrão?")) return; Object.assign(tempThemeColors, JSON.parse(JSON.stringify(defaultThemeColors))); container.querySelectorAll('input[type="color"]').forEach(input => { const key = input.dataset.key; if (tempThemeColors.hasOwnProperty(key)) { input.value = tempThemeColors[key]; } }); UI.createNotification("Cores resetadas para o padrão. Salve para confirmar.", "info"); };
-        },
-        createSettingsPanel() {
-            document.querySelector('.purecloud-script-settings-panel')?.remove(); const panel = document.createElement('div'); panel.className = 'purecloud-script-settings-panel purecloud-script-popup'; if (CONFIG.DARK_MODE) panel.classList.add('gcp-tema-escuro'); let tempHotkeysConfig = { ...CONFIG.HOTKEYS }; let tempThemeColors = JSON.parse(JSON.stringify(CONFIG.THEME_COLORS));
+            container.querySelector('#reset-theme-btn').onclick = () => { if (!confirm("Resetar todas as cores para o padrão?")) return; Object.assign(tempThemeColors, JSON.parse(JSON.stringify(ctx.defaultThemeColors))); container.querySelectorAll('input[type="color"]').forEach(input => { const key = input.dataset.key; if (tempThemeColors.hasOwnProperty(key)) { input.value = tempThemeColors[key]; } }); ctx.UI.createNotification("Cores resetadas para o padrão. Salve para confirmar.", "info"); };
+        }};
+ctx.UI.renderThemeContent = implementation.renderThemeContent;
+});
+
+// Shared dependencies: CONFIG, UI, analyticsManager, createToolbarUI, featureDescriptions, findEl, getHotkeyCombo, injectCss, makeDraggable, saveData, validateConfigValue
+window.AjaModular.register("ui-createSettingsPanel", [], function(ctx) {
+const implementation = {createSettingsPanel() {
+            document.querySelector('.purecloud-script-settings-panel')?.remove(); const panel = document.createElement('div'); panel.className = 'purecloud-script-settings-panel purecloud-script-popup'; if (ctx.CONFIG.DARK_MODE) panel.classList.add('gcp-tema-escuro'); let tempHotkeysConfig = { ...ctx.CONFIG.HOTKEYS }; let tempThemeColors = JSON.parse(JSON.stringify(ctx.CONFIG.THEME_COLORS));
 
             const iconAnalytics = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>`;
             const iconAtendimentos = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
@@ -895,13 +246,13 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     <button id="save-settings-btn" class="purecloud-script-button">Salvar e Fechar</button>
                 </div>`;
 
-            document.body.appendChild(panel); makeDraggable(panel, panel.querySelector('.panel-header'), 'settingsPanel'); panel.querySelector('#closeSettingsPanelBtn').onclick = () => panel.remove();
+            document.body.appendChild(panel); ctx.makeDraggable(panel, panel.querySelector('.panel-header'), 'settingsPanel'); panel.querySelector('#closeSettingsPanelBtn').onclick = () => panel.remove();
 
             const renderHotkeys = (container) => {
                 container.innerHTML = '<h3>Atalhos de Teclado</h3><p>Clique no campo de atalho e pressione a tecla desejada. Use ESC para cancelar a gravação.</p><div id="hotkey-list"></div>';
                 const hotkeyList = container.querySelector('#hotkey-list');
                 for (const actionKey in tempHotkeysConfig) {
-                    const feature = featureDescriptions[actionKey];
+                    const feature = ctx.featureDescriptions[actionKey];
                     if (!feature) continue;
                     const hotkeyGroup = document.createElement('div'); hotkeyGroup.className = 'settings-group hotkey-group';
                     hotkeyGroup.innerHTML = `<label for="hotkey-${actionKey}">${feature.title} <span style="display:block; font-size:0.8em; color:var(--purecloud-script-text-secondary); font-weight:normal;">${feature.description}</span></label><input type="text" id="hotkey-${actionKey}" data-action="${actionKey}" value="${tempHotkeysConfig[actionKey]}" readonly class="hotkey-input">`;
@@ -913,12 +264,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         if (!input.classList.contains('listening')) return;
                         e.preventDefault(); e.stopPropagation();
                         if (e.key === 'Escape') { input.classList.remove('listening'); input.value = tempHotkeysConfig[input.dataset.action]; input.title = ''; document.removeEventListener('keydown', input._captureHotkey, true); return; }
-                        const newCombo = getHotkeyCombo(e);
+                        const newCombo = ctx.getHotkeyCombo(e);
                         if (['Control', 'Shift', 'Alt'].includes(e.key) && newCombo.split('+').length < 2) { return; }
                         const existingAction = Object.keys(tempHotkeysConfig).find(key => tempHotkeysConfig[key] === newCombo && key !== input.dataset.action);
-                        if (existingAction) { UI.createNotification(`Conflito! Já está em uso.`, 'error', 5000); input.value = tempHotkeysConfig[input.dataset.action]; }
-                        else if (newCombo.split('+').length < 2) { UI.createNotification("Deve conter pelo menos um modificador (Ctrl, Shift, Alt).", 'warn', 4000); input.value = tempHotkeysConfig[input.dataset.action]; }
-                        else { tempHotkeysConfig[input.dataset.action] = newCombo; input.value = newCombo; UI.createNotification(`Atalho salvo temporariamente.`, 'info', 3000); }
+                        if (existingAction) { ctx.UI.createNotification(`Conflito! Já está em uso.`, 'error', 5000); input.value = tempHotkeysConfig[input.dataset.action]; }
+                        else if (newCombo.split('+').length < 2) { ctx.UI.createNotification("Deve conter pelo menos um modificador (Ctrl, Shift, Alt).", 'warn', 4000); input.value = tempHotkeysConfig[input.dataset.action]; }
+                        else { tempHotkeysConfig[input.dataset.action] = newCombo; input.value = newCombo; ctx.UI.createNotification(`Atalho salvo temporariamente.`, 'info', 3000); }
                         input.classList.remove('listening'); input.title = ''; document.removeEventListener('keydown', input._captureHotkey, true);
                     };
                     input._captureHotkey = captureHotkey;
@@ -934,202 +285,66 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 panel.querySelectorAll('.purecloud-script-tab-button').forEach(btn => btn.classList.remove('active')); panel.querySelectorAll('.purecloud-script-tab-content').forEach(content => content.classList.remove('active'));
                 const targetTabBtn = panel.querySelector(`.purecloud-script-tab-button[data-tab="${tabId}"]`); const targetTabContent = panel.querySelector(`[data-tab-content="${tabId}"]`);
                 if (targetTabBtn) targetTabBtn.classList.add('active'); if (targetTabContent) targetTabContent.classList.add('active');
-                if (tabId === 'general') { panel.querySelector('#conversation-target').value = CONFIG.CONVERSATION_TARGET; panel.querySelector('#dark-mode-toggle').checked = CONFIG.DARK_MODE; panel.querySelector('#sound-alerts-toggle').checked = CONFIG.SOUND_ALERTS_ENABLED; panel.querySelector('#inactivity-client-alert-seconds').value = CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS; panel.querySelector('#inactivity-operator-alert-seconds').value = CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS; panel.querySelector('#long-convo-alert-min').value = CONFIG.LONG_CONVO_ALERT_MIN; } else if (tabId === 'analytics') { UI.renderAnalyticsContent(targetTabContent); } else if (tabId === 'details') { UI.renderDetailsContent(targetTabContent); } else if (tabId === 'closed') { UI.renderClosedDetailsContent(targetTabContent); } else if (tabId === 'hotkeys') { renderHotkeys(targetTabContent); } else if (tabId === 'theme') { UI.renderThemeContent(targetTabContent, tempThemeColors); }
+                if (tabId === 'general') { panel.querySelector('#conversation-target').value = ctx.CONFIG.CONVERSATION_TARGET; panel.querySelector('#dark-mode-toggle').checked = ctx.CONFIG.DARK_MODE; panel.querySelector('#sound-alerts-toggle').checked = ctx.CONFIG.SOUND_ALERTS_ENABLED; panel.querySelector('#inactivity-client-alert-seconds').value = ctx.CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS; panel.querySelector('#inactivity-operator-alert-seconds').value = ctx.CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS; panel.querySelector('#long-convo-alert-min').value = ctx.CONFIG.LONG_CONVO_ALERT_MIN; } else if (tabId === 'analytics') { ctx.UI.renderAnalyticsContent(targetTabContent); } else if (tabId === 'details') { ctx.UI.renderDetailsContent(targetTabContent); } else if (tabId === 'closed') { ctx.UI.renderClosedDetailsContent(targetTabContent); } else if (tabId === 'hotkeys') { renderHotkeys(targetTabContent); } else if (tabId === 'theme') { ctx.UI.renderThemeContent(targetTabContent, tempThemeColors); }
                 if (tabId !== 'hotkeys') { panel.querySelectorAll('.hotkey-input.listening').forEach(i => { i.classList.remove('listening'); i.value = tempHotkeysConfig[i.dataset.action]; i.title = ''; document.removeEventListener('keydown', i._captureHotkey, true); }); }
             };
             panel.querySelectorAll('.purecloud-script-tab-button').forEach(btn => { btn.onclick = () => switchTab(btn.dataset.tab); });
             const generalTab = panel.querySelector('[data-tab-content="general"]');
-            generalTab.innerHTML = `<div class="settings-group"><label for="conversation-target">Meta Conversas Diárias:</label><input type="number" id="conversation-target" value="${CONFIG.CONVERSATION_TARGET}" min="1"></div><div class="settings-group"><label>Modo Escuro (Cronômetros):</label><label class="switch"><input type="checkbox" id="dark-mode-toggle" ${CONFIG.DARK_MODE ? 'checked' : ''}><span class="slider round"></span></label></div><div class="settings-group"><label>Sons e Confetes 🎉:</label><label class="switch"><input type="checkbox" id="sound-alerts-toggle" ${CONFIG.SOUND_ALERTS_ENABLED ? 'checked' : ''}><span class="slider round"></span></label></div><div class="settings-group"><label for="inactivity-client-alert-seconds">Alerta Inatividade CLIENTE (seg, min 30):</label><input type="number" id="inactivity-client-alert-seconds" value="${CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS}" min="30"></div><div class="settings-group"><label for="inactivity-operator-alert-seconds">Alerta Inatividade OPERADOR (seg, min 10):</label><input type="number" id="inactivity-operator-alert-seconds" value="${CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS}" min="10"></div><div class="settings-group"><label for="long-convo-alert-min">Alerta Conversa Longa (min, min 5):</label><input type="number" id="long-convo-alert-min" value="${CONFIG.LONG_CONVO_ALERT_MIN}" min="5"></div><div class="settings-group"><h4>Sincronização & Dados:</h4><p style="font-size:0.85em; color:var(--purecloud-script-success-color);">✅ Sincronização automática ativa</p><button id="adjust-tma-btn" class="purecloud-script-button" style="margin-bottom:10px;">Ajustar TMA Manual</button><br><button id="reset-counter-btn" class="purecloud-script-button button-danger">Resetar Contadores/Dados do Dia</button></div>`;
-            panel.querySelector('#reset-counter-btn').onclick = () => { if (confirm("Tem certeza? Isso apagará os dados de hoje localmente.")) { analyticsManager.clearAllData(); UI.renderDetailsContent(panel.querySelector('[data-tab-content="details"]')); UI.renderAnalyticsContent(panel.querySelector('[data-tab-content="analytics"]')); UI.renderClosedDetailsContent(panel.querySelector('[data-tab-content="closed"]')); } };
+            generalTab.innerHTML = `<div class="settings-group"><label for="conversation-target">Meta Conversas Diárias:</label><input type="number" id="conversation-target" value="${ctx.CONFIG.CONVERSATION_TARGET}" min="1"></div><div class="settings-group"><label>Modo Escuro (Cronômetros):</label><label class="switch"><input type="checkbox" id="dark-mode-toggle" ${ctx.CONFIG.DARK_MODE ? 'checked' : ''}><span class="slider round"></span></label></div><div class="settings-group"><label>Sons e Confetes 🎉:</label><label class="switch"><input type="checkbox" id="sound-alerts-toggle" ${ctx.CONFIG.SOUND_ALERTS_ENABLED ? 'checked' : ''}><span class="slider round"></span></label></div><div class="settings-group"><label for="inactivity-client-alert-seconds">Alerta Inatividade CLIENTE (seg, min 30):</label><input type="number" id="inactivity-client-alert-seconds" value="${ctx.CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS}" min="30"></div><div class="settings-group"><label for="inactivity-operator-alert-seconds">Alerta Inatividade OPERADOR (seg, min 10):</label><input type="number" id="inactivity-operator-alert-seconds" value="${ctx.CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS}" min="10"></div><div class="settings-group"><label for="long-convo-alert-min">Alerta Conversa Longa (min, min 5):</label><input type="number" id="long-convo-alert-min" value="${ctx.CONFIG.LONG_CONVO_ALERT_MIN}" min="5"></div><div class="settings-group"><h4>Sincronização & Dados:</h4><p style="font-size:0.85em; color:var(--purecloud-script-success-color);">✅ Sincronização automática ativa</p><button id="adjust-tma-btn" class="purecloud-script-button" style="margin-bottom:10px;">Ajustar TMA Manual</button><br><button id="reset-counter-btn" class="purecloud-script-button button-danger">Resetar Contadores/Dados do Dia</button></div>`;
+            panel.querySelector('#reset-counter-btn').onclick = () => { if (confirm("Tem certeza? Isso apagará os dados de hoje localmente.")) { ctx.analyticsManager.clearAllData(); ctx.UI.renderDetailsContent(panel.querySelector('[data-tab-content="details"]')); ctx.UI.renderAnalyticsContent(panel.querySelector('[data-tab-content="analytics"]')); ctx.UI.renderClosedDetailsContent(panel.querySelector('[data-tab-content="closed"]')); } };
             
             panel.querySelector('#adjust-tma-btn').onclick = () => {
-                const currentTma = analyticsManager.calculateStats().tma;
+                const currentTma = ctx.analyticsManager.calculateStats().tma;
                 const newTma = prompt("Insira o novo TMA desejado (formato MM:SS):", currentTma);
-                if (!newTma || !/^\d{2}:\d{2}$/.test(newTma)) { if (newTma !== null) UI.createNotification("Formato inválido. Use MM:SS", "error"); return; }
+                if (!newTma || !/^\d{2}:\d{2}$/.test(newTma)) { if (newTma !== null) ctx.UI.createNotification("Formato inválido. Use MM:SS", "error"); return; }
                 const parts = newTma.split(':');
                 const targetSeconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
                 
-                let data = analyticsManager.getData();
-                let completedConvos = data.conversations.filter(c => c.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
-                if (completedConvos.length === 0) { UI.createNotification("Você precisa ter pelo menos 1 atendimento para ajustar o TMA.", "error"); return; }
+                let data = ctx.analyticsManager.getData();
+                let completedConvos = data.conversations.filter(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS);
+                if (completedConvos.length === 0) { ctx.UI.createNotification("Você precisa ter pelo menos 1 atendimento para ajustar o TMA.", "error"); return; }
                 
                 const currentTotalMs = completedConvos.reduce((sum, conv) => sum + conv.duration, 0);
                 const targetTotalMs = (targetSeconds * completedConvos.length) * 1000;
                 const diffMs = targetTotalMs - currentTotalMs;
                 
-                let firstCompletedIndex = data.conversations.findIndex(c => c.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
+                let firstCompletedIndex = data.conversations.findIndex(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS);
                 if (firstCompletedIndex !== -1) {
                     data.conversations[firstCompletedIndex].duration += diffMs;
                     if (data.conversations[firstCompletedIndex].duration < 1000) data.conversations[firstCompletedIndex].duration = 1000;
-                    analyticsManager.saveData(data);
+                    ctx.analyticsManager.saveData(data);
                     
                     if (document.getElementById('purecloud-script-mini-dashboard')) { document.getElementById('purecloud-script-mini-dashboard')._updateStatsInternal(); }
                     
                     // Atualiza a tela de Analytics imediatamente se estiver aberta
                     const analyticsTab = panel.querySelector('[data-tab-content="analytics"]');
-                    if (analyticsTab) UI.renderAnalyticsContent(analyticsTab);
+                    if (analyticsTab) ctx.UI.renderAnalyticsContent(analyticsTab);
                     
-                    UI.createNotification("TMA ajustado com sucesso!", "success");
+                    ctx.UI.createNotification("TMA ajustado com sucesso!", "success");
                 }
             };
-            panel.querySelector('[data-tab-content="analytics"]').innerHTML = `<div id="analytics-content-main"><button id="load-stats-btn" class="purecloud-script-button">Carregar Estatísticas</button></div>`; panel.querySelector('#load-stats-btn').onclick = () => { UI.renderAnalyticsContent(panel.querySelector('[data-tab-content="analytics"]')); };
+            panel.querySelector('[data-tab-content="analytics"]').innerHTML = `<div id="analytics-content-main"><button id="load-stats-btn" class="purecloud-script-button">Carregar Estatísticas</button></div>`; panel.querySelector('#load-stats-btn').onclick = () => { ctx.UI.renderAnalyticsContent(panel.querySelector('[data-tab-content="analytics"]')); };
             panel.querySelector('#save-settings-btn').onclick = () => {
-                CONFIG.CONVERSATION_TARGET = validateConfigValue('CONVERSATION_TARGET', panel.querySelector('#conversation-target').value); CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS = validateConfigValue('INACTIVITY_CLIENT_ALERT_SECONDS', panel.querySelector('#inactivity-client-alert-seconds').value); CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS = validateConfigValue('INACTIVITY_OPERATOR_ALERT_SECONDS', panel.querySelector('#inactivity-operator-alert-seconds').value); CONFIG.LONG_CONVO_ALERT_MIN = validateConfigValue('LONG_CONVO_ALERT_MIN', panel.querySelector('#long-convo-alert-min').value); CONFIG.SOUND_ALERTS_ENABLED = validateConfigValue('SOUND_ALERTS_ENABLED', panel.querySelector('#sound-alerts-toggle').checked);
-                CONFIG.HOTKEYS = validateConfigValue('HOTKEYS', tempHotkeysConfig); CONFIG.THEME_COLORS = validateConfigValue('THEME_COLORS', tempThemeColors);
-                saveData(); document.querySelectorAll('.purecloud-script-popup, .purecloud-script-custom-btn, #purecloud-script-notification-container, .injected-bubbles-container').forEach(el => el.classList.toggle('gcp-tema-escuro', CONFIG.DARK_MODE)); UI.createNotification("Configurações salvas!", "success"); panel.remove(); document.getElementById('purecloud-script-injected-style')?.remove(); injectCss(); const toolbarEl = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbarEl) { toolbarEl.dataset.scriptVersion = ''; createToolbarUI(toolbarEl); }
+                ctx.CONFIG.CONVERSATION_TARGET = ctx.validateConfigValue('CONVERSATION_TARGET', panel.querySelector('#conversation-target').value); ctx.CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS = ctx.validateConfigValue('INACTIVITY_CLIENT_ALERT_SECONDS', panel.querySelector('#inactivity-client-alert-seconds').value); ctx.CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS = ctx.validateConfigValue('INACTIVITY_OPERATOR_ALERT_SECONDS', panel.querySelector('#inactivity-operator-alert-seconds').value); ctx.CONFIG.LONG_CONVO_ALERT_MIN = ctx.validateConfigValue('LONG_CONVO_ALERT_MIN', panel.querySelector('#long-convo-alert-min').value); ctx.CONFIG.SOUND_ALERTS_ENABLED = ctx.validateConfigValue('SOUND_ALERTS_ENABLED', panel.querySelector('#sound-alerts-toggle').checked);
+                ctx.CONFIG.HOTKEYS = ctx.validateConfigValue('HOTKEYS', tempHotkeysConfig); ctx.CONFIG.THEME_COLORS = ctx.validateConfigValue('THEME_COLORS', tempThemeColors);
+                ctx.saveData(); document.querySelectorAll('.purecloud-script-popup, .purecloud-script-custom-btn, #purecloud-script-notification-container, .injected-bubbles-container').forEach(el => el.classList.toggle('gcp-tema-escuro', ctx.CONFIG.DARK_MODE)); ctx.UI.createNotification("Configurações salvas!", "success"); panel.remove(); document.getElementById('purecloud-script-injected-style')?.remove(); ctx.injectCss(); const toolbarEl = ctx.findEl(ctx.CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbarEl) { toolbarEl.dataset.scriptVersion = ''; ctx.createToolbarUI(toolbarEl); }
             };
             switchTab('analytics');
-        },
+        }};
+ctx.UI.createSettingsPanel = implementation.createSettingsPanel;
+});
 
-        createAgentToolsPanel() {
-            if (!CONFIG.TOOLS_VISIBLE) { document.getElementById('purecloud-script-tools-panel')?.remove(); return; }
-            let panel = document.getElementById('purecloud-script-tools-panel');
-            if (!panel) {
-                panel = document.createElement('div');
-                panel.id = 'purecloud-script-tools-panel';
-                panel.className = 'purecloud-script-popup';
+window.AjaModular.register('ui-createAgentToolsPanel', [], function(ctx) {
+    ctx.UI.createAgentToolsPanel = function() {
+        if (!ctx.CONFIG.TOOLS_VISIBLE) { document.getElementById('purecloud-script-tools-panel')?.remove(); return; }
+        return window.AjaModular.open('ferramentas');
+    };
+});
 
-                const iconNotes = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
-                const iconForm = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
-                const iconZap = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
-                const iconLink = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>`;
-                const iconBell = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
-
-                panel.innerHTML = `
-                    <div class="panel-header" style="cursor: move;">
-                        <h2>🛠️ Ferramentas Rápidas</h2>
-                        <div class="panel-header-buttons">
-                            <button id="tools-btn-theme" class="panel-header-btn" title="Mudar Tema" style="cursor: pointer; font-size: 16px; margin-right: 8px; background: none; border: none; color: inherit;">🌗</button>
-                            <button class="panel-header-btn purecloud-script-popup-close-btn" id="closeToolsBtn" title="Fechar">X</button>
-                        </div>
-                    </div>
-                    <style>
-                        #purecloud-script-tools-panel.cc-escurinho { --purecloud-script-bg-primary: #0f172a; --purecloud-script-bg-secondary: #1e293b; --purecloud-script-text-primary: #f8fafc; --purecloud-script-text-secondary: #cbd5e1; --purecloud-script-border-color: #334155; }
-                        #purecloud-script-tools-panel.local-light-mode { --purecloud-script-bg-primary: #ffffff; --purecloud-script-bg-secondary: #f1f5f9; --purecloud-script-text-primary: #0f172a; --purecloud-script-text-secondary: #475569; --purecloud-script-border-color: #e2e8f0; }
-                    </style>
-                    <div class="purecloud-script-tabs" style="font-size: 0.85em; padding: 0 5px;">
-                        <button class="purecloud-script-tab-button active" data-tab="notas">${iconNotes} Notas</button>
-                        <button class="purecloud-script-tab-button" data-tab="respostas">${iconZap} Respostas</button>
-                        <button class="purecloud-script-tab-button" data-tab="lembretes">${iconBell} Lembretes</button>
-                        <button class="purecloud-script-tab-button" data-tab="links">${iconLink} Links</button>
-                    </div>
-                    <div class="panel-content" style="padding: 15px;">
-                        <div class="purecloud-script-tab-content active" data-tab-content="notas">
-                            <textarea id="tools-notepad" style="width:100%; height:200px; resize:none; border-radius:8px; padding:10px; background:var(--purecloud-script-bg-primary); color:var(--purecloud-script-text-primary); border:1px solid var(--purecloud-script-border-color);" placeholder="Digite suas anotações temporárias aqui... Salva automaticamente!"></textarea>
-                        </div>
-                        
-                        <div class="purecloud-script-tab-content" data-tab-content="respostas">
-                            <p style="font-size: 0.8em; color:var(--purecloud-script-text-secondary); margin-bottom: 10px;">Dica: Digite <strong>/oi</strong> (com espaço) no chat para usar os atalhos mágicos.</p>
-                            <div id="quick-replies-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-                        </div>
-
-                        <div class="purecloud-script-tab-content" data-tab-content="lembretes">
-                            <p style="font-size: 0.85em; color:var(--purecloud-script-text-primary); margin-bottom: 15px;">O cliente pediu um minuto? Defina um alerta para não esquecer de retornar ao chat.</p>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                                <button class="purecloud-script-button btn-lembrete" data-time="1">1 Min</button>
-                                <button class="purecloud-script-button btn-lembrete" data-time="3">3 Min</button>
-                                <button class="purecloud-script-button btn-lembrete" data-time="5">5 Min</button>
-                            </div>
-                        </div>
-
-                        <div class="purecloud-script-tab-content" data-tab-content="links">
-                            <div id="useful-links-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(panel); makeDraggable(panel, panel.querySelector('.panel-header'), 'toolsPanel');
-                panel.querySelector('#closeToolsBtn').onclick = () => { CONFIG.TOOLS_VISIBLE = false; saveData(); panel.remove(); };
-
-                const themeBtnTools = panel.querySelector('#tools-btn-theme');
-                const savedThemeTools = ajaStorage.getItem('TOOLS_THEME');
-                if (savedThemeTools === 'light') {
-                    panel.classList.add('local-light-mode');
-                    themeBtnTools.innerText = '☀️';
-                } else if (savedThemeTools === 'dark') {
-                    panel.classList.add('cc-escurinho');
-                    themeBtnTools.innerText = '🌗';
-                }
-                themeBtnTools.onclick = () => {
-                    const isLight = panel.classList.contains('local-light-mode');
-                    if (isLight) {
-                        panel.classList.remove('local-light-mode');
-                        panel.classList.add('cc-escurinho');
-                        ajaStorage.setItem('TOOLS_THEME', 'dark');
-                        themeBtnTools.innerText = '🌗';
-                    } else {
-                        panel.classList.remove('cc-escurinho');
-                        panel.classList.add('local-light-mode');
-                        ajaStorage.setItem('TOOLS_THEME', 'light');
-                        themeBtnTools.innerText = '☀️';
-                    }
-                };
-
-                const switchToolsTab = (tabId) => {
-                    panel.querySelectorAll('.purecloud-script-tab-button').forEach(btn => btn.classList.remove('active'));
-                    panel.querySelectorAll('.purecloud-script-tab-content').forEach(content => content.classList.remove('active'));
-                    panel.querySelector(`.purecloud-script-tab-button[data-tab="${tabId}"]`)?.classList.add('active');
-                    panel.querySelector(`[data-tab-content="${tabId}"]`)?.classList.add('active');
-                };
-                panel.querySelectorAll('.purecloud-script-tab-button').forEach(btn => { btn.onclick = () => switchToolsTab(btn.dataset.tab); });
-
-                const notepad = panel.querySelector('#tools-notepad'); notepad.value = ajaStorage.getItem('purecloudScript_notepad') || ''; notepad.addEventListener('input', (e) => { ajaStorage.setItem('purecloudScript_notepad', e.target.value); });
-
-                // Populando Respostas Rápidas (Padrão)
-                const qrList = panel.querySelector('#quick-replies-list');
-
-                CONFIG.QUICK_REPLIES.forEach(qr => {
-                    // Preenche a aba Respostas visuais (Lista)
-                    const btn = document.createElement('button'); btn.className = 'purecloud-script-button';
-                    btn.style.cssText = "text-align:left; padding: 8px 12px; background:var(--purecloud-script-bg-secondary); color:var(--purecloud-script-text-primary); border:1px solid var(--purecloud-script-border-color); box-shadow:none; position:relative;";
-                    btn.innerHTML = `<strong>${escapeHTML(qr.title)}</strong> <span style="font-size:0.8em; color:var(--purecloud-script-accent-color); float:right; font-weight:bold;">${escapeHTML(qr.shortcut || '')}</span> <span style="display:block; font-size:0.8em; font-weight:normal; color:var(--purecloud-script-text-secondary); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(qr.text)}</span>`;
-                    btn.onmouseover = () => { btn.style.borderColor = 'var(--purecloud-script-accent-color)'; }; btn.onmouseout = () => { btn.style.borderColor = 'var(--purecloud-script-border-color)'; };
-
-                    const dispatchSnippet = async () => {
-                        const chatInputField = getChatInput();
-                        const textToInject = templateProcessor.process(qr.text);
-                        if (chatInputField) {
-                            chatInputField.value = textToInject; chatInputField.dispatchEvent(new Event('input', { bubbles: true })); chatInputField.focus();
-                            UI.createNotification("Resposta inserida no chat!", "success");
-                        } else {
-                            if (await copyTextToClipboard(textToInject)) { UI.createNotification("Resposta copiada para o mouse!", "info"); }
-                        }
-                    };
-                    btn.onclick = dispatchSnippet;
-                    qrList.appendChild(btn);
-                });
-
-                // Populando Links Úteis
-                const linksList = panel.querySelector('#useful-links-list');
-                USEFUL_LINKS.forEach(link => {
-                    const btn = document.createElement('button'); btn.className = 'purecloud-script-button';
-                    btn.style.cssText = `text-align:center; padding: 10px; background:${link.color}; color:#fff; border:none; margin-bottom: 5px; font-weight: bold;`;
-                    btn.textContent = link.title;
-                    btn.onclick = () => window.open(link.url, '_blank');
-                    linksList.appendChild(btn);
-                });
-
-                // Lógica dos Lembretes
-                panel.querySelectorAll('.btn-lembrete').forEach(btn => {
-                    btn.onclick = (e) => {
-                        const minutes = parseInt(e.target.dataset.time);
-                        const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
-                        let { participantName } = documentExtractor.getNameAndNumber(selectedConvEl);
-                        if (!participantName || participantName === 'N/A') participantName = 'o cliente';
-
-                        UI.createNotification(`Alarme configurado! Avisarei sobre ${participantName} em ${minutes} minuto(s).`, "success");
-
-                        setTimeout(() => {
-                            effectsManager.playBeep('reminder');
-                            UI.createNotification(`⏰ HORA DE RETORNAR!\nVerifique o chat do cliente: ${participantName}`, "error", 15000);
-                        }, minutes * 60000);
-                    };
-                });
-
-            }
-        },
-
-        createMiniDashboard() {
-            if (!CONFIG.MINI_DASHBOARD_VISIBLE) { const dashboard = document.getElementById('purecloud-script-mini-dashboard'); if (dashboard && dashboard._updateInterval) { clearInterval(dashboard._updateInterval); } dashboard?.remove(); return; }
+// Shared dependencies: CONFIG, UI, ajaStorage, analyticsManager, makeDraggable, saveData
+window.AjaModular.register("ui-createMiniDashboard", [], function(ctx) {
+const implementation = {createMiniDashboard() {
+            if (!ctx.CONFIG.MINI_DASHBOARD_VISIBLE) { const dashboard = document.getElementById('purecloud-script-mini-dashboard'); if (dashboard && dashboard._updateInterval) { clearInterval(dashboard._updateInterval); } dashboard?.remove(); return; }
             let dashboard = document.getElementById('purecloud-script-mini-dashboard');
             if (!dashboard) {
                 dashboard = document.createElement('div'); dashboard.id = 'purecloud-script-mini-dashboard'; dashboard.className = 'purecloud-script-popup'; document.body.appendChild(dashboard);
@@ -1161,10 +376,10 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         </div>
                     </div>
                 `;
-                const dashboardHeader = dashboard.querySelector('.mini-dashboard-header'); makeDraggable(dashboard, dashboardHeader, 'miniDashboard');
+                const dashboardHeader = dashboard.querySelector('.mini-dashboard-header'); ctx.makeDraggable(dashboard, dashboardHeader, 'miniDashboard');
 
                 const themeBtnDash = dashboard.querySelector('#mini-dashboard-btn-theme');
-                const savedThemeDash = ajaStorage.getItem('DASHBOARD_THEME');
+                const savedThemeDash = ctx.ajaStorage.getItem('DASHBOARD_THEME');
                 if (savedThemeDash === 'light') {
                     dashboard.classList.add('local-light-mode');
                     themeBtnDash.innerText = '☀️';
@@ -1177,12 +392,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     if (isLight) {
                         dashboard.classList.remove('local-light-mode');
                         dashboard.classList.add('cc-escurinho');
-                        ajaStorage.setItem('DASHBOARD_THEME', 'dark');
+                        ctx.ajaStorage.setItem('DASHBOARD_THEME', 'dark');
                         themeBtnDash.innerText = '🌗';
                     } else {
                         dashboard.classList.remove('cc-escurinho');
                         dashboard.classList.add('local-light-mode');
-                        ajaStorage.setItem('DASHBOARD_THEME', 'light');
+                        ctx.ajaStorage.setItem('DASHBOARD_THEME', 'light');
                         themeBtnDash.innerText = '☀️';
                     }
                 };
@@ -1200,11 +415,11 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 dashboard._lastRenderedStats = {};
                 dashboard._updateStatsInternal = () => {
                     if (!dashboard.isConnected) { clearInterval(dashboard._updateInterval); return; }
-                    const stats = analyticsManager.calculateStats();
-                    const progress = (stats.count / CONFIG.CONVERSATION_TARGET) * 100;
+                    const stats = ctx.analyticsManager.calculateStats();
+                    const progress = (stats.count / ctx.CONFIG.CONVERSATION_TARGET) * 100;
 
                     const counterTextEl = dashboard.querySelector('.counter-text');
-                    const newCounterText = `${stats.count}/${CONFIG.CONVERSATION_TARGET}`;
+                    const newCounterText = `${stats.count}/${ctx.CONFIG.CONVERSATION_TARGET}`;
                     if (counterTextEl && dashboard._lastRenderedStats.counterText !== newCounterText) {
                         counterTextEl.textContent = newCounterText;
                         dashboard._lastRenderedStats.counterText = newCounterText;
@@ -1217,9 +432,9 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         dashboard._lastRenderedStats.progressWidth = newProgressWidth;
                     }
 
-                    if (CONFIG.MINI_DASHBOARD_MAXIMIZED) {
+                    if (ctx.CONFIG.MINI_DASHBOARD_MAXIMIZED) {
                         const currentTmaSeconds = Math.floor(stats.tma.split(':').reduce((acc, time) => (60 * acc) + +time, 0));
-                        const targetTmaSeconds = CONFIG.LONG_CONVO_ALERT_MIN * 60;
+                        const targetTmaSeconds = ctx.CONFIG.LONG_CONVO_ALERT_MIN * 60;
                         let tmaIndicator = currentTmaSeconds > 0 ? (currentTmaSeconds < targetTmaSeconds * 0.9 ? '▲' : (currentTmaSeconds > targetTmaSeconds * 1.1 ? '▼' : '●')) : '';
 
                         const convCountElement = dashboard.querySelector('#dashboard-conv-count');
@@ -1251,8 +466,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
                 const toggleButton = dashboard.querySelector('.toggle-expand-btn'); const expandIcon = dashboard.querySelector('.expand-icon'); const collapseIcon = dashboard.querySelector('.collapse-icon');
                 const toggleFloatingDashboard = (forceState = null) => {
-                    const shouldExpand = forceState !== null ? forceState : !CONFIG.MINI_DASHBOARD_MAXIMIZED;
-                    CONFIG.MINI_DASHBOARD_MAXIMIZED = shouldExpand;
+                    const shouldExpand = forceState !== null ? forceState : !ctx.CONFIG.MINI_DASHBOARD_MAXIMIZED;
+                    ctx.CONFIG.MINI_DASHBOARD_MAXIMIZED = shouldExpand;
                     dashboard.classList.toggle('expanded', shouldExpand); dashboard.classList.toggle('collapsed', !shouldExpand);
                     expandIcon.style.display = shouldExpand ? 'none' : 'inline-block'; collapseIcon.style.display = shouldExpand ? 'inline-block' : 'none';
                     toggleButton.title = shouldExpand ? "Recolher" : "Expandir";
@@ -1260,374 +475,180 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     if (!shouldExpand) {
                         dashboard.style.width = ''; dashboard.style.height = ''; dashboard.style.resize = 'none';
                     } else {
-                        const savedPosition = CONFIG.POPUP_POSITIONS['miniDashboard'];
+                        const savedPosition = ctx.CONFIG.POPUP_POSITIONS['miniDashboard'];
                         if (savedPosition && savedPosition.top && savedPosition.top !== 'auto') {
                             dashboard.style.top = savedPosition.top; dashboard.style.left = savedPosition.left; dashboard.style.bottom = 'auto'; dashboard.style.right = 'auto'; dashboard.style.transform = 'none';
                         } else { dashboard.style.top = '50%'; dashboard.style.left = '50%'; dashboard.style.transform = 'translate(-50%, -50%)'; dashboard.style.bottom = 'auto'; dashboard.style.right = 'auto'; }
                         dashboard.style.width = '320px'; dashboard.style.height = 'auto'; dashboard.style.resize = 'none';
                     }
-                    saveData(); dashboard._updateStatsInternal();
+                    ctx.saveData(); dashboard._updateStatsInternal();
                 };
 
                 dashboard._toggleFloatingDashboard = toggleFloatingDashboard;
-                dashboardHeader.onclick = (e) => { if (e.target.closest('.compact-btn, #mini-dashboard-adjust-attended-btn')) { return; } const wasDragging = dashboard.dataset.isDragging === 'true'; dashboard.dataset.isDragging = 'false'; if (!wasDragging && !CONFIG.MINI_DASHBOARD_MAXIMIZED) { toggleFloatingDashboard(true); } };
+                dashboardHeader.onclick = (e) => { if (e.target.closest('.compact-btn, #mini-dashboard-adjust-attended-btn')) { return; } const wasDragging = dashboard.dataset.isDragging === 'true'; dashboard.dataset.isDragging = 'false'; if (!wasDragging && !ctx.CONFIG.MINI_DASHBOARD_MAXIMIZED) { toggleFloatingDashboard(true); } };
                 toggleButton.onclick = (e) => { e.stopPropagation(); toggleFloatingDashboard(); };
-                dashboard.querySelector('.close-btn').onclick = () => { clearInterval(dashboard._updateInterval); dashboard.remove(); CONFIG.MINI_DASHBOARD_VISIBLE = false; saveData(); };
+                dashboard.querySelector('.close-btn').onclick = () => { clearInterval(dashboard._updateInterval); dashboard.remove(); ctx.CONFIG.MINI_DASHBOARD_VISIBLE = false; ctx.saveData(); };
 
                 dashboard.querySelector('#mini-dashboard-tools-btn').onclick = (e) => {
-                    e.stopPropagation(); CONFIG.TOOLS_VISIBLE = !CONFIG.TOOLS_VISIBLE; saveData(); UI.createAgentToolsPanel();
+                    e.stopPropagation(); ctx.CONFIG.TOOLS_VISIBLE = !ctx.CONFIG.TOOLS_VISIBLE; ctx.saveData(); ctx.UI.createAgentToolsPanel();
                 };
 
                 dashboard.querySelector('#mini-dashboard-adjust-attended-btn').onclick = (e) => {
-                    e.stopPropagation(); const currentAttendedCount = analyticsManager.calculateStats().count; const newCount = prompt("Insira o novo número de conversas atendidas:", currentAttendedCount);
+                    e.stopPropagation(); const currentAttendedCount = ctx.analyticsManager.calculateStats().count; const newCount = prompt("Insira o novo número de conversas atendidas:", currentAttendedCount);
                     if (newCount !== null && !isNaN(newCount)) {
-                        const parsedNewCount = parseInt(newCount, 10); if (parsedNewCount < 0) { UI.createNotification("O número deve ser positivo.", 'error', 4000); return; }
-                        let data = analyticsManager.getData(); const currentUniqueCount = analyticsManager.calculateStats().count;
-                        if (parsedNewCount < currentUniqueCount) { UI.createNotification("Use 'Resetar Contadores' nas Configurações para reduzir.", "warn", 7000); return; }
+                        const parsedNewCount = parseInt(newCount, 10); if (parsedNewCount < 0) { ctx.UI.createNotification("O número deve ser positivo.", 'error', 4000); return; }
+                        let data = ctx.analyticsManager.getData(); const currentUniqueCount = ctx.analyticsManager.calculateStats().count;
+                        if (parsedNewCount < currentUniqueCount) { ctx.UI.createNotification("Use 'Resetar Contadores' nas Configurações para reduzir.", "warn", 7000); return; }
                         if (parsedNewCount > currentUniqueCount) {
                             const diff = parsedNewCount - currentUniqueCount;
-                            for (let i = 0; i < diff; i++) { data.conversations.push({ timestamp: Date.now() - (i * 1000), duration: CONFIG.CHECKMARK_THRESHOLD_MS + 5000, activeDuration: CONFIG.CHECKMARK_THRESHOLD_MS + 2000, participantName: `Ajuste Manual ${Date.now()}`, phoneNumber: `000000000${i}`, isRecurrence: false, endedByAgent: 'AVALIACAO', interactionUrl: 'Ajuste Manual' }); }
-                            analyticsManager.saveData(data);
+                            for (let i = 0; i < diff; i++) { data.conversations.push({ timestamp: Date.now() - (i * 1000), duration: ctx.CONFIG.CHECKMARK_THRESHOLD_MS + 5000, activeDuration: ctx.CONFIG.CHECKMARK_THRESHOLD_MS + 2000, participantName: `Ajuste Manual ${Date.now()}`, phoneNumber: `000000000${i}`, isRecurrence: false, endedByAgent: 'AVALIACAO', interactionUrl: 'Ajuste Manual' }); }
+                            ctx.analyticsManager.saveData(data);
                         }
                         dashboard._updateStatsInternal();
                     }
                 };
-                toggleFloatingDashboard(CONFIG.MINI_DASHBOARD_MAXIMIZED);
+                toggleFloatingDashboard(ctx.CONFIG.MINI_DASHBOARD_MAXIMIZED);
                 if (dashboard._updateInterval) { clearInterval(dashboard._updateInterval); }
                 dashboard._updateInterval = setInterval(dashboard._updateStatsInternal, 5000);
                 dashboard._updateStatsInternal();
             } else {
                 if (dashboard._updateStatsInternal) { dashboard._updateStatsInternal(); }
             }
-        },
-    };
+        }};
+ctx.UI.createMiniDashboard = implementation.createMiniDashboard;
+});
 
-    const defaultTheme = { bgPrimary: '#ffffff', bgSecondary: '#f8fafc', textPrimary: '#1e293b', textSecondary: '#64748b', borderColor: '#e2e8f0', accent: '#6366f1', accentText: '#ffffff', success: '#10b981', error: '#ef4444', warn: '#f59e0b', info: '#3b82f6', timerBg: '#f8fafc', timerNormalText: '#1e293b', timerActiveText: '#6366f1', timerPausedText: '#f59e0b', timerInactiveClientText: '#ef4444', timerCompletedBg: '#10b981', miniDashboardProgress: '#10b981' };
-    let theme;
-    try {
-        theme = JSON.parse(ajaStorage.getItem('gcp_themeColors_v2')) || JSON.parse(ajaStorage.getItem('timerColors')) || defaultTheme;
-    } catch (e) { theme = defaultTheme; }
+window.AjaModular.register("lembretes", [], function(ctx) {
+return { mount(panel, notify) { // Lógica dos Lembretes
+                        panel.querySelectorAll('.btn-lembrete').forEach(btn => {
+                            btn.onclick = (e) => {
+                                const minutes = parseInt(e.target.dataset.time);
+                                notify(`Alarme configurado! Avisarei em ${minutes} minuto(s).`, "success");
 
+                                setTimeout(() => {
+                                    // Play beep / alert
+                                    if (window.audioNotificacao) { window.audioNotificacao.play().catch(e => { }); }
+                                    alert(`⏰ HORA DE RETORNAR! Verifique o chat do cliente.`);
+                                }, minutes * 60000);
+                            };
+                        });
+ } };
+});
 
-    const CONFIG_CSS = {
-        VARIAVEIS: `
-            :root { 
-                --purecloud-script-bg-primary: ${theme.bgPrimary}; --purecloud-script-bg-secondary: ${theme.bgSecondary}
-            .gcp-tema-escuro { 
-                --purecloud-script-bg-primary: #121212 !important; 
-                --purecloud-script-bg-secondary: #1e1e1e !important; 
-                --purecloud-script-text-primary: #e2e8f0 !important; 
-                --purecloud-script-text-secondary: #94a3b8 !important; 
-                --purecloud-script-border-color: #334155 !important; 
-                --purecloud-script-header-bg: #0f172a !important; 
-                --purecloud-script-bubble-bg-normal: #1e1e1e !important; 
-                --purecloud-script-bubble-text-normal: #ffffff !important; 
-                --purecloud-script-shadow-color: rgba(0,0,0,0.8) !important;
-            }
-            ; --purecloud-script-text-primary: ${theme.textPrimary}; --purecloud-script-text-secondary: ${theme.textSecondary}; --purecloud-script-border-color: ${theme.borderColor}; --purecloud-script-accent-color: ${theme.accent}; --purecloud-script-accent-text: ${theme.accentText}; --purecloud-script-success-color: ${theme.success}; --purecloud-script-error-color: ${theme.error}; --purecloud-script-warn-color: ${theme.warn}; --purecloud-script-info-color: ${theme.info}; --purecloud-script-bubble-bg-normal: ${theme.timerBg}; --purecloud-script-bubble-bg-selected: ${theme.accent}; --purecloud-script-bubble-text-normal: ${theme.timerNormalText}; --purecloud-script-bubble-text-active: ${theme.timerActiveText}; --purecloud-script-bubble-text-paused: ${theme.timerPausedText}; --purecloud-script-bubble-text-timer-inactive: ${theme.timerInactiveClientText}; --purecloud-script-shadow-color: rgba(0,0,0,0.08); --mini-dashboard-progress-color: ${theme.miniDashboardProgress}; --font-family-modern: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            }
-            .hide-scrollbar::-webkit-scrollbar { display: none; }
-            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        `,
-        ZEN_MODE: `
-            body.sys-zen-active { background-color: #121212 !important; }
-            body.sys-zen-active .sidebar, body.sys-zen-active .navbar, body.sys-zen-active .topbar, body.sys-zen-active header { opacity: 0.15; pointer-events: none; transition: opacity 0.4s ease; }
-            body.sys-zen-active .interaction-list { opacity: 0.15; transition: opacity 0.4s ease; }
-            body.sys-zen-active .interaction-list:hover { opacity: 1; }
-            body.sys-zen-active .interaction-content-wrapper { box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); z-index: 9999; position: relative; border-radius: 8px; }
-        `,
-        ANIMATIONS: `
-            @keyframes alertPulseGlow { 0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); transform: scale(1); } 50% { transform: scale(1.02); } 70% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); } 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); transform: scale(1); } }
-            @keyframes warningPulseGlow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
-            .warning-pulse-alert { animation: warningPulseGlow 1.5s infinite !important; border-color: var(--purecloud-script-warn-color) !important; color: #000 !important; background-color: var(--purecloud-script-warn-color) !important; }
-            @keyframes fadeInRight { from { opacity: 0; transform: translateX(120%); } to { opacity: 0.98; transform: translateX(0); } } 
-            @keyframes fadeEffect { from {opacity: 0; transform: translateY(5px);} to {opacity: 1; transform: translateY(0);} }
-        `,
-        SCROLLBAR: `
-            .purecloud-script-popup, .purecloud-script-notification, .injected-element { font-family: var(--font-family-modern); }
-            .panel-content, .mini-dashboard-content, .details-table-wrapper, .chart-scroll-container, .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-            .panel-content::-webkit-scrollbar, .mini-dashboard-content::-webkit-scrollbar, .details-table-wrapper::-webkit-scrollbar, .chart-scroll-container::-webkit-scrollbar, .hide-scrollbar::-webkit-scrollbar { display: none; }
-            textarea::-webkit-scrollbar { width: 6px; height: 6px; }
-            textarea::-webkit-scrollbar-track { background: transparent; }
-            textarea::-webkit-scrollbar-thumb { background-color: var(--purecloud-script-border-color); border-radius: 10px; }
-        `,
-        BUTTONS: `
-            .purecloud-script-button { background-color: var(--purecloud-script-accent-color); color: var(--purecloud-script-accent-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); } 
-            .purecloud-script-button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); filter: brightness(1.05); }
-            .purecloud-script-button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .purecloud-script-button.button-danger { background-color: var(--purecloud-script-error-color); color: #fff; }
-        `,
-        NOTIFICATIONS: `
-            .purecloud-script-notification { position: relative; z-index: 10005; width: 320px; padding: 16px 20px; margin: 12px; border-radius: 12px; box-shadow: 0 10px 25px var(--purecloud-script-shadow-color); font-size: 0.9em; font-weight: 500; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); opacity: 0.98; transition: opacity 0.3s, transform 0.3s; animation: fadeInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); } 
-            #purecloud-script-notification-container { position: fixed; top: 15px; right: 15px; z-index: 10004; } 
-            .purecloud-script-notification-success { border-left: 4px solid var(--purecloud-script-success-color); } .purecloud-script-notification-error { border-left: 4px solid var(--purecloud-script-error-color); } .purecloud-script-notification-info { border-left: 4px solid var(--purecloud-script-info-color); } .purecloud-script-notification-warn { border-left: 4px solid var(--purecloud-script-warn-color); }
-        `,
-        BUBBLES: `
-            .injected-element { font-weight: 600; font-size: 11px !important; padding: 2px 8px !important; border-radius: 12px; display: flex; align-items: center; justify-content: center; height: 22px; line-height: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05) !important; transition: all 0.3s ease; white-space: nowrap; background-color: var(--purecloud-script-bubble-bg-normal) !important; color: var(--purecloud-script-bubble-text-normal) !important; }
-            .injected-bubbles-container { position: absolute; bottom: 6px; left: 12px; display: flex; gap: 6px; z-index: 10; pointer-events: none; user-select: none; } 
-            .interaction-content-wrapper, .interaction-content { position: relative !important; padding-bottom: 28px !important; }
-            .injected-conversation-number { min-width: 22px; } .injected-interaction-icon { font-size: 11px !important; }
-            .injected-bubbles-container:has(.injected-conversation-timer.normal-timer) .injected-element { color: var(--purecloud-script-bubble-text-active) !important; }
-            .injected-bubbles-container:has(.injected-conversation-timer.paused-alert) .injected-element { color: var(--purecloud-script-bubble-text-paused) !important; }
-            .injected-bubbles-container:has(.injected-conversation-timer.inactive-client-alert) .injected-element, .injected-bubbles-container:has(.injected-conversation-timer.inactive-operator-alert) .injected-element { color: var(--purecloud-script-bubble-text-timer-inactive) !important; border-color: var(--purecloud-script-bubble-text-timer-inactive) !important; animation: alertPulseGlow 1.5s infinite ease-out; }
-            .injected-checkmark { background-color: var(--purecloud-script-success-color) !important; color: #fff !important; }
-            .injected-recurrence-icon { background-color: var(--purecloud-script-warn-color) !important; color: #000 !important; } 
-            /* Regra removida para evitar o "bug do cronômetro roxo" ao selecionar a conversa */
-            /* div.interaction-group.is-selected .injected-element { background-color: var(--purecloud-script-bubble-bg-selected) !important; color: var(--purecloud-script-accent-text) !important; border-color: rgba(255,255,255,0.2) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.15); } */
-        `,
-        PANELS: `
-            /* Paleta Customizada por Módulo */
-            .purecloud-script-settings-panel { --purecloud-script-header-bg: #475569; --purecloud-script-header-text: #ffffff; }
-            #purecloud-script-tools-panel { --purecloud-script-header-bg: #7c3aed; --purecloud-script-header-text: #ffffff; }
-            
-            .purecloud-script-popup { position: fixed; background: var(--purecloud-script-bg-primary); border-radius: 16px; box-shadow: 0 16px 40px var(--purecloud-script-shadow-color); z-index: 10002; display: flex; flex-direction: column; border: 1px solid var(--purecloud-script-border-color); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); margin: 0; overflow: hidden; } 
-            .purecloud-script-settings-panel { resize: none; width: 90%; max-width: 850px; min-height: 550px; height: 85vh; } 
-            #purecloud-script-tools-panel { width: 400px; height: auto; max-height: 85vh; resize: both; min-width: 280px; min-height: 250px; }
-            .panel-header { cursor: move; background: var(--purecloud-script-header-bg, var(--purecloud-script-bg-secondary)); padding: 16px 20px; border-bottom: 1px solid var(--purecloud-script-border-color); display: flex; justify-content: space-between; align-items: center; } 
-            .panel-header h2, .panel-header h3 { margin: 0; color: var(--purecloud-script-header-text, var(--purecloud-script-text-primary)); font-size: 16px; font-weight: 700; letter-spacing: -0.5px; } 
-            .panel-header-buttons { display: flex; gap: 8px; } 
-            .panel-header-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.9em; cursor: pointer; color: var(--purecloud-script-header-text, var(--purecloud-script-text-secondary)); transition: all 0.2s; } 
-            .panel-header-btn:hover { color: #fff; background: rgba(255,255,255,0.1); transform: scale(1.1); } 
-            .panel-content { padding: 24px; overflow-y: auto; flex-grow: 1; background: var(--purecloud-script-bg-primary); color: var(--purecloud-script-text-primary); } 
-            .panel-footer { padding: 16px 24px; background: var(--purecloud-script-bg-secondary); border-top: 1px solid var(--purecloud-script-border-color); text-align: right; }
-            .panel-content h4 { color: var(--purecloud-script-text-primary); font-size: 1.1em; margin-top: 15px; margin-bottom: 10px; border-bottom: 1px solid var(--purecloud-script-border-color); padding-bottom: 5px; }
-            .purecloud-script-tabs { display: flex; flex-wrap: wrap; background: var(--purecloud-script-bg-secondary); border-bottom: 1px solid var(--purecloud-script-border-color); padding: 0 10px; overflow-x: hidden; } 
-            .purecloud-script-tab-button { background-color: transparent; color: var(--purecloud-script-text-secondary); border: none; padding: 10px 14px; cursor: pointer; transition: all 0.2s ease; font-size: 0.95em; font-weight: 600; position: relative; display: flex; align-items: center; gap: 6px; white-space: nowrap; } 
-            .purecloud-script-tab-button svg { width: 16px; height: 16px; transition: stroke 0.2s ease; }
-            .purecloud-script-tab-button::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 3px; background-color: var(--purecloud-script-accent-color); transition: width 0.3s ease; border-radius: 3px 3px 0 0; }
-            .purecloud-script-tab-button.active { color: var(--purecloud-script-accent-color); } .purecloud-script-tab-button.active::after { width: 80%; }
-            .purecloud-script-tab-button:hover:not(.active) { color: var(--purecloud-script-text-primary); } 
-            .purecloud-script-tab-content { display: none; animation: fadeEffect 0.4s; flex-direction: column; flex-grow: 1; } 
-            .purecloud-script-tab-content.active { display: flex; }
-            .settings-group { margin-bottom: 24px; display: flex; flex-direction: column; } 
-            .settings-group label { color: var(--purecloud-script-text-primary); font-size: 0.95em; margin-bottom: 8px; font-weight: 600; } 
-            .settings-group input[type="number"], .settings-group input[type="text"], textarea { background: var(--purecloud-script-bg-primary); color: var(--purecloud-script-text-primary); border: 1px solid var(--purecloud-script-border-color); padding: 10px 14px; border-radius: 8px; transition: all 0.2s; width: 100%; box-sizing: border-box; font-size: 0.95em; font-family: inherit;} 
-            .settings-group input:focus, textarea:focus { border-color: var(--purecloud-script-accent-color); outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
-        `,
-        TABLES_COLORS: `
-            .details-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; } 
-            .details-table th, .details-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--purecloud-script-border-color); } 
-            .details-table th { background-color: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); font-weight: 600; } 
-            .details-table tr:hover { background-color: rgba(0, 0, 0, 0.02); } 
-            .recurrence-tag, .first-tag { padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8em; display: inline-block; } 
-            .recurrence-tag { background-color: var(--purecloud-script-warn-color); color: #000; } .first-tag { background-color: var(--purecloud-script-success-color); color: #fff; } 
-            .is-recurrence-row { opacity: 0.85; } 
-            .details-table th.col-num, .details-table td.col-num { text-align: right; width: 40px; font-weight: bold; color: var(--purecloud-script-text-secondary); } 
-            .details-table th.col-type, .details-table td.col-type { text-align: center; width: 40px; font-size: 1.2em; }
-            .theme-section { margin-bottom: 24px; } .theme-section h4 { margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--purecloud-script-border-color); color: var(--purecloud-script-text-primary); } 
-            .settings-group.color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; } 
-            .color-picker-group { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--purecloud-script-bg-secondary); border: 1px solid var(--purecloud-script-border-color); border-radius: 8px; } 
-            .color-picker-group label { margin-bottom: 0; font-size: 0.85em; color: var(--purecloud-script-text-secondary); margin-right: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
-            .color-picker-group input[type="color"] { min-width: 44px; height: 28px; padding: 2px; border: 1px solid var(--purecloud-script-border-color); cursor: pointer; background: var(--purecloud-script-bg-primary); border-radius: 4px; flex-shrink: 0; } 
-        `,
-        DASHBOARD: `
-            .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px; } 
-            .stat-item { background: var(--purecloud-script-bg-secondary); padding: 18px; border-radius: 12px; border: 1px solid var(--purecloud-script-border-color); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; } 
-            .stat-item:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); }
-            .stat-item span { font-size: 0.85em; color: var(--purecloud-script-text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;} 
-            .stat-item strong { font-size: 1.8em; display: block; margin-top: 8px; color: var(--purecloud-script-accent-color); }
-            .analytics-chart-container-main { padding: 15px 0 5px 0; } .chart-scroll-container { overflow-x: auto; width: 100%; padding-bottom: 5px; } 
-            .chart-bars-wrapper { display: flex; align-items: flex-end; height: 150px; min-width: 800px; padding-bottom: 20px; border-bottom: 1px solid var(--purecloud-script-border-color); } 
-            .chart-bar-wrapper { width: 4.1666%; margin-right: 1px; text-align: center; position: relative; font-size: 0.7em; height: 100%; flex-shrink: 0; } 
-            .chart-bar { background-color: var(--purecloud-script-accent-color); border-radius: 4px 4px 0 0; transition: height 0.4s ease-out; } 
-            .bar-count { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.9em; font-weight: bold; color: var(--purecloud-script-text-primary); } 
-            .bar-label { position: absolute; bottom: -20px; left: 0; width: 100%; color: var(--purecloud-script-text-secondary); font-size: 1.1em; }
-            div.interaction-group{position:relative!important;} 
-            #purecloud-script-mini-dashboard { padding: 0; background-color: var(--purecloud-script-bg-primary) !important; border: 1px solid var(--purecloud-script-border-color); } 
-            #purecloud-script-mini-dashboard.collapsed { border-radius: 50px; box-shadow: 0 6px 16px var(--purecloud-script-shadow-color); height: 42px; padding: 0 16px; width: auto; min-width: 80px; cursor: move; overflow: hidden; } 
-            #purecloud-script-mini-dashboard.expanded { --purecloud-script-header-bg: #0284c7; --purecloud-script-header-text: #ffffff; border-radius: 16px; width: 320px; max-width: 320px; cursor: default; resize: none; bottom: auto; left: auto; } 
-            .mini-dashboard-header { height: 100%; padding: 8px 16px; display: flex; align-items: center; justify-content: center; background-color: transparent; border-bottom: none; border-radius: inherit; transition: all 0.2s; } 
-            #purecloud-script-mini-dashboard.collapsed .mini-dashboard-header { cursor: move; } 
-            #purecloud-script-mini-dashboard.expanded .mini-dashboard-header { height: 46px; background-color: var(--purecloud-script-header-bg); border-bottom: 1px solid var(--purecloud-script-border-color); justify-content: space-between; cursor: move; }
-            .mini-dashboard-content { padding: 15px; background-color: var(--purecloud-script-bg-primary); border-radius: 0 0 16px 16px; flex-grow: 1; overflow-y: auto; display: none; } 
-            #purecloud-script-mini-dashboard.expanded .mini-dashboard-content { display: block; } 
-            .counter-display { display: flex; align-items: center; flex-grow: 1; margin-right: 0; overflow: hidden; justify-content: center; gap: 8px; } 
-            #purecloud-script-mini-dashboard.expanded .counter-display { justify-content: flex-start; margin-right: 10px; } 
-            .counter-text { color: var(--purecloud-script-text-primary); font-weight: 700; font-size: 1.15em; white-space: nowrap; } 
-            #purecloud-script-mini-dashboard.expanded .counter-text { color: var(--purecloud-script-header-text); }
-            #purecloud-script-mini-dashboard.expanded .stat-icon { color: var(--purecloud-script-header-text) !important; }
-            .progress-bar-container-compact { flex-grow: 1; height: 6px; border-radius: 3px; background-color: var(--purecloud-script-border-color); display: none; } 
-            #purecloud-script-mini-dashboard.expanded .progress-bar-container-compact { display: block; overflow: visible; } 
-            .progress-bar-compact { background: linear-gradient(90deg, var(--purecloud-script-accent-color), var(--mini-dashboard-progress-color)); border-radius: 3px; height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 8px rgba(14, 165, 233, 0.4); }
-            .mini-dashboard-controls { display: flex; align-items: center; gap: 6px; } 
-            #purecloud-script-mini-dashboard.collapsed .mini-dashboard-controls { display: none; } 
-            #purecloud-script-mini-dashboard.expanded .mini-dashboard-controls { display: flex; } 
-            .compact-btn { border-radius: 6px; width: 28px; height: 28px; background: var(--purecloud-script-bg-secondary); border: 1px solid var(--purecloud-script-border-color); color: var(--purecloud-script-text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; padding: 0; } 
-            .compact-btn:hover { background: var(--purecloud-script-border-color); color: var(--purecloud-script-accent-color); }
-            #purecloud-script-mini-dashboard.expanded .compact-btn { background: transparent; border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
-            #purecloud-script-mini-dashboard.expanded .compact-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
-            .stats-grid-original.mini-dashboard-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 0; } 
-            .stat-label { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--purecloud-script-text-secondary); font-size: 0.8em; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; } 
-            .stat-icon { width: 14px; height: 14px; color: var(--purecloud-script-accent-color); stroke-width: 2px; }
-            .stat-item-original strong { font-size: 1.4em; color: var(--purecloud-script-text-primary); font-weight: 700; }
-            .stat-item-original { text-align: center; background: linear-gradient(145deg, var(--purecloud-script-bg-secondary), var(--purecloud-script-bg-primary)); padding: 14px 10px; border-radius: 12px; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--purecloud-script-border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; } 
-            .stat-item-original:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); border-color: var(--purecloud-script-accent-color); }
-        `,
-        TOOLBAR: `
-            .purecloud-script-custom-btn { background: var(--purecloud-script-bg-secondary) !important; border: 1px solid var(--purecloud-script-border-color) !important; border-radius: 8px !important; margin: 0 4px !important; height: 34px; padding: 0 10px !important; transition: all 0.2s ease !important; cursor: pointer; display: inline-flex; align-items: center; color: var(--purecloud-script-text-secondary) !important; order: 3; position: relative; overflow: hidden; }
-            .purecloud-script-custom-btn:hover { background: var(--purecloud-script-accent-color) !important; color: #fff !important; transform: translateY(-2px) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; border-color: transparent !important; }
-            .purecloud-script-custom-btn:active { transform: translateY(0) !important; box-shadow: none !important; }
-            .purecloud-script-custom-btn svg { stroke: currentColor !important; width: 18px; height: 18px; flex-shrink: 0; } 
-        `,
-        SPELL_PRO: `
-            #spell-overlay-layer { position: absolute; pointer-events: none; color: transparent !important; background: transparent !important; z-index: 2147483640; overflow: hidden; white-space: pre-wrap; word-wrap: break-word; }
-            .spell-wavy-error { text-decoration: underline wavy #ef4444;  text-decoration-skip-ink: none; text-underline-offset: 3px; }
-            .spell-wavy-punct { border-bottom: 2px dashed #10b981;  display: inline-block; min-width: 4px; }
-            #spell-badge { position: absolute; width: 22px; height: 22px; border-radius: 50%; color: white; display: none; align-items: center; justify-content: center; font-family: sans-serif; font-size: 11px; font-weight: bold; z-index: 2147483645; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); background: #ef4444; transition: all 0.2s ease; }
-            #spell-badge.loading { background: #f59e0b; animation: spellPulse 1.5s infinite; }
-            #spell-badge.clean { background: #10b981; }
-            #spell-badge:hover { transform: scale(1.1); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
-            @keyframes spellPulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
-            
-            #spell-inline-popup { position: absolute; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 250px; display: none; flex-direction: column; z-index: 2147483648; font-family: sans-serif; overflow: hidden; animation: spellPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-            @keyframes spellPopIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-            .popup-header { background: #f8fafc; padding: 10px 12px; font-size: 11px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; letter-spacing: 0.5px; }
-            .popup-body { padding: 12px; }
-            .popup-sug-btn { width: 100%; text-align: left; padding: 8px 12px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-            .popup-sug-btn:hover { background: #dbeafe; border-color: #93c5fd; }
-            .popup-footer { display: flex; gap: 5px; padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e5e7eb; }
-            .popup-action-btn { flex: 1; padding: 6px; font-size: 11px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer; color: #475569; transition: background 0.2s; }
-            .popup-action-btn:hover { background: #f1f5f9; color: #0f172a; }
-            #btn-rewrite { font-weight: 600; color: #8b5cf6; border-color: #ede9fe; background: #f5f3ff; }
-            #btn-rewrite:hover { background: #ede9fe; }
-            .ai-loading { background: linear-gradient(90deg, #f5f3ff, #ddd6fe, #f5f3ff); background-size: 200% 100%; animation: spellAILoading 1.5s infinite linear; pointer-events: none; }
-            @keyframes spellAILoading { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+window.AjaModular.register("links-uteis", [], function(ctx) {
+return { mount(panel, USEFUL_LINKS) { // Populando Links Úteis
+                        const linksList = panel.querySelector('#useful-links-list');
+                        USEFUL_LINKS.forEach(link => {
+                            const btn = document.createElement('button'); btn.className = 'purecloud-script-button';
+                            btn.style.cssText = `text-align:center; padding: 10px; background:${link.color}; color:#fff; border:none; margin-bottom: 5px; font-weight: bold;`;
+                            btn.textContent = link.title;
+                            btn.onclick = () => window.open(link.url, '_blank');
+                            linksList.appendChild(btn);
+                        });
 
-            #spell-main-panel { --purecloud-script-header-bg: #059669; --purecloud-script-header-text: #ffffff; position: fixed; top: 80px; right: 20px; width: 340px; max-height: 80vh; background: white; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e5e7eb; z-index: 2147483649; display: none; flex-direction: column; font-family: sans-serif; overflow: hidden; }
-            .panel-header-top { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--purecloud-script-header-bg, #f8fafc); border-bottom: 1px solid #e5e7eb; }
-            .panel-title { font-weight: 700; color: var(--purecloud-script-header-text, #0f172a); display: flex; align-items: center; gap: 8px; }
-            .btn-fix-all { background: white; color: var(--purecloud-script-header-bg, #3b82f6); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
-            .btn-fix-all:hover { background: #f1f5f9; }
-            .panel-tabs { display: flex; border-bottom: 1px solid #e5e7eb; padding: 0 10px; }
-            .tab-active { padding: 10px 15px; font-size: 12px; font-weight: 600; color: #10b981; border-bottom: 2px solid #10b981; cursor: default; }
-            .panel-body { overflow-y: auto; padding: 10px; background: #f1f5f9; flex: 1; display: flex; flex-direction: column; gap: 10px; }
-            .panel-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-            .card-category { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 6px; display: block; }
-            .card-change { font-size: 14px; color: #0f172a; line-height: 1.5; }
-            .card-wrong { text-decoration: line-through; color: #ef4444; background: #fef2f2; padding: 2px 4px; border-radius: 4px; }
-            .card-right { color: #10b981; background: #ecfdf5; padding: 2px 4px; border-radius: 4px; font-weight: 500; cursor: pointer; transition: background 0.2s; border: 1px dashed #6ee7b7; margin-left: 5px; }
-            .card-right:hover { background: #d1fae5; border-style: solid; }
-        `
-    };
+                         } };
+});
 
+window.AjaModular.register("historico-documentos", [], function(ctx) {
+const key = 'purecloudScript_idHistory';
+function record(doc) {
+    let history; try { history = JSON.parse(ctx.ajaStorage.getItem(key) || '[]'); } catch { history = []; }
+    if (!Array.isArray(history)) history = [];
+    history.unshift({doc, tipo:doc.length === 11 ? 'CPF' : 'CNPJ', hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
+    ctx.ajaStorage.setItem(key, JSON.stringify(history.slice(0,30)));
+    document.dispatchEvent(new Event('ajamodular:document-saved'));
+}
+return { record, mount(panel) {
+// Lógica Extrator F2 e Histórico
+                        const refreshHistoryUI = () => {
+                            const list = panel.querySelector('#historico-id-list');
+                            list.innerHTML = '';
+                            let history = [];
+                            try { history = JSON.parse(ctx.ajaStorage.getItem('purecloudScript_idHistory') || '[]'); } catch (e) { }
 
-    function injectCss() {
-        document.getElementById('purecloud-script-injected-style')?.remove();
-        const theme = validateConfigValue('THEME_COLORS', CONFIG.THEME_COLORS);
-        const css = Object.values(CONFIG_CSS).join('\n');
+                            if (!Array.isArray(history)) history = [];
+                            if (history.length === 0) {
+                                list.innerHTML = '<span style="color:var(--purecloud-script-text-secondary); font-size:0.85em;">Nenhum documento salvo ainda.</span>';
+                                return;
+                            }
 
-        // Substituindo as variáveis lidas do theme no texto do CSS
-        const processedCss = css.replace(/\$\{theme\.([a-zA-Z]+)\}/g, (match, p1) => theme[p1]);
+                            history.forEach((item, index) => {
+                                const btn = document.createElement('button');
+                                btn.className = 'purecloud-script-button';
+                                btn.style.cssText = `text-align: left; padding: 8px; font-size: 0.85em; background: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); border: 1px solid var(--purecloud-script-border-color); display: flex; justify-content: space-between;`;
+                                btn.innerHTML = `<span><strong>${item.doc}</strong> (${item.tipo})</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
+                                btn.onclick = () => {
+                                    navigator.clipboard.writeText(item.doc);
+                                    btn.innerHTML = `<span><strong>Copiado!</strong> ✅</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
+                                    setTimeout(() => refreshHistoryUI(), 1000);
+                                };
+                                list.appendChild(btn);
+                            });
+                        };
 
-        const style = document.createElement('style');
-        style.id = 'purecloud-script-injected-style';
-        document.head.appendChild(style);
-        style.textContent = processedCss;
-    }
+                        panel.querySelector('#btn-clear-history').onclick = () => {
+                            ctx.ajaStorage.removeItem('purecloudScript_idHistory');
+                            refreshHistoryUI();
+                        };
 
-    function initializeDailyCounters(forceReset = false) {
-        const todayKey = getBrazilTime(new Date()).toLocaleDateString('pt-BR');
-        const lastSavedDate = ajaStorage.getItem('purecloudScript_lastActivityDate');
-        if (lastSavedDate !== todayKey || forceReset) { 
-            ajaStorage.setItem('purecloudScript_lastActivityDate', todayKey); 
-            analyticsManager.clearAllData(); 
-        } else { 
-            analyticsManager.getData(); 
-            loadV4Counters(); 
-        }
-    }
+                        refreshHistoryUI();
 
+                        
+document.addEventListener('ajamodular:document-saved', refreshHistoryUI);
+} };
+});
 
-    function sincronizarDadosComPlanilha() {
-        if (typeof analyticsManager === 'undefined' || typeof v4_counters === 'undefined') return;
-        let currentUserName = getAgentName(); 
-        const stats = analyticsManager.calculateStats();
-        const analyticsPayload = { conversasUnicas: stats.count, tmaGeral: stats.tma, tmeAtivo: stats.tme, encAgente: stats.baloonClicks, inicio: stats.last, ultima: stats.first, meta: CONFIG.CONVERSATION_TARGET, transferidos: stats.transferClicks, tmaGeralSegundos: stats.tmaSeconds || 0, tmeAtivoSegundos: stats.tmeSeconds || 0 };
-        DataSyncer.send({ type: 'analytics', user: currentUserName, stats: analyticsPayload });
-        const atendimentosPayload = analyticsManager.getData().conversations.map(conv => ({ tipo: conv.interactionType || 'unknown', horaFim: new Date(conv.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), cliente: conv.participantName, tme: (() => { const s = Math.floor(conv.activeDuration / 1000); return `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}` })(), tmeSegundos: Math.floor(conv.activeDuration / 1000), duracaoSegundos: Math.floor((conv.duration || 0) / 1000), recorrencia: conv.isRecurrence ? 'Sim' : 'Não', link: conv.interactionUrl || 'N/A' }));
-        DataSyncer.send({ type: 'atendimento', user: currentUserName, atendimentos: atendimentosPayload });
-        if (v4_counters.balao.length > 0) { DataSyncer.send({ type: 'encerrados', user: currentUserName, encerrados: v4_counters.balao }); }
-    }
+// Shared dependencies: ajaStorage
+window.AjaModular.register("notepad", [], function(ctx) {
+return { mount(panel, notify) { // Notepad
+                        const notepad = panel.querySelector('#tools-notepad');
+                        notepad.value = ctx.ajaStorage.getItem('purecloudScript_notepad') || '';
+                        notepad.addEventListener('input', (e) => { ctx.ajaStorage.setItem('purecloudScript_notepad', e.target.value); });
 
-    const isMainFrame = (window.self === window.top);
+                        panel.querySelector('#btn-notepad-clear').onclick = () => { notepad.value = ''; notepad.dispatchEvent(new Event('input')); };
+                        panel.querySelector('#btn-notepad-copy').onclick = async () => {
+                            try {
+                                await navigator.clipboard.writeText(notepad.value);
+                                const btn = panel.querySelector('#btn-notepad-copy');
+                                btn.innerText = '✅ Copiado';
+                                setTimeout(() => btn.innerText = '📋 Copiar', 2000);
+                            } catch (e) { notify("Erro ao copiar", "error"); }
+                        };
 
-    const initialize = () => {
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.get(['SHOW_AGENT_TOOLS'], function (result) {
-                iniciarScript(result.SHOW_AGENT_TOOLS !== false);
-            });
-        } else {
-            iniciarScript(true);
-        }
-    };
+                        panel.querySelector('#btn-notepad-fetch').onclick = () => {
+                            let rawText = document.body.innerText + " ";
+                            document.querySelectorAll('iframe').forEach(ifr => {
+                                try { rawText += " " + (ifr.contentDocument || ifr.contentWindow.document).body.innerText + " "; } catch (e) { }
+                            });
 
-    function iniciarScript(mostrarFerramentas) {
-        // Inicialização em TODOS OS FRAMES (CAR e Corretor)
-        // Corretor único inicializado pelo módulo tools/corretor.
-        
-        // Inicialização APENAS NO TOP FRAME (Dashboards, Menus, IA)
-        if (isMainFrame) {
-            effectsManager.init();
-            timerManager.startGlobalTimer();
+                            let nome = "Cliente", cpf = "Não encontrado", prot = "Não encontrado", tel = "Não encontrado";
 
-            // --- SISTEMA DE INTEGRAÇÃO MODULAR (EXTENSÃO CHROME) ---
-            window.PCScript = window.PCScript || {};
-            window.PCScript.Integrador = {
-                Config: CONFIG,
-                UI: {
-                    notificar: UI.createNotification,
-                    alternarDarkMode: actions.toggleDarkMode
-                },
-                Estilo: {
-                    geradorCSS: CONFIG_CSS
-                },
-                Audio: {
-                    tocarSom: (tipo) => effectsManager.playBeep(tipo),
-                    sucesso: () => effectsManager.playSuccess()
-                },
-                Estado: {
-                    conversasAtivas: timerManager.activeTimers,
-                    getMétricas: () => analyticsManager.getData()
-                }
-            };
+                            const cpfMatch = rawText.match(/(?:CPF|CNPJ)[\s:]*([\d\.\-\/]+)/i) || rawText.match(/\d{3}\.\d{3}\.\d{3}\-\d{2}/);
+                            if (cpfMatch) cpf = (cpfMatch[1] || cpfMatch[0]).replace(/[^\d\.\-\/]/g, '');
 
-            setInterval(() => DataSyncer.processQueue(), 60000);
-            setTimeout(() => DataSyncer.updateIndicator(), 3000);
-            setTimeout(sincronizarDadosComPlanilha, 15000); // Sincroniza mais cedo ao iniciar
-            setInterval(sincronizarDadosComPlanilha, 5 * 60 * 1000); // Sincroniza a cada 5 min em vez de 10
+                            const protMatch = rawText.match(/(?:Protocolo)[\s:]*(\d{10,})/i) || rawText.match(/202[456]\d{8,}/);
+                            if (protMatch) prot = protMatch[1] || protMatch[0];
 
-            if (mostrarFerramentas) {
-                initializeDailyCounters();
-                saveData();
-                injectCss();
-                document.addEventListener('keydown', keyboardEventHandler);
-                document.addEventListener('click', () => effectsManager.init(), { once: true });
-                let targetNode = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_LIST_CONTAINER);
-                if (!targetNode) { targetNode = document.body; }
-                const mainObserver = new MutationObserver(throttle(mainLoop, CONFIG.MAIN_LOOP_THROTTLE_MS));
-                setTimeout(() => { mainObserver.observe(targetNode, { childList: true, subtree: true, attributes: true }); }, 500);
-                setTimeout(mainLoop, 100);
-                setTimeout(autoRestoreFromCloud, 2000); // Tenta restaurar 2s após carregar
-                if (CONFIG.MINI_DASHBOARD_VISIBLE) {
-                    setTimeout(() => {
-                        UI.createMiniDashboard();
-                        if (CONFIG.TOOLS_VISIBLE) UI.createAgentToolsPanel();
-                    }, 4000);
-                }
-            }
-        }
-    }
+                            const telMatch = rawText.match(/(?:Telefone|Celular|Contato)[\s:]*(\(?\d{2}\)?\s?\d{4,5}-?\d{4})/i);
+                            if (telMatch) tel = (telMatch[1] || telMatch[0]).trim();
 
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initialize); } else { initialize(); }
+                            const nameMatch = rawText.match(/(?:Nome|Cliente|Titular)[\s:]*([A-ZÀ-Ú][a-zà-ú]+(?:[ ]+[A-ZÀ-Úa-zà-ú]+)+)/i);
+                            if (nameMatch) nome = nameMatch[1].trim();
 
+                            const contentToAppend = `👤 Nome: ${nome}\n🆔 CPF/CNPJ: ${cpf}\n📱 Tel: ${tel}\n🎫 Prot: ${prot}\n\n`;
+                            notepad.value = contentToAppend + notepad.value;
+                            notepad.dispatchEvent(new Event('input'));
 
-    /* ============================================================== 
-       ⬇️ INJEÇÃO DOS MÓDULOS DA EXTENSÃO ⬇️ 
-       (Limpeza e conversão automática de estilos) 
-       ============================================================== */
+                            const btn = panel.querySelector('#btn-notepad-fetch');
+                            btn.innerText = '✅ Feito';
+                            setTimeout(() => btn.innerText = '📎 Puxar', 2000);
+                        };
 
+                         } };
+});
 
-
+// Shared dependencies: ajaStorage
+window.AjaModular.register("compatibility", [], function(ctx) {
     /* --- MÓDULO ANEXADO: COMPATIBILITY.JS --- */
     try {
         // compatibility.js
@@ -1671,12 +692,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     if (typeof keys === 'string') keys = [keys];
                     if (Array.isArray(keys)) {
                         keys.forEach(k => {
-                            let val = ajaStorage.getItem(k);
+                            let val = ctx.ajaStorage.getItem(k);
                             result[k] = val !== null ? JSON.parse(val) : undefined;
                         });
                     } else if (typeof keys === 'object' && keys !== null) {
                         Object.keys(keys).forEach(k => {
-                            let val = ajaStorage.getItem(k);
+                            let val = ctx.ajaStorage.getItem(k);
                             result[k] = val !== null ? JSON.parse(val) : keys[k];
                         });
                     }
@@ -1685,7 +706,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 set: function (obj, callback) {
                     if (obj && typeof obj === 'object') {
                         Object.keys(obj).forEach(k => {
-                            ajaStorage.setItem(k, JSON.stringify(obj[k]));
+                            ctx.ajaStorage.setItem(k, JSON.stringify(obj[k]));
                         });
                     }
                     if (callback) callback();
@@ -1693,7 +714,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 remove: function (keys, callback) {
                     if (typeof keys === 'string') keys = [keys];
                     if (Array.isArray(keys)) {
-                        keys.forEach(k => ajaStorage.removeItem(k));
+                        keys.forEach(k => ctx.ajaStorage.removeItem(k));
                     }
                     if (callback) callback();
                 }
@@ -1711,6 +732,10 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo compatibility.js:', e); }
 
 
+});
+
+// Shared dependencies: ajaStorage, safeFetch
+window.AjaModular.register("bar", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: BAR.JS --- */
     try {
         (function () {
@@ -2699,7 +1724,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 btn.disabled = true; btn.textContent = 'Aguarde...';
                 output.textContent = 'A contactar api.ipify.org...';
                 try {
-                    const response = await safeFetch('https://api.ipify.org');
+                    const response = await ctx.safeFetch('https://api.ipify.org');
                     if (!response.ok) throw new Error(`Status da resposta: ${response.status}`);
                     const ip = await response.text();
                     output.textContent = `Seu IP Público é: ${ip}`;
@@ -2724,7 +1749,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 output.textContent = `A iniciar download de ${fileSizeInBytes / 1024 / 1024}MB...`;
                 try {
                     const startTime = performance.now();
-                    const response = await safeFetch(testUrl + '?t=' + new Date().getTime());
+                    const response = await ctx.safeFetch(testUrl + '?t=' + new Date().getTime());
                     if (!response.ok) throw new Error(`Erro no servidor: ${response.status}`);
                     await response.blob();
                     const endTime = performance.now();
@@ -3143,7 +2168,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     document.removeEventListener('mouseup', onUp);
                     triggerBtn.style.transition = '';
                     if (isBtnDrag) {
-                        ajaStorage.setItem('bauTriggerPos', JSON.stringify({ left: triggerBtn.style.left, top: triggerBtn.style.top }));
+                        ctx.ajaStorage.setItem('bauTriggerPos', JSON.stringify({ left: triggerBtn.style.left, top: triggerBtn.style.top }));
                         setTimeout(() => {
                             triggerBtn.onclick = function () {
                                 const j = document.getElementById('bau-rede');
@@ -3164,7 +2189,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
             };
 
             // 4. Restaurar Posição
-            const savedPos = ajaStorage.getItem('bauTriggerPos');
+            const savedPos = ctx.ajaStorage.getItem('bauTriggerPos');
             if (savedPos) {
                 const p = JSON.parse(savedPos);
                 triggerBtn.style.left = p.left;
@@ -3178,6 +2203,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo bar.js:', e); }
 
 
+
+return { open() { return document.getElementById('bau-trigger-button')?.click(); } };
+});
+
+// Shared dependencies: none
+window.AjaModular.register("extrator", ["compatibility","historico-documentos"], function(ctx) {
     /* --- MÓDULO ANEXADO: EXTRATOR.JS --- */
     try {
         // ==UserScript==
@@ -3317,10 +2348,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     const feedbackText = documento.length === 11 ? `CPF: ${documento}` : `CNPJ: ${documento}`;
 
                     navigator.clipboard.writeText(documento).then(() => {
+                        window.AjaModular.get('historico-documentos').record(documento);
                         mostrarFeedback(`Copiado! ${feedbackText}`, 'sucesso');
                     }).catch(() => {
                         if (typeof GM_setClipboard !== 'undefined') {
                             GM_setClipboard(documento);
+                            window.AjaModular.get('historico-documentos').record(documento);
                             mostrarFeedback(`Copiado (GM)! ${feedbackText}`, 'sucesso');
                         } else {
                             mostrarFeedback("Erro de Clipboard.", 'erro');
@@ -3377,6 +2410,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo extrator.js:', e); }
 
 
+
+return { open() { return window.executarExtracaoDocumento(); } };
+});
+
+// Shared dependencies: UI
+window.AjaModular.register("espelho", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: ESPELHO.JS --- */
     try {
         // ==UserScript==
@@ -3439,20 +2478,20 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     try {
                         await navigator.clipboard.writeText(textoFinal);
                         // Notificação visual simples usando a UI existente da extensão (se houver)
-                        if (typeof UI !== 'undefined' && UI.createNotification) {
-                            UI.createNotification("Chat copiado com sucesso! (Modo Espelho)", "success");
+                        if (typeof ctx.UI !== 'undefined' && ctx.UI.createNotification) {
+                            ctx.UI.createNotification("Chat copiado com sucesso! (Modo Espelho)", "success");
                         } else {
                             console.log("Chat copiado!"); // Fallback
                         }
                         return true;
                     } catch (err) {
                         console.error("Erro ao copiar:", err);
-                        if (typeof UI !== 'undefined') UI.createNotification("Erro ao acessar Clipboard.", "error");
+                        if (typeof ctx.UI !== 'undefined') ctx.UI.createNotification("Erro ao acessar Clipboard.", "error");
                         return false;
                     }
                 } else {
-                    if (typeof UI !== 'undefined') {
-                        UI.createNotification("Não foi possível ler o chat. Clique na conversa primeiro.", "warn");
+                    if (typeof ctx.UI !== 'undefined') {
+                        ctx.UI.createNotification("Não foi possível ler o chat. Clique na conversa primeiro.", "warn");
                     } else {
                         alert("Não foi possível ler o chat.\nClique na conversa para garantir que está ativa.");
                     }
@@ -3476,6 +2515,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo espelho.js:', e); }
 
 
+
+return { open() { return window.executarCopiaEspelho(); } };
+});
+
+// Shared dependencies: ajaSessionStorage, ajaStorage, safeFetch
+window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: PROTOCOLOS.JS --- */
     try {
         // ==UserScript==
@@ -3581,7 +2626,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     try {
                         if (typeof CONFIG === 'undefined') window.CONFIG = { POPUP_POSITIONS: {} };
                         if (!CONFIG.POPUP_POSITIONS) CONFIG.POPUP_POSITIONS = {};
-                        let saved = ajaSessionStorage.getItem('qr_popupPositions') || ajaSessionStorage.getItem('popupPositions') || '{}';
+                        let saved = ctx.ajaSessionStorage.getItem('qr_popupPositions') || ctx.ajaSessionStorage.getItem('popupPositions') || '{}';
                         CONFIG.POPUP_POSITIONS = JSON.parse(saved);
                     } catch (e) { }
 
@@ -3613,8 +2658,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         if (typeof CONFIG !== 'undefined' && CONFIG.POPUP_POSITIONS) {
                             CONFIG.POPUP_POSITIONS[popupName] = { top: safe.top + 'px', left: safe.left + 'px', width: popup.style.width, height: popup.style.height };
                             try {
-                                ajaSessionStorage.setItem('qr_popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
-                                ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
+                                ctx.ajaSessionStorage.setItem('qr_popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
+                                ctx.ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
                             } catch (e) { }
                         }
                     };
@@ -3678,31 +2723,31 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 const loadData = async () => {
                     let protocolsLoaded = false;
                     try {
-                        const localProtocols = ajaStorage.getItem('pr_protocolos');
+                        const localProtocols = ctx.ajaStorage.getItem('pr_protocolos');
                         if (localProtocols) {
                             const parsed = JSON.parse(localProtocols);
                             if (Array.isArray(parsed) && parsed.length > 0) { CONFIG.PROTOCOLOS = parsed; protocolsLoaded = true; }
                         }
-                    } catch (e) { ajaStorage.removeItem('pr_protocolos'); }
+                    } catch (e) { ctx.ajaStorage.removeItem('pr_protocolos'); }
 
                     if (!protocolsLoaded) {
                         try {
-                            const response = await safeFetch(PROTOCOLOS_JSON_URL + '?v=' + Date.now());
+                            const response = await ctx.safeFetch(PROTOCOLOS_JSON_URL + '?v=' + Date.now());
                             if (!response.ok) throw new Error('Network error');
                             const data = await response.json();
                             let newProtocolos = (Array.isArray(data)) ? data : (data && Array.isArray(data.protocols) ? data.protocols : null);
                             if (newProtocolos) {
                                 CONFIG.PROTOCOLOS = newProtocolos;
-                                try { ajaStorage.setItem('pr_protocolos', JSON.stringify(newProtocolos)); } catch (e) { }
+                                try { ctx.ajaStorage.setItem('pr_protocolos', JSON.stringify(newProtocolos)); } catch (e) { }
                             }
                         } catch (fetchErr) { CONFIG.PROTOCOLOS = initialProtocolos; }
                     }
 
                     try {
-                        CONFIG.LAST_COPIED_PROTOCOLO = ajaStorage.getItem('pr_lastCopiedProtocol') || '';
-                        CONFIG.RECENT_PROTOCOLOS = JSON.parse(ajaStorage.getItem('pr_recentProtocols_v1')) || [];
-                        CONFIG.POPUP_POSITIONS = JSON.parse(ajaSessionStorage.getItem('pr_popupPositions') || '{}');
-                        CONFIG.PR_DARK_MODE = ajaStorage.getItem('pr_darkMode') === 'true';
+                        CONFIG.LAST_COPIED_PROTOCOLO = ctx.ajaStorage.getItem('pr_lastCopiedProtocol') || '';
+                        CONFIG.RECENT_PROTOCOLOS = JSON.parse(ctx.ajaStorage.getItem('pr_recentProtocols_v1')) || [];
+                        CONFIG.POPUP_POSITIONS = JSON.parse(ctx.ajaSessionStorage.getItem('pr_popupPositions') || '{}');
+                        CONFIG.PR_DARK_MODE = ctx.ajaStorage.getItem('pr_darkMode') === 'true';
                     } catch (e) {
                         CONFIG.RECENT_PROTOCOLOS = [];
                         CONFIG.POPUP_POSITIONS = {};
@@ -3713,7 +2758,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     CONFIG.PROTOCOLOS.forEach(reply => { requiredTagsMap[reply.title] = (Array.isArray(reply.requiredData) ? reply.requiredData : []).map(tag => typeof tag === 'string' ? tag.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase() : ''); });
                 };
 
-                const saveData = () => { try { ajaStorage.setItem('pr_protocolos', JSON.stringify(CONFIG.PROTOCOLOS)); ajaStorage.setItem('pr_lastCopiedProtocol', CONFIG.LAST_COPIED_PROTOCOLO); ajaStorage.setItem('pr_recentProtocols_v1', JSON.stringify(CONFIG.RECENT_PROTOCOLOS)); ajaStorage.setItem('pr_darkMode', CONFIG.PR_DARK_MODE); } catch (e) { } };
+                const saveData = () => { try { ctx.ajaStorage.setItem('pr_protocolos', JSON.stringify(CONFIG.PROTOCOLOS)); ctx.ajaStorage.setItem('pr_lastCopiedProtocol', CONFIG.LAST_COPIED_PROTOCOLO); ctx.ajaStorage.setItem('pr_recentProtocols_v1', JSON.stringify(CONFIG.RECENT_PROTOCOLOS)); ctx.ajaStorage.setItem('pr_darkMode', CONFIG.PR_DARK_MODE); } catch (e) { } };
 
                 const logUsedProtocolo = (title, text) => {
                     const MAX = 5;
@@ -3822,7 +2867,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         makeDraggable(popup, popup.querySelector('.panel-header'), 'protocoloPopup');
 
                         const themeBtnPR = popup.querySelector('#pr-btn-theme');
-                        const savedThemePR = ajaStorage.getItem('PR_THEME');
+                        const savedThemePR = ctx.ajaStorage.getItem('PR_THEME');
                         if (savedThemePR === 'light') {
                             popup.classList.add('local-light-mode');
                             themeBtnPR.innerText = '☀️';
@@ -3835,13 +2880,13 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                             if (isLight) {
                                 popup.classList.remove('local-light-mode');
                                 popup.classList.add('cc-escurinho');
-                                ajaStorage.setItem('PR_THEME', 'dark');
+                                ctx.ajaStorage.setItem('PR_THEME', 'dark');
                                 themeBtnPR.innerText = '🌗';
                                 themeBtnPR.title = 'Mudar para Tema Claro';
                             } else {
                                 popup.classList.remove('cc-escurinho');
                                 popup.classList.add('local-light-mode');
-                                ajaStorage.setItem('PR_THEME', 'light');
+                                ctx.ajaStorage.setItem('PR_THEME', 'light');
                                 themeBtnPR.innerText = '☀️';
                                 themeBtnPR.title = 'Mudar para Tema Escuro';
                             }
@@ -4029,7 +3074,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
                         document.body.appendChild(panel); makeDraggable(panel, panel.querySelector('.panel-header'), 'settingsPanel');
                         // Herdar tema do popup principal
-                        const savedThemePR = ajaStorage.getItem('PR_THEME');
+                        const savedThemePR = ctx.ajaStorage.getItem('PR_THEME');
                         if (savedThemePR === 'dark') panel.classList.add('cc-escurinho');
                         else if (savedThemePR === 'light') panel.classList.add('local-light-mode');
                         else panel.classList.add('cc-escurinho'); // fallback escuro
@@ -4092,8 +3137,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     createTriggerButton() {
                         let btn = document.getElementById('pr-trigger-button'); if (btn) return;
                         btn = document.createElement('button'); btn.id = 'pr-trigger-button'; btn.innerHTML = '📋'; btn.title = 'Protocolos (Ctrl+Shift+U)'; document.body.appendChild(btn);
-                        let isDragging = false; const savedPos = ajaStorage.getItem('prTriggerButtonPos'); if (savedPos) { const p = JSON.parse(savedPos); btn.style.left = p.left; btn.style.top = p.top; } else { btn.style.right = '25px'; btn.style.bottom = '30px'; }
-                        btn.onmousedown = (e) => { if (e.button !== 0) return; isDragging = false; const startX = e.clientX, startY = e.clientY; const rect = btn.getBoundingClientRect(); const initL = rect.left, initT = rect.top; btn.style.cursor = 'grabbing'; const move = (me) => { if (Math.abs(me.clientX - startX) > 5 || Math.abs(me.clientY - startY) > 5) { isDragging = true; btn.style.left = (initL + me.clientX - startX) + 'px'; btn.style.top = (initT + me.clientY - startY) + 'px'; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; const up = () => { btn.style.cursor = 'pointer'; if (isDragging) ajaStorage.setItem('prTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
+                        let isDragging = false; const savedPos = ctx.ajaStorage.getItem('prTriggerButtonPos'); if (savedPos) { const p = JSON.parse(savedPos); btn.style.left = p.left; btn.style.top = p.top; } else { btn.style.right = '25px'; btn.style.bottom = '30px'; }
+                        btn.onmousedown = (e) => { if (e.button !== 0) return; isDragging = false; const startX = e.clientX, startY = e.clientY; const rect = btn.getBoundingClientRect(); const initL = rect.left, initT = rect.top; btn.style.cursor = 'grabbing'; const move = (me) => { if (Math.abs(me.clientX - startX) > 5 || Math.abs(me.clientY - startY) > 5) { isDragging = true; btn.style.left = (initL + me.clientX - startX) + 'px'; btn.style.top = (initT + me.clientY - startY) + 'px'; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; const up = () => { btn.style.cursor = 'pointer'; if (isDragging) ctx.ajaStorage.setItem('prTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
                         btn.onclick = () => { if (!isDragging) UI.createProtocoloPopup(); };
                     }
                 };
@@ -4251,6 +3296,13 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo protocolos.js:', e); }
 
 
+
+return { open() { return document.getElementById('pr-trigger-button')?.click(); } };
+});
+
+// Shared dependencies: ajaSessionStorage, ajaStorage, safeFetch
+window.AjaModular.register("respostas", ["compatibility"], function(ctx) {
+let publicApi;
     /* --- MÓDULO ANEXADO: RESPOSTAS.JS --- */
     try {
         // ==UserScript==
@@ -4336,7 +3388,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 try {
                     if (typeof CONFIG === 'undefined') window.CONFIG = { POPUP_POSITIONS: {} };
                     if (!CONFIG.POPUP_POSITIONS) CONFIG.POPUP_POSITIONS = {};
-                    let saved = ajaSessionStorage.getItem('qr_popupPositions') || ajaSessionStorage.getItem('popupPositions') || '{}';
+                    let saved = ctx.ajaSessionStorage.getItem('qr_popupPositions') || ctx.ajaSessionStorage.getItem('popupPositions') || '{}';
                     CONFIG.POPUP_POSITIONS = JSON.parse(saved);
                 } catch (e) { }
 
@@ -4368,8 +3420,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     if (typeof CONFIG !== 'undefined' && CONFIG.POPUP_POSITIONS) {
                         CONFIG.POPUP_POSITIONS[popupName] = { top: safe.top + 'px', left: safe.left + 'px', width: popup.style.width, height: popup.style.height };
                         try {
-                            ajaSessionStorage.setItem('qr_popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
-                            ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
+                            ctx.ajaSessionStorage.setItem('qr_popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
+                            ctx.ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
                         } catch (e) { }
                     }
                 };
@@ -4419,7 +3471,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
                 // 1. Tentar carregar Respostas do LocalStorage
                 try {
-                    const localReplies = ajaStorage.getItem('qr_quickReplies'); // Prefixo 'qr_'
+                    const localReplies = ctx.ajaStorage.getItem('qr_quickReplies'); // Prefixo 'qr_'
                     if (localReplies) {
                         const parsed = JSON.parse(localReplies);
                         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -4427,20 +3479,20 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                             repliesLoaded = true;
                             log("Respostas Rápidas carregadas do LocalStorage.");
                         } else {
-                            ajaStorage.removeItem('qr_quickReplies');
+                            ctx.ajaStorage.removeItem('qr_quickReplies');
                             log("LocalStorage de Respostas Rápidas estava inválido. Removido.");
                         }
                     }
                 } catch (e) {
                     log("Erro ao ler Respostas Rápidas do LocalStorage (será substituído):", e);
-                    ajaStorage.removeItem('qr_quickReplies');
+                    ctx.ajaStorage.removeItem('qr_quickReplies');
                 }
 
                 // 2. Se o LocalStorage estiver vazio, buscar do GitHub
                 if (!repliesLoaded) {
                     log(`LocalStorage de Respostas Rápidas vazio. Puxando de: ${RESPOSTAS_JSON_URL}`);
                     try {
-                        const response = await safeFetch(RESPOSTAS_JSON_URL + '?v=' + Date.now());
+                        const response = await ctx.safeFetch(RESPOSTAS_JSON_URL + '?v=' + Date.now());
                         if (!response.ok) {
                             throw new Error(`Falha ao buscar: ${response.statusText} (status ${response.status})`);
                         }
@@ -4451,7 +3503,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                             log(`Respostas Rápidas (${data.length}) puxadas com sucesso do GitHub.`);
                             // Salvar no LocalStorage para a próxima vez
                             try {
-                                ajaStorage.setItem('qr_quickReplies', JSON.stringify(data)); // Prefixo 'qr_'
+                                ctx.ajaStorage.setItem('qr_quickReplies', JSON.stringify(data)); // Prefixo 'qr_'
                                 log("Respostas Rápidas do GitHub salvas no LocalStorage.");
                             } catch (saveErr) {
                                 log("Erro ao salvar Respostas Rápidas no LocalStorage:", saveErr);
@@ -4470,12 +3522,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
                 // 3. Carregar o resto das configurações (não-respostas)
                 try {
-                    CONFIG.LAST_COPIED_REPLY = ajaStorage.getItem('qr_lastCopiedReply') || '';
-                    CONFIG.RECENT_REPLIES = JSON.parse(ajaStorage.getItem('qr_recentReplies_v3')) || [];
-                    CONFIG.POPUP_POSITIONS = JSON.parse(ajaSessionStorage.getItem('qr_popupPositions') || '{}');
-                    const e = ajaStorage.getItem('qr_darkMode');
+                    CONFIG.LAST_COPIED_REPLY = ctx.ajaStorage.getItem('qr_lastCopiedReply') || '';
+                    CONFIG.RECENT_REPLIES = JSON.parse(ctx.ajaStorage.getItem('qr_recentReplies_v3')) || [];
+                    CONFIG.POPUP_POSITIONS = JSON.parse(ctx.ajaSessionStorage.getItem('qr_popupPositions') || '{}');
+                    const e = ctx.ajaStorage.getItem('qr_darkMode');
                     CONFIG.DARK_MODE = e !== 'false';
-                    const t = ajaStorage.getItem('qr_customThemeColors');
+                    const t = ctx.ajaStorage.getItem('qr_customThemeColors');
                     CONFIG.customThemeColors = t ? JSON.parse(t) : { ...DEFAULT_CYBERPUNK_COLORS };
                     for (const o in DEFAULT_CYBERPUNK_COLORS) { if (!CONFIG.customThemeColors[o]) { CONFIG.customThemeColors[o] = DEFAULT_CYBERPUNK_COLORS[o] } }
                     log("Outras configs (Recentes, Posição, Tema) carregadas.");
@@ -4490,18 +3542,18 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
             const saveData = () => {
                 try {
-                    ajaStorage.setItem('qr_quickReplies', JSON.stringify(CONFIG.QUICK_REPLIES)); // PREFIXADO
-                    ajaStorage.setItem('qr_lastCopiedReply', CONFIG.LAST_COPIED_REPLY); // PREFIXADO
-                    ajaStorage.setItem('qr_recentReplies_v3', JSON.stringify(CONFIG.RECENT_REPLIES)); // PREFIXADO
-                    ajaStorage.setItem('qr_darkMode', CONFIG.DARK_MODE); // (Já estava prefixado)
-                    ajaStorage.setItem('qr_customThemeColors', JSON.stringify(CONFIG.customThemeColors)); // PREFIXADO
+                    ctx.ajaStorage.setItem('qr_quickReplies', JSON.stringify(CONFIG.QUICK_REPLIES)); // PREFIXADO
+                    ctx.ajaStorage.setItem('qr_lastCopiedReply', CONFIG.LAST_COPIED_REPLY); // PREFIXADO
+                    ctx.ajaStorage.setItem('qr_recentReplies_v3', JSON.stringify(CONFIG.RECENT_REPLIES)); // PREFIXADO
+                    ctx.ajaStorage.setItem('qr_darkMode', CONFIG.DARK_MODE); // (Já estava prefixado)
+                    ctx.ajaStorage.setItem('qr_customThemeColors', JSON.stringify(CONFIG.customThemeColors)); // PREFIXADO
                     log("Data saved.")
                 } catch (e) { log("Error saving data:", e); UI.createNotification("Error saving settings.", 'error') } applyThemeColors(CONFIG.DARK_MODE ? CONFIG.customThemeColors : LIGHT_THEME_COLORS); document.body.classList.toggle('rr-escurinho', CONFIG.DARK_MODE)
             };
 
             const logUsedReply = (e, t) => {
                 const o = 5, n = { title: e, text: t }; CONFIG.RECENT_REPLIES = CONFIG.RECENT_REPLIES.filter(l => l.title !== e || l.text !== t); CONFIG.RECENT_REPLIES.unshift(n); if (CONFIG.RECENT_REPLIES.length > o) { CONFIG.RECENT_REPLIES.length = o } try {
-                    ajaStorage.setItem('qr_recentReplies_v3', JSON.stringify(CONFIG.RECENT_REPLIES)) // PREFIXADO
+                    ctx.ajaStorage.setItem('qr_recentReplies_v3', JSON.stringify(CONFIG.RECENT_REPLIES)) // PREFIXADO
                 } catch (l) { log("Error saving recents:", l) }
             };
             // --- FIM DA MODIFICAÇÃO ---
@@ -4560,7 +3612,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     document.body.appendChild(popup);
                     makeDraggable(popup, popup.querySelector('.panel-header'), 'quickReplyPopup');
                     const themeBtnQR = popup.querySelector('#qr-btn-theme');
-                    const savedThemeQR = ajaStorage.getItem('QR_THEME');
+                    const savedThemeQR = ctx.ajaStorage.getItem('QR_THEME');
                     if (savedThemeQR === 'light') {
                         popup.classList.add('local-light-mode');
                         themeBtnQR.innerText = '☀️';
@@ -4573,13 +3625,13 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         if (isLight) {
                             popup.classList.remove('local-light-mode');
                             popup.classList.add('cc-escurinho');
-                            ajaStorage.setItem('QR_THEME', 'dark');
+                            ctx.ajaStorage.setItem('QR_THEME', 'dark');
                             themeBtnQR.innerText = '🌗';
                             themeBtnQR.title = 'Mudar para Tema Claro';
                         } else {
                             popup.classList.remove('cc-escurinho');
                             popup.classList.add('local-light-mode');
-                            ajaStorage.setItem('QR_THEME', 'light');
+                            ctx.ajaStorage.setItem('QR_THEME', 'light');
                             themeBtnQR.innerText = '☀️';
                             themeBtnQR.title = 'Mudar para Tema Escuro';
                         }
@@ -4609,7 +3661,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     document.body.appendChild(panel);
                     makeDraggable(panel, panel.querySelector('.panel-header'), 'settingsPanel');
                     // Herdar tema do popup principal
-                    const savedThemeQR = ajaStorage.getItem('QR_THEME');
+                    const savedThemeQR = ctx.ajaStorage.getItem('QR_THEME');
                     if (savedThemeQR === 'dark') panel.classList.add('cc-escurinho');
                     else if (savedThemeQR === 'light') panel.classList.add('local-light-mode');
                     else panel.classList.add('cc-escurinho'); // fallback escuro
@@ -4617,10 +3669,11 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     // ... (restante da lógica da função é interna e não precisa de prefixo)
                     const tabs = panel.querySelectorAll('.tab-button'); const contents = panel.querySelectorAll('.settings-tab-content'); tabs.forEach(tab => { tab.addEventListener('click', () => { log(`Tab clicked: ${tab.dataset.tab}`); const targetId = `tab-content-${tab.dataset.tab}`; const targetContent = panel.querySelector(`#${targetId}`); tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); if (targetContent) { targetContent.classList.add('active'); log(`Activated tab content: #${targetId}`); } else { log(`Error: Target content not found for id #${targetId}`); } }); }); const getReplyDataTags = (title) => CONFIG.QUICK_REPLIES.find(r => r.title === title)?.requiredData || []; const renderRepliesSettings = () => { const list = panel.querySelector('#settings-quick-replies-list'); list.innerHTML = ''; const sorted = [...CONFIG.QUICK_REPLIES].sort((a, b) => a.title.localeCompare(b.title)); sorted.forEach((reply) => { const idx = CONFIG.QUICK_REPLIES.findIndex(r => r.title === reply.title && r.text === reply.text); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = idx; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}">${t.replace(/_/g, ' ')}</span>`).join(' '); item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito" ${reply.isFavorite ? 'checked' : ''}><input type="text" value="${reply.title}" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="${reply.hotkey || ''}" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags">${tagsHtml}</div><textarea class="reply-text" rows="3" placeholder="Texto...">${reply.text}</textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.appendChild(item); }); list.querySelectorAll('.remove-reply-btn').forEach(btn => { btn.onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; }); }; panel.querySelector('#add-reply-btn').onclick = () => { const list = panel.querySelector('#settings-quick-replies-list'); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = '-1'; item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito"><input type="text" value="NOVA - Título" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags"></div><textarea class="reply-text" rows="3" placeholder="Texto..."></textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.prepend(item); item.querySelector('.remove-reply-btn').onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; item.querySelector('.reply-title').focus(); item.querySelector('.reply-title').select(); }; panel.querySelector('#restore-replies-btn').onclick = () => { if (confirm("Limpar TODAS as respostas?")) { CONFIG.QUICK_REPLIES = []; renderRepliesSettings(); UI.createNotification("Respostas limpas. Salve para confirmar.", "info", 4000); } }; const fileInput = panel.querySelector('#import-replies-input'); panel.querySelector('#export-replies-btn').onclick = () => { try { if (CONFIG.QUICK_REPLIES.length === 0) { UI.createNotification("Nada para exportar.", 'warn'); return; } const json = JSON.stringify(CONFIG.QUICK_REPLIES, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'respostas_rapidas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification(`Exportado (${CONFIG.QUICK_REPLIES.length})!`, 'success'); } catch (e) { log("Erro exportar:", e); UI.createNotification("Erro ao exportar.", 'error'); } }; panel.querySelector('#import-replies-btn').onclick = () => { fileInput.click(); }; fileInput.onchange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); if (!Array.isArray(imported) || (imported.length > 0 && (!imported[0].title || !imported[0].text))) { throw new Error('JSON inválido.'); } const msg = imported.length > 0 ? `Importar ${imported.length} respostas?` : "Arquivo vazio. Limpar atuais?"; if (confirm(`${msg}\n\nATENÇÃO: Substituirá as respostas atuais. Salve para confirmar.`)) { CONFIG.QUICK_REPLIES = imported.map(r => ({ title: r.title || "INVÁLIDO", text: r.text || "INVÁLIDO", isFavorite: r.isFavorite || false, requiredData: (Array.isArray(r.requiredData) ? r.requiredData : []).map(t => t.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase().replace(/[ÁÀÂÃÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÍÌÎÏ]/g, 'I').replace(/[ÓÒÔÕÖ]/g, 'O').replace(/[ÚÙÛÜ]/g, 'U').replace(/Ç/g, 'C').replace(/[^A-Z0-9_]/g, '')), hotkey: r.hotkey || null })); renderRepliesSettings(); UI.createNotification("Importado! Revise e Salve.", 'success', 4000); } } catch (err) { log("Erro importar:", err); UI.createNotification(err.message || "Erro ao ler JSON.", 'error'); } finally { event.target.value = null; } }; reader.readAsText(file, 'UTF-8'); }; panel.querySelector('#custom-action-example-btn').onclick = () => { exampleCustomFunction(); }; panel.querySelector('#reset-colors-btn').onclick = () => { if (confirm("Resetar as cores para o padrão Cyberpunk?")) { CONFIG.customThemeColors = { ...DEFAULT_CYBERPUNK_COLORS }; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors[key]) { input.value = CONFIG.customThemeColors[key]; } }); applyThemeColors(CONFIG.customThemeColors); UI.createNotification("Cores resetadas.", "info"); } }; panel.querySelector('#qr-save-settings-btn').onclick = () => { const newReplies = []; let hasError = false; const titles = new Set(); panel.querySelectorAll('#settings-quick-replies-list .reply-item').forEach(item => { const titleInput = item.querySelector('.reply-title'); const textInput = item.querySelector('.reply-text'); const hotkeyInput = item.querySelector('.reply-hotkey'); const title = titleInput.value.trim(); const text = textInput.value.trim(); const hotkey = hotkeyInput.value.trim() || null; const isFav = item.querySelector('.favorite-toggle').checked; const idx = parseInt(item.dataset.originalIndex, 10); titleInput.classList.remove('invalid-input'); titleInput.title = ''; textInput.classList.remove('invalid-input'); textInput.title = ''; let reqData = []; if (!isNaN(idx) && idx >= 0 && CONFIG.QUICK_REPLIES[idx]) { reqData = CONFIG.QUICK_REPLIES[idx].requiredData || []; } let titleError = ''; if (!title || !title.includes(' - ')) { titleError = 'Formato: CATEGORIA - Título'; } else if (titles.has(title.toLowerCase())) { titleError = 'Título duplicado.'; } if (titleError) { titleInput.classList.add('invalid-input'); titleInput.title = titleError; hasError = true; } else { titles.add(title.toLowerCase()); } if (!text) { textInput.classList.add('invalid-input'); textInput.title = 'Texto vazio.'; hasError = true; } if (!hasError) { newReplies.push({ title, text, isFavorite: isFav, requiredData: reqData, hotkey: hotkey }); } }); if (hasError) { UI.createNotification("Corrija os campos inválidos nas respostas.", 'error'); return; } CONFIG.QUICK_REPLIES = newReplies; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors.hasOwnProperty(key)) { CONFIG.customThemeColors[key] = input.value; } }); CONFIG.DARK_MODE = panel.querySelector('#dark-mode-toggle').checked; saveData(); UI.createNotification("Salvo!", "success"); panel.remove(); }; renderRepliesSettings();
                 },
-                createTriggerButton() { /* ... (igual v2.4.3 - usa ID #qr-trigger-button, já prefixado) ... */ let btn = document.getElementById('qr-trigger-button'); if (btn) return; btn = document.createElement('button'); btn.id = 'qr-trigger-button'; btn.innerHTML = ICONS.CHAT; btn.title = 'Abrir Respostas (Ctrl+Shift+Ç)'; document.body.appendChild(btn); let dragging = false, startX, startY, initialL, initialT; const saved = ajaStorage.getItem('qrTriggerButtonPos'); if (saved) { try { const pos = JSON.parse(saved); const w = 48, h = 48; const savedL = parseFloat(pos.left), savedT = parseFloat(pos.top); if (savedL >= 0 && savedL <= innerWidth - w && savedT >= 0 && savedT <= innerHeight - h) { btn.style.left = pos.left; btn.style.top = pos.top; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } else { throw new Error("Fora dos limites."); } } catch (e) { log("Posição salva inválida (botão).", e); btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; ajaStorage.removeItem('qrTriggerButtonPos'); } } else { btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; } btn.onmousedown = (e) => { if (e.button !== 0) return; dragging = false; startX = e.clientX; startY = e.clientY; const rect = btn.getBoundingClientRect(); initialL = rect.left; initialT = rect.top; btn.style.cursor = 'grabbing'; e.preventDefault(); const threshold = 5; let moved = false; document.onmousemove = (me) => { const dX = me.clientX - startX; const dY = me.clientY - startY; if (!moved && (Math.abs(dX) > threshold || Math.abs(dY) > threshold)) { moved = true; dragging = true; } if (moved) { let nX = initialL + dX; let nY = initialT + dY; const bW = btn.offsetWidth, bH = btn.offsetHeight; nX = Math.max(5, Math.min(nX, innerWidth - bW - 5)); nY = Math.max(5, Math.min(nY, innerHeight - bH - 5)); btn.style.left = `${nX}px`; btn.style.top = `${nY}px`; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; document.onmouseup = () => { btn.style.cursor = 'pointer'; if (moved) { ajaStorage.setItem('qrTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); } document.onmousemove = null; document.onmouseup = null; setTimeout(() => { dragging = false; }, 0); }; }; btn.onclick = () => { if (!dragging) { UI.createQuickReplyPopup(); } }; }
+                createTriggerButton() { /* ... (igual v2.4.3 - usa ID #qr-trigger-button, já prefixado) ... */ let btn = document.getElementById('qr-trigger-button'); if (btn) return; btn = document.createElement('button'); btn.id = 'qr-trigger-button'; btn.innerHTML = ICONS.CHAT; btn.title = 'Abrir Respostas (Ctrl+Shift+Ç)'; document.body.appendChild(btn); let dragging = false, startX, startY, initialL, initialT; const saved = ctx.ajaStorage.getItem('qrTriggerButtonPos'); if (saved) { try { const pos = JSON.parse(saved); const w = 48, h = 48; const savedL = parseFloat(pos.left), savedT = parseFloat(pos.top); if (savedL >= 0 && savedL <= innerWidth - w && savedT >= 0 && savedT <= innerHeight - h) { btn.style.left = pos.left; btn.style.top = pos.top; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } else { throw new Error("Fora dos limites."); } } catch (e) { log("Posição salva inválida (botão).", e); btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; ctx.ajaStorage.removeItem('qrTriggerButtonPos'); } } else { btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; } btn.onmousedown = (e) => { if (e.button !== 0) return; dragging = false; startX = e.clientX; startY = e.clientY; const rect = btn.getBoundingClientRect(); initialL = rect.left; initialT = rect.top; btn.style.cursor = 'grabbing'; e.preventDefault(); const threshold = 5; let moved = false; document.onmousemove = (me) => { const dX = me.clientX - startX; const dY = me.clientY - startY; if (!moved && (Math.abs(dX) > threshold || Math.abs(dY) > threshold)) { moved = true; dragging = true; } if (moved) { let nX = initialL + dX; let nY = initialT + dY; const bW = btn.offsetWidth, bH = btn.offsetHeight; nX = Math.max(5, Math.min(nX, innerWidth - bW - 5)); nY = Math.max(5, Math.min(nY, innerHeight - bH - 5)); btn.style.left = `${nX}px`; btn.style.top = `${nY}px`; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; document.onmouseup = () => { btn.style.cursor = 'pointer'; if (moved) { ctx.ajaStorage.setItem('qrTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); } document.onmousemove = null; document.onmouseup = null; setTimeout(() => { dragging = false; }, 0); }; }; btn.onclick = () => { if (!dragging) { UI.createQuickReplyPopup(); } }; }
             };
 
-            // --- Injeção de CSS ---
+            publicApi = { open: () => UI.createQuickReplyPopup() };
+// --- Injeção de CSS ---
             // *** MODIFICADO v2.4.4 (Conflict Fix) ***
             const injectCss = () => {
                 // Tenta carregar a fonte Inter via @resource
@@ -4812,6 +3865,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo respostas.js:', e); }
 
 
+
+return publicApi;
+});
+
+// Shared dependencies: ajaStorage
+window.AjaModular.register("pausas", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: PAUSAS.JS --- */
     try {
         // =================================================================
@@ -4895,12 +3954,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
             let audioDesbloqueado = false;
 
             // --- Funções de LocalStorage ---
-            function salvarHorariosLocalStorage(h) { try { ajaStorage.setItem(STORAGE_KEY_HORARIOS, JSON.stringify(h)); console.log("[LS] Horários salvos.") } catch (e) { console.error("[LS] Erro save horários:", e) } }
-            function carregarHorariosLocalStorage() { try { const h = ajaStorage.getItem(STORAGE_KEY_HORARIOS); if (h) { const p = JSON.parse(h); if (Array.isArray(p)) { if (p.every(i => typeof i.hora === 'string' && typeof i.status === 'string')) { console.log("[LS] Horários carregados."); return p } else { console.warn("[LS] Formato interno inválido."); ajaStorage.removeItem(STORAGE_KEY_HORARIOS) } } else { console.warn("[LS] Formato JSON inválido."); ajaStorage.removeItem(STORAGE_KEY_HORARIOS) } } } catch (e) { console.error("[LS] Erro load horários:", e); ajaStorage.removeItem(STORAGE_KEY_HORARIOS) } console.log("[LS] Nenhum horário salvo. Usando padrão."); return [...PAUSAS_AGENDADAS_DEFAULT] }
-            function salvarPosicaoPainelLocalStorage(k, el) { if (!el) return; try { let p = {}; if (el.style.top && el.style.left) { p = { top: el.style.top, left: el.style.left } } else if (el.style.bottom && el.style.right) { p = { bottom: el.style.bottom, right: el.style.right } } else { const r = el.getBoundingClientRect(); p = { top: r.top + 'px', left: r.left + 'px' } } ajaStorage.setItem(k, JSON.stringify(p)) } catch (e) { console.error(`[LS] Erro save pos ${k}:`, e) } }
-            function carregarPosicaoPainelLocalStorage(k) { try { const pS = ajaStorage.getItem(k); if (pS) { const p = JSON.parse(pS); if (p && (p.top || p.bottom)) return p } } catch (e) { console.error(`[LS] Erro load pos ${k}:`, e); ajaStorage.removeItem(k) } return null }
-            function salvarConfiguracoesNotificacaoLocalStorage(c) { try { ajaStorage.setItem(STORAGE_KEY_NOTIF_CONFIG, JSON.stringify(c)); console.log("[LS] Config Notif salva.") } catch (e) { console.error("[LS] Erro save config notif:", e) } }
-            function carregarConfiguracoesNotificacaoLocalStorage() { try { const cS = ajaStorage.getItem(STORAGE_KEY_NOTIF_CONFIG); if (cS) { const c = JSON.parse(cS); if (typeof c.ativadas === 'boolean' && typeof c.somAtivado === 'boolean' && typeof c.antecedenciaSegundos === 'number') { console.log("[LS] Config Notif carregada."); return { ...NOTIF_CONFIG_DEFAULT, ...c } } else { console.warn("[LS] Formato config notif inválido."); ajaStorage.removeItem(STORAGE_KEY_NOTIF_CONFIG) } } } catch (e) { console.error("[LS] Erro load config notif:", e); ajaStorage.removeItem(STORAGE_KEY_NOTIF_CONFIG) } console.log("[LS] Nenhuma config notif salva. Usando padrão."); return { ...NOTIF_CONFIG_DEFAULT } }
+            function salvarHorariosLocalStorage(h) { try { ctx.ajaStorage.setItem(STORAGE_KEY_HORARIOS, JSON.stringify(h)); console.log("[LS] Horários salvos.") } catch (e) { console.error("[LS] Erro save horários:", e) } }
+            function carregarHorariosLocalStorage() { try { const h = ctx.ajaStorage.getItem(STORAGE_KEY_HORARIOS); if (h) { const p = JSON.parse(h); if (Array.isArray(p)) { if (p.every(i => typeof i.hora === 'string' && typeof i.status === 'string')) { console.log("[LS] Horários carregados."); return p } else { console.warn("[LS] Formato interno inválido."); ctx.ajaStorage.removeItem(STORAGE_KEY_HORARIOS) } } else { console.warn("[LS] Formato JSON inválido."); ctx.ajaStorage.removeItem(STORAGE_KEY_HORARIOS) } } } catch (e) { console.error("[LS] Erro load horários:", e); ctx.ajaStorage.removeItem(STORAGE_KEY_HORARIOS) } console.log("[LS] Nenhum horário salvo. Usando padrão."); return [...PAUSAS_AGENDADAS_DEFAULT] }
+            function salvarPosicaoPainelLocalStorage(k, el) { if (!el) return; try { let p = {}; if (el.style.top && el.style.left) { p = { top: el.style.top, left: el.style.left } } else if (el.style.bottom && el.style.right) { p = { bottom: el.style.bottom, right: el.style.right } } else { const r = el.getBoundingClientRect(); p = { top: r.top + 'px', left: r.left + 'px' } } ctx.ajaStorage.setItem(k, JSON.stringify(p)) } catch (e) { console.error(`[LS] Erro save pos ${k}:`, e) } }
+            function carregarPosicaoPainelLocalStorage(k) { try { const pS = ctx.ajaStorage.getItem(k); if (pS) { const p = JSON.parse(pS); if (p && (p.top || p.bottom)) return p } } catch (e) { console.error(`[LS] Erro load pos ${k}:`, e); ctx.ajaStorage.removeItem(k) } return null }
+            function salvarConfiguracoesNotificacaoLocalStorage(c) { try { ctx.ajaStorage.setItem(STORAGE_KEY_NOTIF_CONFIG, JSON.stringify(c)); console.log("[LS] Config Notif salva.") } catch (e) { console.error("[LS] Erro save config notif:", e) } }
+            function carregarConfiguracoesNotificacaoLocalStorage() { try { const cS = ctx.ajaStorage.getItem(STORAGE_KEY_NOTIF_CONFIG); if (cS) { const c = JSON.parse(cS); if (typeof c.ativadas === 'boolean' && typeof c.somAtivado === 'boolean' && typeof c.antecedenciaSegundos === 'number') { console.log("[LS] Config Notif carregada."); return { ...NOTIF_CONFIG_DEFAULT, ...c } } else { console.warn("[LS] Formato config notif inválido."); ctx.ajaStorage.removeItem(STORAGE_KEY_NOTIF_CONFIG) } } } catch (e) { console.error("[LS] Erro load config notif:", e); ctx.ajaStorage.removeItem(STORAGE_KEY_NOTIF_CONFIG) } console.log("[LS] Nenhuma config notif salva. Usando padrão."); return { ...NOTIF_CONFIG_DEFAULT } }
 
             let PAUSAS_AGENDADAS = carregarHorariosLocalStorage();
             configNotificacao = carregarConfiguracoesNotificacaoLocalStorage();
@@ -4911,7 +3970,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
             function tocarSomNotificacao() { if (!configNotificacao.somAtivado) return; if (!audioDesbloqueado) { console.warn("[Notif Som] Áudio não desbloqueado."); desbloquearAudio(true); return } audioNotificacao.currentTime = 0; audioNotificacao.play().catch(e => { console.error("[Notif Som] Erro:", e.message); audioDesbloqueado = !1; document.addEventListener('click', desbloquearAudio, { once: !0 }) }) }
             function desbloquearAudio(forcePlay = !1) { if (audioDesbloqueado && !forcePlay) return; let p = audioNotificacao.play(); if (p !== undefined) { p.then(() => { audioNotificacao.pause(); audioNotificacao.currentTime = 0; if (!audioDesbloqueado) { audioDesbloqueado = !0; console.log("[Audio] Contexto desbloqueado.") } }).catch(e => { }); } if (audioDesbloqueado) { document.removeEventListener('click', desbloquearAudio) } }
-            async function mostrarNotificacao(evento) { if (!configNotificacao.ativadas) { console.log("[Notif] Desativadas."); return } if (!("Notification" in window)) { console.warn("[Notif] Navegador não suporta."); return } let p = Notification.permission; if (p === "granted") { tocarSomNotificacao(); new Notification("Gerenciador - Próxima Ação", { body: `${evento.status} às ${evento.hora}`, tag: `gdp-${evento.hora}-${evento.status}` }); console.log(`[Notif] Exibida: ${evento.status}`) } else if (p === "default") { console.log("[Notif] Pedindo permissão..."); try { p = await Notification.requestPermission(); if (p === "granted") { console.log("[Notif] Permissão OK!"); mostrarNotificacao(evento) } else { console.warn("[Notif] Permissão Negada."); ajaStorage.setItem('notif_negada', '1') } } catch (err) { console.error("[Notif] Erro ao pedir:", err) } } else { if (!ajaStorage.getItem('notif_negada')) { console.warn("[Notif] Permissão negada antes."); ajaStorage.setItem('notif_negada', '1') } } }
+            async function mostrarNotificacao(evento) { if (!configNotificacao.ativadas) { console.log("[Notif] Desativadas."); return } if (!("Notification" in window)) { console.warn("[Notif] Navegador não suporta."); return } let p = Notification.permission; if (p === "granted") { tocarSomNotificacao(); new Notification("Gerenciador - Próxima Ação", { body: `${evento.status} às ${evento.hora}`, tag: `gdp-${evento.hora}-${evento.status}` }); console.log(`[Notif] Exibida: ${evento.status}`) } else if (p === "default") { console.log("[Notif] Pedindo permissão..."); try { p = await Notification.requestPermission(); if (p === "granted") { console.log("[Notif] Permissão OK!"); mostrarNotificacao(evento) } else { console.warn("[Notif] Permissão Negada."); ctx.ajaStorage.setItem('notif_negada', '1') } } catch (err) { console.error("[Notif] Erro ao pedir:", err) } } else { if (!ctx.ajaStorage.getItem('notif_negada')) { console.warn("[Notif] Permissão negada antes."); ctx.ajaStorage.setItem('notif_negada', '1') } } }
 
             // ATUALIZADA V49.0 (Revertida para V46.1)
             function clicarElemento(s, t = null) {
@@ -5539,7 +4598,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 c.onmouseenter = (e) => { if (document.getElementById('pausa-script-conteudo').style.display !== 'none') c.style.background = 'var(--ger-bg-hover, #1e293b)' };
                 c.onmouseleave = () => { if (document.getElementById('pausa-script-conteudo').style.display !== 'none') c.style.background = 'var(--ger-bg-primary, #0f172a)' };
 
-                const savedTheme = ajaStorage.getItem('GERENCIADOR_THEME');
+                const savedTheme = ctx.ajaStorage.getItem('GERENCIADOR_THEME');
                 if (savedTheme === 'light') c.classList.add('local-light-mode');
                 else c.classList.add('cc-escurinho');
 
@@ -5687,7 +4746,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         ">--:--:--</span>
                         
                         <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-                            <span id="btn-tema-gerenciador" title="Mudar Tema" style="cursor: pointer; font-size: 16px;">${ajaStorage.getItem('GERENCIADOR_THEME') === 'light' ? '☀️' : '🌗'}</span>
+                            <span id="btn-tema-gerenciador" title="Mudar Tema" style="cursor: pointer; font-size: 16px;">${ctx.ajaStorage.getItem('GERENCIADOR_THEME') === 'light' ? '☀️' : '🌗'}</span>
                             <span id="btn-abrir-config" title="Configurações">⚙️</span>
                             <span id="btn-minimizar" title="Fechar Painel">[X]</span>
                         </div>
@@ -5757,12 +4816,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                             if (isLight) {
                                 c.classList.remove('local-light-mode');
                                 c.classList.add('cc-escurinho');
-                                ajaStorage.setItem('GERENCIADOR_THEME', 'dark');
+                                ctx.ajaStorage.setItem('GERENCIADOR_THEME', 'dark');
                                 if (themeBtn) themeBtn.innerText = '🌗';
                             } else {
                                 c.classList.remove('cc-escurinho');
                                 c.classList.add('local-light-mode');
-                                ajaStorage.setItem('GERENCIADOR_THEME', 'light');
+                                ctx.ajaStorage.setItem('GERENCIADOR_THEME', 'light');
                                 if (themeBtn) themeBtn.innerText = '☀️';
                             }
                             break;
@@ -5802,7 +4861,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 let cssPos = `position:fixed; ${pSC ? (pSC.top ? `top:${pSC.top};left:${pSC.left};` : `bottom:${pSC.bottom};right:${pSC.right};`) : 'bottom:30px;right:340px;'}`;
 
                 // Injeta leitura de tema local
-                const saveCfgTheme = ajaStorage.getItem('GERCONFIG_THEME');
+                const saveCfgTheme = ctx.ajaStorage.getItem('GERCONFIG_THEME');
                 if (saveCfgTheme === 'light') cC.classList.add('local-light-mode');
                 else cC.classList.add('cc-escurinho');
 
@@ -5944,7 +5003,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
             <div id="pausa-script-config-header">
                 <h3>⚙️ Config & Histórico</h3>
                 <div class="panel-actions" style="display:flex; align-items:center;">
-                    <span id="config-btn-theme" title="Mudar Tema">${ajaStorage.getItem('GERCONFIG_THEME') === 'dark' ? '🌗' : '☀️'}</span>
+                    <span id="config-btn-theme" title="Mudar Tema">${ctx.ajaStorage.getItem('GERCONFIG_THEME') === 'dark' ? '🌗' : '☀️'}</span>
                     <span id="btn-fechar-config" title="Fechar">[X]</span>
                 </div>
             </div>
@@ -6095,8 +5154,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     PAUSAS_AGENDADAS = carregarHorariosLocalStorage();
 
                     console.log("[GERENCIADOR] Solicitando permissão para notificações...");
-                    if (configNotificacao.ativadas && "Notification" in window && Notification.permission === 'default') { Notification.requestPermission().then(p => { if (p === 'granted') { console.log("[Notificação] Permissão OK!"); new Notification("Gerenciador", { body: "Notificações Ativadas!" }) } else { console.warn("[Notificação] Permissão Negada."); ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); } }); }
-                    else if (Notification.permission === 'denied') { console.warn("[Notificação] Permissão Negada Anteriormente."); ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); }
+                    if (configNotificacao.ativadas && "Notification" in window && Notification.permission === 'default') { Notification.requestPermission().then(p => { if (p === 'granted') { console.log("[Notificação] Permissão OK!"); new Notification("Gerenciador", { body: "Notificações Ativadas!" }) } else { console.warn("[Notificação] Permissão Negada."); ctx.ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); } }); }
+                    else if (Notification.permission === 'denied') { console.warn("[Notificação] Permissão Negada Anteriormente."); ctx.ajaStorage.setItem('notificacao_permissao_negada_aviso', 'true'); }
 
                     console.log("[GERENCIADOR] Injetando UI...");
                     criarUI();
@@ -6119,6 +5178,10 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo pausas.js:', e); }
 
 
+});
+
+// Shared dependencies: ajaStorage
+window.AjaModular.register("car", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: CAR.JS --- */
     try {
         // ==UserScript==
@@ -6152,8 +5215,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                             callback({ scripts: res[STORAGE_KEY] || defaultScripts, theme: res[THEME_KEY] || 'dark' });
                         });
                     } else {
-                        const s = ajaStorage.getItem(STORAGE_KEY);
-                        const t = ajaStorage.getItem(THEME_KEY);
+                        const s = ctx.ajaStorage.getItem(STORAGE_KEY);
+                        const t = ctx.ajaStorage.getItem(THEME_KEY);
                         callback({ scripts: s ? JSON.parse(s) : defaultScripts, theme: t || 'dark' });
                     }
                 },
@@ -6164,8 +5227,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                         if (data.theme) saveObj[THEME_KEY] = data.theme;
                         chrome.storage.local.set(saveObj);
                     } else {
-                        if (data.scripts) ajaStorage.setItem(STORAGE_KEY, JSON.stringify(data.scripts));
-                        if (data.theme) ajaStorage.setItem(THEME_KEY, data.theme);
+                        if (data.scripts) ctx.ajaStorage.setItem(STORAGE_KEY, JSON.stringify(data.scripts));
+                        if (data.theme) ctx.ajaStorage.setItem(THEME_KEY, data.theme);
                     }
                     if (data.scripts) scripts = data.scripts;
                     if (data.theme) isDark = (data.theme === 'dark');
@@ -6520,6 +5583,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo car.js:', e); }
 
 
+
+return { open() { return window.toggleCAR(); } };
+});
+
+// Shared dependencies: ajaStorage, escapeHTML
+window.AjaModular.register("ia", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: IA.JS --- */
     try {
         // ==UserScript==
@@ -6544,7 +5613,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     } else {
                         let res = {};
                         keys.forEach(k => {
-                            const val = ajaStorage.getItem(APP_PREFIX + k);
+                            const val = ctx.ajaStorage.getItem(APP_PREFIX + k);
                             if (val) { try { res[k] = JSON.parse(val); } catch (e) { res[k] = val; } }
                         });
                         cb(res);
@@ -6554,7 +5623,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                         chrome.storage.local.set(obj, cb);
                     } else {
-                        Object.keys(obj).forEach(k => ajaStorage.setItem(APP_PREFIX + k, JSON.stringify(obj[k])));
+                        Object.keys(obj).forEach(k => ctx.ajaStorage.setItem(APP_PREFIX + k, JSON.stringify(obj[k])));
                         if (cb) cb();
                     }
                 },
@@ -6562,7 +5631,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                         chrome.storage.local.remove(keys, cb);
                     } else {
-                        keys.forEach(k => ajaStorage.removeItem(APP_PREFIX + k));
+                        keys.forEach(k => ctx.ajaStorage.removeItem(APP_PREFIX + k));
                         if (cb) cb();
                     }
                 }
@@ -7090,7 +6159,7 @@ Telecine	Telecine filmes erros APP app.
                 }
                 function formatMarkdown(text) {
                     if (!text) return '';
-                    return escapeHTML(String(text))
+                    return ctx.escapeHTML(String(text))
                         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                         .replace(/\*(.*?)\*/g, '<em>$1</em>')
                         .replace(/`(.*?)`/g, '<code style="background:rgba(255,255,255,0.1); padding:2px; border-radius:3px;">$1</code>');
@@ -7427,6 +6496,12 @@ Telecine	Telecine filmes erros APP app.
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo ia.js:', e); }
 
 
+
+return { open() { return document.getElementById('gemini-float-btn')?.click(); } };
+});
+
+// Shared dependencies: none
+window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: MONITOR.JS --- */
     try {
         // ==UserScript==
@@ -7746,6 +6821,12 @@ Telecine	Telecine filmes erros APP app.
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo monitor.js:', e); }
 
 
+
+return { open() { return document.getElementById('monitor-trigger-btn')?.click(); } };
+});
+
+// Shared dependencies: ajaStorage, buildSpellOverlayHTML, safeFetch
+window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: CORRETOR.JS --- */
     try {
         // ==UserScript==
@@ -7824,7 +6905,7 @@ Telecine	Telecine filmes erros APP app.
                     const p = palavra.toLowerCase().trim();
                     if (p && !this.dicionarioPessoal.includes(p)) {
                         this.dicionarioPessoal.push(p);
-                        ajaStorage.setItem('pcs_spell_dict', JSON.stringify(this.dicionarioPessoal));
+                        ctx.ajaStorage.setItem('pcs_spell_dict', JSON.stringify(this.dicionarioPessoal));
                         this.verificarTextoNaAPI();
                     }
                 },
@@ -7969,7 +7050,7 @@ Telecine	Telecine filmes erros APP app.
                     const revision = this.__revision = (this.__revision || 0) + 1;
                     if (!text.trim()) { this.errosEncontrados=[]; this.atualizarLinhasOnduladas(text); this.atualizarBadge(); return; }
                     try {
-                        const response = await safeFetch('https://api.languagetool.org/v2/check', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({text,language:'pt-BR'}).toString()});
+                        const response = await ctx.safeFetch('https://api.languagetool.org/v2/check', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({text,language:'pt-BR'}).toString()});
                         if (!response.ok) throw new Error('LanguageTool ' + response.status);
                         const data = await response.json();
                         const current = field.isContentEditable ? (field.innerText || field.textContent) : field.value;
@@ -7980,7 +7061,7 @@ Telecine	Telecine filmes erros APP app.
                     } catch(error) { console.warn('[AjaModular] Corretor indisponível:', error.message); }
                 },
                 atualizarLinhasOnduladas(textoOriginal) {
-                    this.camadaIlusao.innerHTML = buildSpellOverlayHTML(textoOriginal, this.errosEncontrados);
+                    this.camadaIlusao.innerHTML = ctx.buildSpellOverlayHTML(textoOriginal, this.errosEncontrados);
                     this.sincronizarIlusao();
                 },
                 atualizarBadge() {
@@ -8116,7 +7197,7 @@ Telecine	Telecine filmes erros APP app.
                             item.innerHTML = `<span>${word}</span> <button style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">×</button>`;
                             item.querySelector('button').onclick = () => {
                                 this.dicionarioPessoal = this.dicionarioPessoal.filter(w => w !== word);
-                                ajaStorage.setItem('pcs_spell_dict', JSON.stringify(this.dicionarioPessoal));
+                                ctx.ajaStorage.setItem('pcs_spell_dict', JSON.stringify(this.dicionarioPessoal));
                                 renderDict();
                                 this.verificarTextoNaAPI();
                             };
@@ -8189,6 +7270,12 @@ Telecine	Telecine filmes erros APP app.
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo corretor.js:', e); }
 
 
+
+return { open() { window.AjaModularSetupSpell?.(); return window.toggleCorretorAja?.(); } };
+});
+
+// Shared dependencies: ajaStorage
+window.AjaModular.register("ferramentas", ["compatibility","notepad","extrator","historico-documentos","links-uteis","lembretes"], function(ctx) {
     /* --- MÓDULO ANEXADO: FERRAMENTAS.JS --- */
     try {
         // ==UserScript==
@@ -8379,40 +7466,8 @@ Telecine	Telecine filmes erros APP app.
                             { title: "Calculadora", url: "https://example.com/calc", color: "#3B82F6" }
                         ];
 
-                        // Lógica Extrator F2 e Histórico
-                        const refreshHistoryUI = () => {
-                            const list = panel.querySelector('#historico-id-list');
-                            list.innerHTML = '';
-                            let history = [];
-                            try { history = JSON.parse(ajaStorage.getItem('purecloudScript_idHistory') || '[]'); } catch (e) { }
-
-                            if (history.length === 0) {
-                                list.innerHTML = '<span style="color:var(--purecloud-script-text-secondary); font-size:0.85em;">Nenhum documento salvo ainda.</span>';
-                                return;
-                            }
-
-                            history.forEach((item, index) => {
-                                const btn = document.createElement('button');
-                                btn.className = 'purecloud-script-button';
-                                btn.style.cssText = `text-align: left; padding: 8px; font-size: 0.85em; background: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); border: 1px solid var(--purecloud-script-border-color); display: flex; justify-content: space-between;`;
-                                btn.innerHTML = `<span><strong>${item.doc}</strong> (${item.tipo})</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
-                                btn.onclick = () => {
-                                    navigator.clipboard.writeText(item.doc);
-                                    btn.innerHTML = `<span><strong>Copiado!</strong> ✅</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
-                                    setTimeout(() => refreshHistoryUI(), 1000);
-                                };
-                                list.appendChild(btn);
-                            });
-                        };
-
-                        panel.querySelector('#btn-clear-history').onclick = () => {
-                            ajaStorage.removeItem('purecloudScript_idHistory');
-                            refreshHistoryUI();
-                        };
-
-                        refreshHistoryUI();
-
-                        const switchToolsTab = (tabId) => {
+                        window.AjaModular.get('historico-documentos').mount(panel);
+const switchToolsTab = (tabId) => {
                             panel.querySelectorAll('.purecloud-script-tab-button').forEach(btn => btn.classList.remove('active'));
                             panel.querySelectorAll('.purecloud-script-tab-content').forEach(content => content.classList.remove('active'));
                             panel.querySelector(`.purecloud-script-tab-button[data-tab="${tabId}"]`)?.classList.add('active');
@@ -8423,176 +7478,9 @@ Telecine	Telecine filmes erros APP app.
                             btn.onclick = () => switchToolsTab(btn.dataset.tab);
                         });
 
-                        // ==== LÓGICA DO EXTRATOR DE DOCUMENTOS (F2) ====
-                        function validarCPF_Ext(cpf) {
-                            cpf = cpf.replace(/[^\d]+/g, '');
-                            if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
-                            let soma = 0, resto;
-                            for (let i = 1; i <= 9; i++) soma = soma + parseInt(cpf.substring(i - 1, i)) * (11 - i);
-                            resto = (soma * 10) % 11; if (resto === 10 || resto === 11) resto = 0;
-                            if (resto !== parseInt(cpf.substring(9, 10))) return false;
-                            soma = 0;
-                            for (let i = 1; i <= 10; i++) soma = soma + parseInt(cpf.substring(i - 1, i)) * (12 - i);
-                            resto = (soma * 10) % 11; if (resto === 10 || resto === 11) resto = 0;
-                            if (resto !== parseInt(cpf.substring(10, 11))) return false;
-                            return true;
-                        }
-
-                        function validarCNPJ_Ext(cnpj) {
-                            cnpj = cnpj.replace(/[^\d]+/g, '');
-                            if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
-                            let tamanho = cnpj.length - 2, numeros = cnpj.substring(0, tamanho), digitos = cnpj.substring(tamanho), soma = 0, pos = tamanho - 7;
-                            for (let i = tamanho; i >= 1; i--) { soma += numeros.charAt(tamanho - i) * pos--; if (pos < 2) pos = 9; }
-                            let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                            if (resultado != digitos.charAt(0)) return false;
-                            tamanho = tamanho + 1; numeros = cnpj.substring(0, tamanho); soma = 0; pos = tamanho - 7;
-                            for (let i = tamanho; i >= 1; i--) { soma += numeros.charAt(tamanho - i) * pos--; if (pos < 2) pos = 9; }
-                            resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                            if (resultado != digitos.charAt(1)) return false;
-                            return true;
-                        }
-
-                        function buscarMelhorDocumento() {
-                            let textoTotal = document.body.innerText + " ";
-                            document.querySelectorAll('iframe').forEach(ifr => {
-                                try { textoTotal += " " + (ifr.contentDocument || ifr.contentWindow.document).body.innerText + " "; } catch (e) { }
-                            });
-
-                            const regexDoc = /(?<!\d)(\d{3}\.?\d{3}\.?\d{3}-?\d{2})(?!\d)|(?<!\d)(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})(?!\d)/g;
-                            const encontrados = textoTotal.match(regexDoc);
-                            if (!encontrados) return null;
-
-                            let melhorCandidato = null, maiorPontuacao = -1000;
-                            encontrados.forEach(rawDoc => {
-                                const docLimpo = rawDoc.replace(/\D/g, '');
-                                let ehValido = false;
-                                if (docLimpo.length === 11 && validarCPF_Ext(docLimpo)) ehValido = true;
-                                if (docLimpo.length === 14 && validarCNPJ_Ext(docLimpo)) ehValido = true;
-                                if (!ehValido) return;
-
-                                let pontos = 0;
-                                const index = textoTotal.indexOf(rawDoc);
-                                const contexto = textoTotal.substring(Math.max(0, index - 60), index + rawDoc.length + 60).toLowerCase();
-
-                                if (contexto.includes('cpf') || contexto.includes('cnpj') || contexto.includes('documento')) pontos += 200;
-                                if (contexto.includes('cliente') || contexto.includes('titular')) pontos += 50;
-                                if (rawDoc.includes('.') || rawDoc.includes('-')) pontos += 50;
-                                if (contexto.includes('tel') || contexto.includes('cel') || contexto.includes('zap')) pontos -= 1000;
-                                if (contexto.includes('documento:')) pontos += 500;
-                                pontos += 5;
-
-                                if (pontos > maiorPontuacao) {
-                                    maiorPontuacao = pontos;
-                                    melhorCandidato = docLimpo;
-                                }
-                            });
-                            return maiorPontuacao > -500 ? melhorCandidato : null;
-                        }
-
-                        // Substitui globalmente a funcao
-                        window.executarExtracaoDocumento = function () {
-                            const documento = buscarMelhorDocumento();
-                            if (documento) {
-                                const tipo = documento.length === 11 ? 'CPF' : 'CNPJ';
-                                navigator.clipboard.writeText(documento).then(() => {
-                                    notify(`📋 ${tipo} Copiado: ${documento}`, 'success');
-                                    // Salva no histórico
-                                    let history = [];
-                                    try { history = JSON.parse(ajaStorage.getItem('purecloudScript_idHistory') || '[]'); } catch (e) { }
-                                    // Adiciona no topo
-                                    history.unshift({
-                                        doc: documento,
-                                        tipo: tipo,
-                                        hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                                    });
-                                    if (history.length > 30) history.pop(); // Limita 30
-                                    ajaStorage.setItem('purecloudScript_idHistory', JSON.stringify(history));
-                                    refreshHistoryUI();
-                                });
-                            } else {
-                                notify("Nenhum CPF/CNPJ válido encontrado.", 'error');
-                            }
-                        };
-
-                        // Atalho global F2 APENAS SE AINDA NÃO EXISTIR
-                        if (!window._f2ExtractorAttached) {
-                            window._f2ExtractorAttached = true;
-                            document.addEventListener('keydown', (e) => {
-                                if (e.key === 'F2') {
-                                    e.preventDefault(); e.stopPropagation();
-                                    window.executarExtracaoDocumento();
-                                }
-                            });
-                        }
-                        // ============================================
-
-                        // Notepad
-                        const notepad = panel.querySelector('#tools-notepad');
-                        notepad.value = ajaStorage.getItem('purecloudScript_notepad') || '';
-                        notepad.addEventListener('input', (e) => { ajaStorage.setItem('purecloudScript_notepad', e.target.value); });
-
-                        panel.querySelector('#btn-notepad-clear').onclick = () => { notepad.value = ''; notepad.dispatchEvent(new Event('input')); };
-                        panel.querySelector('#btn-notepad-copy').onclick = async () => {
-                            try {
-                                await navigator.clipboard.writeText(notepad.value);
-                                const btn = panel.querySelector('#btn-notepad-copy');
-                                btn.innerText = '✅ Copiado';
-                                setTimeout(() => btn.innerText = '📋 Copiar', 2000);
-                            } catch (e) { notify("Erro ao copiar", "error"); }
-                        };
-
-                        panel.querySelector('#btn-notepad-fetch').onclick = () => {
-                            let rawText = document.body.innerText + " ";
-                            document.querySelectorAll('iframe').forEach(ifr => {
-                                try { rawText += " " + (ifr.contentDocument || ifr.contentWindow.document).body.innerText + " "; } catch (e) { }
-                            });
-
-                            let nome = "Cliente", cpf = "Não encontrado", prot = "Não encontrado", tel = "Não encontrado";
-
-                            const cpfMatch = rawText.match(/(?:CPF|CNPJ)[\s:]*([\d\.\-\/]+)/i) || rawText.match(/\d{3}\.\d{3}\.\d{3}\-\d{2}/);
-                            if (cpfMatch) cpf = (cpfMatch[1] || cpfMatch[0]).replace(/[^\d\.\-\/]/g, '');
-
-                            const protMatch = rawText.match(/(?:Protocolo)[\s:]*(\d{10,})/i) || rawText.match(/202[456]\d{8,}/);
-                            if (protMatch) prot = protMatch[1] || protMatch[0];
-
-                            const telMatch = rawText.match(/(?:Telefone|Celular|Contato)[\s:]*(\(?\d{2}\)?\s?\d{4,5}-?\d{4})/i);
-                            if (telMatch) tel = (telMatch[1] || telMatch[0]).trim();
-
-                            const nameMatch = rawText.match(/(?:Nome|Cliente|Titular)[\s:]*([A-ZÀ-Ú][a-zà-ú]+(?:[ ]+[A-ZÀ-Úa-zà-ú]+)+)/i);
-                            if (nameMatch) nome = nameMatch[1].trim();
-
-                            const contentToAppend = `👤 Nome: ${nome}\n🆔 CPF/CNPJ: ${cpf}\n📱 Tel: ${tel}\n🎫 Prot: ${prot}\n\n`;
-                            notepad.value = contentToAppend + notepad.value;
-                            notepad.dispatchEvent(new Event('input'));
-
-                            const btn = panel.querySelector('#btn-notepad-fetch');
-                            btn.innerText = '✅ Feito';
-                            setTimeout(() => btn.innerText = '📎 Puxar', 2000);
-                        };
-
-                        // Populando Links Úteis
-                        const linksList = panel.querySelector('#useful-links-list');
-                        USEFUL_LINKS.forEach(link => {
-                            const btn = document.createElement('button'); btn.className = 'purecloud-script-button';
-                            btn.style.cssText = `text-align:center; padding: 10px; background:${link.color}; color:#fff; border:none; margin-bottom: 5px; font-weight: bold;`;
-                            btn.textContent = link.title;
-                            btn.onclick = () => window.open(link.url, '_blank');
-                            linksList.appendChild(btn);
-                        });
-
-                        // Lógica dos Lembretes
-                        panel.querySelectorAll('.btn-lembrete').forEach(btn => {
-                            btn.onclick = (e) => {
-                                const minutes = parseInt(e.target.dataset.time);
-                                notify(`Alarme configurado! Avisarei em ${minutes} minuto(s).`, "success");
-
-                                setTimeout(() => {
-                                    // Play beep / alert
-                                    if (window.audioNotificacao) { window.audioNotificacao.play().catch(e => { }); }
-                                    alert(`⏰ HORA DE RETORNAR! Verifique o chat do cliente.`);
-                                }, minutes * 60000);
-                            };
-                        });
+                        window.AjaModular.get('notepad').mount(panel, notify);
+window.AjaModular.get('links-uteis').mount(panel, USEFUL_LINKS);
+window.AjaModular.get('lembretes').mount(panel, notify);
                     } else {
                         panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
                     }
@@ -8603,6 +7491,12 @@ Telecine	Telecine filmes erros APP app.
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo ferramentas.js:', e); }
 
 
+
+return { open() { return window.UI_tools.createAgentToolsPanel(); } };
+});
+
+// Shared dependencies: ajaStorage
+window.AjaModular.register("central", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: CENTRAL.JS --- */
     try {
         // ==UserScript==
@@ -8746,7 +7640,7 @@ Telecine	Telecine filmes erros APP app.
                 document.body.appendChild(dashboard);
 
                 const themeBtn = dashboard.querySelector('#btn-central-theme');
-                const savedTheme = ajaStorage.getItem('CENTRAL_THEME');
+                const savedTheme = ctx.ajaStorage.getItem('CENTRAL_THEME');
                 if (savedTheme === 'light') {
                     dashboard.classList.add('local-light-mode');
                     themeBtn.innerText = '☀️';
@@ -8759,12 +7653,12 @@ Telecine	Telecine filmes erros APP app.
                     if (isLight) {
                         dashboard.classList.remove('local-light-mode');
                         dashboard.classList.add('cc-escurinho');
-                        ajaStorage.setItem('CENTRAL_THEME', 'dark');
+                        ctx.ajaStorage.setItem('CENTRAL_THEME', 'dark');
                         themeBtn.innerText = '🌗';
                     } else {
                         dashboard.classList.remove('cc-escurinho');
                         dashboard.classList.add('local-light-mode');
-                        ajaStorage.setItem('CENTRAL_THEME', 'light');
+                        ctx.ajaStorage.setItem('CENTRAL_THEME', 'light');
                         themeBtn.innerText = '☀️';
                     }
                 };
@@ -8999,6 +7893,12 @@ Telecine	Telecine filmes erros APP app.
     } catch (e) { console.error('[BUILDER] Erro fatal no módulo central.js:', e); }
 
 
+
+return { open() { return document.getElementById('central-trigger-btn')?.click(); } };
+});
+
+// Shared dependencies: ajaStorage
+window.AjaModular.register("menu", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: MENU.JS --- */
     try {
         // ==UserScript==
@@ -9149,7 +8049,7 @@ Telecine	Telecine filmes erros APP app.
                 document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp);
                 if (isDragging) {
                     container.style.transition = 'all 0.3s';
-                    ajaStorage.setItem('uniMenuPos', JSON.stringify({ left: container.style.left, top: container.style.top }));
+                    ctx.ajaStorage.setItem('uniMenuPos', JSON.stringify({ left: container.style.left, top: container.style.top }));
                     setTimeout(() => { isDragging = false; }, 50);
                 }
             }
@@ -9159,33 +8059,100 @@ Telecine	Telecine filmes erros APP app.
                 container.classList.toggle('active'); trigger.classList.toggle('active');
             });
 
-            try { const savedPos = ajaStorage.getItem('uniMenuPos'); if (savedPos) { const p = JSON.parse(savedPos); container.style.left = p.left; container.style.top = p.top; container.style.bottom = 'auto'; container.style.right = 'auto'; } } catch (e) { }
+            try { const savedPos = ctx.ajaStorage.getItem('uniMenuPos'); if (savedPos) { const p = JSON.parse(savedPos); container.style.left = p.left; container.style.top = p.top; container.style.bottom = 'auto'; container.style.right = 'auto'; } } catch (e) { }
 
-            // TRIGGERS
-            function triggerModule(id) { const btn = document.getElementById(id); if (btn) btn.click(); else console.warn("Módulo não carregado: " + id); }
+            // Navigation uses module contracts rather than private trigger identifiers.
+const routes = { 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'ferramentas', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
+for (const [buttonId, moduleId] of Object.entries(routes)) {
+    document.getElementById(buttonId).onclick = () => window.AjaModular.open(moduleId);
+}
+/* Calculator registered separately. */
 
-            document.getElementById('uni-btn-qr').onclick = () => triggerModule('qr-trigger-button');
-            document.getElementById('uni-btn-pr').onclick = () => triggerModule('pr-trigger-button');
-            document.getElementById('uni-btn-bar').onclick = () => triggerModule('bau-trigger-button');
-            document.getElementById('uni-btn-ia').onclick = () => triggerModule('gemini-float-btn');
-            document.getElementById('uni-btn-mon').onclick = () => triggerModule('monitor-trigger-btn');
-            document.getElementById('uni-btn-central').onclick = () => triggerModule('central-trigger-btn');
-            document.getElementById('uni-btn-tools').onclick = () => {
-                if (typeof window.UI_tools !== 'undefined') window.UI_tools.createAgentToolsPanel();
+        })();
 
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo menu.js:', e); }
+
+
+});
+
+// Shared dependencies: none
+window.AjaModular.register("gerente", ["compatibility"], function(ctx) {
+    /* --- MÓDULO ANEXADO: GERENTE.JS --- */
+    try {
+        // ==UserScript==
+        // @name         Genesys - Gerente de Visibilidade (v2.5 - Game Added)
+        // @description  Controla quem aparece na tela com base nas configurações.
+        // ==/UserScript==
+
+        (function () {
+            'use strict';
+
+            console.log("[Gerente] Iniciando serviço de camuflagem...");
+
+            // Mapeamento: Nome do Módulo -> IDs dos Elementos para ESCONDER
+            const MAPA = {
+                'MOD_CRONOMETROS': ['#purecloud-script-mini-dashboard', '.injected-bubbles-container'],
+                'MOD_PAUSAS': ['#pausa-script-container'],
+                'MOD_PROTOCOLOS': ['#pr-trigger-button', '.pr-script-base-popup', '#uni-btn-pr'],
+                'MOD_RESPOSTAS': ['#qr-trigger-button', '.qr-script-quick-reply-popup', '#uni-btn-qr'],
+                'MOD_BAR': ['#bau-trigger-button', '#bau-rede', '#uni-btn-bar'],
+                'MOD_IA': ['#gemini-float-btn', '#gemini-modal', '#uni-btn-ia'],
+                'MOD_CAR': ['#car-panel', '#uni-btn-car'],
+                'MOD_ID': ['#uni-btn-id'],
+                'MOD_MENU': ['#uni-menu-container'],
+                'MOD_CALC': ['#uni-btn-calc']
             };
 
-            document.getElementById('uni-btn-car').onclick = () => { if (typeof window.toggleCAR === 'function') window.toggleCAR(); };
-            document.getElementById('uni-btn-id').onclick = () => { if (typeof window.executarExtracaoDocumento === 'function') window.executarExtracaoDocumento(); };
-            document.getElementById('uni-btn-copy').onclick = () => {
-                if (typeof window.executarCopiaEspelho === 'function') {
-                    const btn = document.getElementById('uni-btn-copy'); btn.style.transform = 'scale(0.9)';
-                    setTimeout(() => btn.style.transform = 'scale(1)', 150); window.executarCopiaEspelho();
-                }
-            };
+            function aplicarRegras() {
+                if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
 
-            // --- SISTEMA MULTI-CALC PRO (Shadow DOM) ---
-            (function initCalc() {
+                chrome.storage.local.get(Object.keys(MAPA), function (config) {
+                    let css = "";
+
+                    for (const [modulo, seletores] of Object.entries(MAPA)) {
+                        if (config[modulo] === false) {
+                            seletores.forEach(seletor => {
+                                css += `${seletor} { display: none !important; opacity: 0 !important; pointer-events: none !important; }\n`;
+                            });
+                        }
+                    }
+
+                    if (config['MOD_MENU'] === false) {
+                        // Se o menu estiver desligado, restauramos os botões flutuantes originais se os módulos estiverem ligados
+                        if (config['MOD_IA'] !== false) css += `#gemini-float-btn { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 85px !important; right: 25px !important; width: 50px !important; height: 50px !important; }\n`;
+                        if (config['MOD_PROTOCOLOS'] !== false) css += `#pr-trigger-button { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 30px !important; right: 25px !important; width: 50px !important; height: 50px !important; }\n`;
+                        if (config['MOD_RESPOSTAS'] !== false) css += `#qr-trigger-button { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 20px !important; right: 20px !important; width: 48px !important; height: 48px !important; }\n`;
+                        if (config['MOD_BAR'] !== false) css += `#bau-trigger-button { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 20px !important; right: 80px !important; width: 48px !important; height: 48px !important; }\n`;
+                    }
+
+                    let style = document.getElementById('estilo-gerente-visual');
+                    if (!style) {
+                        style = document.createElement('style');
+                        style.id = 'estilo-gerente-visual';
+                        document.head.appendChild(style);
+                    }
+                    if (style.textContent !== css) {
+                        style.textContent = css;
+                    }
+                });
+            }
+
+            // chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local') aplicarRegras(); });
+            if (window.self === window.top) {
+                setInterval(aplicarRegras, 500);
+                aplicarRegras();
+            }
+
+        })();
+
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo gerente.js:', e); }
+
+
+});
+
+// Shared dependencies: ajaStorage, safeFetch
+window.AjaModular.register("calculadora", ["menu"], function(ctx) {
+return (function initCalc() {
                 const oldHost = document.getElementById('calc-ultimate-host');
                 if (oldHost) oldHost.remove();
 
@@ -9467,7 +8434,7 @@ Telecine	Telecine filmes erros APP app.
                     const f = shadow.getElementById('cur-f').value, t = shadow.getElementById('cur-t').value, v = parseFloat(curV.value);
                     if(isNaN(v)) return;
                     try {
-                        const r = await safeFetch('https://open.er-api.com/v6/latest/'+f);
+                        const r = await ctx.safeFetch('https://open.er-api.com/v6/latest/'+f);
                         const d = await r.json();
                         shadow.getElementById('res-curr').innerHTML = `<strong>${(v * d.rates[t]).toFixed(2)} ${t}</strong>`;
                     } catch(e) {}
@@ -9475,16 +8442,16 @@ Telecine	Telecine filmes erros APP app.
                 curV.oninput = updateCur;
 
                 // Histórico
-                let hData = JSON.parse(ajaStorage.getItem('smart-ultimate-h')) || [];
+                let hData = JSON.parse(ctx.ajaStorage.getItem('smart-ultimate-h')) || [];
                 const saveH = (e, r) => {
                     hData.unshift({e, r}); hData = hData.slice(0,10);
-                    ajaStorage.setItem('smart-ultimate-h', JSON.stringify(hData));
+                    ctx.ajaStorage.setItem('smart-ultimate-h', JSON.stringify(hData));
                     renderH();
                 };
                 const renderH = () => {
                     shadow.getElementById('hist-list').innerHTML = hData.map(x => `<div class="hist-item">${x.e} = <strong>${x.r}</strong></div>`).join('');
                 };
-                shadow.getElementById('btn-clear-h').onclick = () => { hData = []; ajaStorage.removeItem('smart-ultimate-h'); renderH(); };
+                shadow.getElementById('btn-clear-h').onclick = () => { hData = []; ctx.ajaStorage.removeItem('smart-ultimate-h'); renderH(); };
                 renderH();
 
                 // Arrastar
@@ -9508,97 +8475,1138 @@ Telecine	Telecine filmes erros APP app.
                     else if(e.key === 'Backspace') { expr = expr.slice(0,-1); display.value = expr || "0"; }
                 });
 
-                // Integração com o botão do menu genesys original
-                const calcBtn = document.getElementById('uni-btn-calc');
-                if(calcBtn) {
-                    calcBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        modal.classList.toggle('calc-visible');
-                        // Fechar o menu FAB original para não ficar por cima
-                        const cont = document.getElementById('uni-menu-container');
-                        if (cont) { cont.classList.remove('active'); }
-                        const trig = document.getElementById('uni-fab-trigger');
-                        if (trig) { trig.classList.remove('active'); }
-                    };
-                }
+                return { open() {
+    modal.classList.toggle('calc-visible');
+    document.getElementById('uni-menu-container')?.classList.remove('active');
+    document.getElementById('uni-fab-trigger')?.classList.remove('active');
+} };
             })();
-
-        })();
-
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo menu.js:', e); }
+});
 
 
-    /* --- MÓDULO ANEXADO: GERENTE.JS --- */
-    try {
-        // ==UserScript==
-        // @name         Genesys - Gerente de Visibilidade (v2.5 - Game Added)
-        // @description  Controla quem aparece na tela com base nas configurações.
-        // ==/UserScript==
+// ==UserScript==
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.0)
+// @namespace    http://tampermonkey.net/
+// @version      1.0.28.9
+// @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
+// @author       Kingoffjoss Assess
+// @match        https://apps.mypurecloud.com/*
+// @match        https://apps.mypurecloud.de/*
+// @match        https://apps.mypurecloud.jp/*
+// @match        https://apps.mypurecloud.ie/*
+// @match        https://apps.mypurecloud.com.au/*
+// @grant        GM_xmlhttpRequest
+// @connect      api.languagetool.org
+// ==/UserScript==
 
-        (function () {
-            'use strict';
+(function () {
+    'use strict';
+const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
+const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
 
-            console.log("[Gerente] Iniciando serviço de camuflagem...");
 
-            // Mapeamento: Nome do Módulo -> IDs dos Elementos para ESCONDER
-            const MAPA = {
-                'MOD_CRONOMETROS': ['#purecloud-script-mini-dashboard', '.injected-bubbles-container'],
-                'MOD_PAUSAS': ['#pausa-script-container'],
-                'MOD_PROTOCOLOS': ['#pr-trigger-button', '.pr-script-base-popup', '#uni-btn-pr'],
-                'MOD_RESPOSTAS': ['#qr-trigger-button', '.qr-script-quick-reply-popup', '#uni-btn-qr'],
-                'MOD_BAR': ['#bau-trigger-button', '#bau-rede', '#uni-btn-bar'],
-                'MOD_IA': ['#gemini-float-btn', '#gemini-modal', '#uni-btn-ia'],
-                'MOD_CAR': ['#car-panel', '#uni-btn-car'],
-                'MOD_ID': ['#uni-btn-id'],
-                'MOD_MENU': ['#uni-menu-container'],
-                'MOD_CALC': ['#uni-btn-calc']
-            };
+    // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
+    const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
+    const SCRIPT_VERSION = 'AjaModular_1.1.0';
 
-            function aplicarRegras() {
-                if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
-
-                chrome.storage.local.get(Object.keys(MAPA), function (config) {
-                    let css = "";
-
-                    for (const [modulo, seletores] of Object.entries(MAPA)) {
-                        if (config[modulo] === false) {
-                            seletores.forEach(seletor => {
-                                css += `${seletor} { display: none !important; opacity: 0 !important; pointer-events: none !important; }\n`;
-                            });
-                        }
-                    }
-
-                    if (config['MOD_MENU'] === false) {
-                        // Se o menu estiver desligado, restauramos os botões flutuantes originais se os módulos estiverem ligados
-                        if (config['MOD_IA'] !== false) css += `#gemini-float-btn { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 85px !important; right: 25px !important; width: 50px !important; height: 50px !important; }\n`;
-                        if (config['MOD_PROTOCOLOS'] !== false) css += `#pr-trigger-button { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 30px !important; right: 25px !important; width: 50px !important; height: 50px !important; }\n`;
-                        if (config['MOD_RESPOSTAS'] !== false) css += `#qr-trigger-button { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 20px !important; right: 20px !important; width: 48px !important; height: 48px !important; }\n`;
-                        if (config['MOD_BAR'] !== false) css += `#bau-trigger-button { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; top: auto !important; bottom: 20px !important; right: 80px !important; width: 48px !important; height: 48px !important; }\n`;
-                    }
-
-                    let style = document.getElementById('estilo-gerente-visual');
-                    if (!style) {
-                        style = document.createElement('style');
-                        style.id = 'estilo-gerente-visual';
-                        document.head.appendChild(style);
-                    }
-                    if (style.textContent !== css) {
-                        style.textContent = css;
+    async function safeFetch(url, options = {}) {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            return new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage({ action: "fetchAPI", url: url, options: options }, response => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                    } else if (!response || !response.success) {
+                        reject(new Error(response ? response.error : "Unknown error"));
+                    } else {
+                        resolve({
+                            status: response.status,
+                            ok: response.status >= 200 && response.status < 300,
+                            text: async () => response.text,
+                            json: async () => JSON.parse(response.text)
+                        });
                     }
                 });
+            });
+        } else {
+            return fetch(url, options);
+        }
+    }
+
+    if (window[`PURECLOUD_SCRIPT_LOADED_FLAG_${SCRIPT_VERSION}`]) {
+        console.log(`[NOVO SCRIPT] Script V${SCRIPT_VERSION} já está carregado e em execução.`);
+        return;
+    }
+
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.get(['ajamodular_enabled'], function(result) {
+            if (result.ajamodular_enabled === false) {
+                console.log("[AJA ASSISTANT] Script desativado pelo usuário na extensão.");
+                return;
+            }
+            startScript();
+        });
+    } else {
+        startScript();
+    }
+
+    function startScript() {
+        window[`PURECLOUD_SCRIPT_LOADED_FLAG_${SCRIPT_VERSION}`] = true;
+
+
+    const DEBUG_MODE = true;
+    const log = (...args) => { if (DEBUG_MODE) console.log("[PURECLOUD SCRIPT]", ...args); };
+
+
+    // --- SISTEMA DE SOM E CONFETES (GAMIFICAÇÃO) ---
+    const effectsManager = {
+        audioContext: null,
+        init() {
+            if (!this.audioContext && (window.AudioContext || window.webkitAudioContext)) {
+                try { this.audioContext = new (window.AudioContext || window.webkitAudioContext)(); log("AudioContext inicializado."); } catch (e) { log("Erro ao inicializar AudioContext:", e); }
+            }
+        },
+        playBeep(type = 'inactive') {
+            if (!this.audioContext || !CONFIG.SOUND_ALERTS_ENABLED) return;
+            try {
+                const oscillator = this.audioContext.createOscillator(); const gainNode = this.audioContext.createGain();
+                let frequency = 440, duration = 0.1;
+                if (type === 'inactive_client') { frequency = 880; duration = 0.15; } else if (type === 'inactive_operator') { frequency = 660; duration = 0.1; }
+                else if (type === 'reminder') { frequency = 1046.50; duration = 0.3; } // Som específico para o lembrete
+                oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                oscillator.connect(gainNode); gainNode.connect(this.audioContext.destination);
+                oscillator.start(this.audioContext.currentTime); oscillator.stop(this.audioContext.currentTime + duration);
+            } catch (e) { }
+        },
+        playSuccess() {
+            if (!this.audioContext || !CONFIG.SOUND_ALERTS_ENABLED) return;
+            try {
+                [440, 554, 659, 880].forEach((freq, i) => {
+                    setTimeout(() => {
+                        const osc = this.audioContext.createOscillator(); const gain = this.audioContext.createGain();
+                        osc.type = 'sine'; osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.1, this.audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+                        osc.connect(gain); gain.connect(this.audioContext.destination);
+                        osc.start(); osc.stop(this.audioContext.currentTime + 0.5);
+                    }, i * 100);
+                });
+            } catch (e) { }
+        },
+        triggerConfetti() {
+            const colors = ['#10b981', '#3b82f6', '#fbbf24', '#ef4444', '#6366f1', '#ec4899'];
+            for (let i = 0; i < 120; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'fixed'; confetti.style.width = '10px'; confetti.style.height = '12px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw'; confetti.style.top = '-20px';
+                confetti.style.zIndex = '999999'; confetti.style.pointerEvents = 'none';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                document.body.appendChild(confetti);
+                const duration = Math.random() * 3 + 2;
+                confetti.animate([
+                    { transform: `translate3d(0, 0, 0) rotate(0deg)`, opacity: 1 },
+                    { transform: `translate3d(${Math.random() * 300 - 150}px, 100vh, 0) rotate(${Math.random() * 1080}deg)`, opacity: 0 }
+                ], { duration: duration * 1000, easing: 'cubic-bezier(.37,0,.63,1)' });
+                setTimeout(() => confetti.remove(), duration * 1000);
+            }
+        }
+    };
+
+
+    const LOCKDOWN_CONFIG = { REQUIRED_CLICKS: 5, END_CHAT_BUTTON_SELECTOR: ['#call-control-end-sms-button', 'button[aria-label="Mensagens de término"]'], BALAO_BUTTON_SELECTOR_V4: 'button[aria-label="Mensagens de término"]' };
+
+    // --- VARIÁVEIS E LINKS ÚTEIS ---
+    const initialQuickReplies = [
+        { title: "👋 Saudação", text: "Olá, {primeiro_nome}! Tudo bem? Sou o agente e vou te ajudar hoje.", shortcut: "/oi" },
+        { title: "📝 Pedir Dados", text: "{primeiro_nome}, para prosseguirmos, poderia me confirmar seu CPF ou número do pedido, por favor?", shortcut: "/cpf" },
+        { title: "⏳ Aguardar", text: "Por favor, aguarde só um momento enquanto eu verifico essa informação, {primeiro_nome}.", shortcut: "/espera" },
+        { title: "🔄 Transferir", text: "Vou precisar transferir o seu atendimento para o setor responsável. Por favor, aguarde um instante.", shortcut: "/transf" },
+        { title: "⚠️ Cliente Inativo", text: "{primeiro_nome}, ainda está por aí? Como não tivemos mais retorno, encerrarei o atendimento em alguns minutos caso não haja resposta.", shortcut: "/inativo" },
+        { title: "❌ Encerramento", text: "Como não tivemos mais retorno, estou encerrando este atendimento. Qualquer dúvida, estamos à disposição!", shortcut: "/enc" },
+        { title: "✅ Resolução", text: "{primeiro_nome}, ficou mais alguma dúvida referente a este assunto ou posso te ajudar com algo mais?", shortcut: "/duvida" },
+        { title: "👋 Despedida", text: "Foi um prazer te atender, {primeiro_nome}! Tenha um excelente dia!", shortcut: "/tchau" }
+    ];
+
+    const USEFUL_LINKS = [
+        { title: "🌐 CRM Corporativo", url: "https://google.com", color: "#3b82f6" },
+        { title: "📚 Base de Conhecimento", url: "https://wikipedia.org", color: "#10b981" },
+        { title: "💳 Sistema de Faturamento", url: "https://yahoo.com", color: "#f59e0b" },
+        { title: "📦 Rastreio de Pedidos", url: "https://bing.com", color: "#6366f1" }
+    ];
+
+    const defaultThemeColors = { bgPrimary: '#f8fafc', bgSecondary: '#f1f5f9', textPrimary: '#0f172a', textSecondary: '#475569', borderColor: '#e2e8f0', accent: '#6366f1', accentText: '#ffffff', timerBg: '#2d3748', timerNormalText: '#ffffff', timerActiveText: '#4ade80', timerPausedText: '#f87171', timerInactiveClientText: '#fbbf24', timerInactiveOperatorText: '#fbbf24', timerCompletedBg: '#2d3748', timerCompletedText: '#ffffff', success: '#10b981', error: '#ef4444', warn: '#f59e0b', info: '#3b82f6', miniDashboardProgress: '#0ea5e9' };
+
+
+    function applyGenesysDarkMode() {
+        let s = document.getElementById('genesys-forced-dark-style');
+        if (typeof CONFIG === 'undefined' || !CONFIG.GENESYS_DARK_MODE) {
+            if (s) s.remove();
+            document.body.classList.remove('genesys-forced-dark');
+            return;
+        }
+        const styleStr = `
+        body.genesys-forced-dark { background-color: #121212 !important; color: #e2e8f0 !important; }
+        body.genesys-forced-dark .app-body, body.genesys-forced-dark .sidebar, body.genesys-forced-dark .interaction-content-wrapper, body.genesys-forced-dark .navbar, body.genesys-forced-dark .topbar, body.genesys-forced-dark #main-content { background-color: #121212 !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+        body.genesys-forced-dark .interaction-list { background-color: #1a1a1a !important; }
+        body.genesys-forced-dark div, body.genesys-forced-dark span { border-color: #334155 !important; color: inherit; }
+        body.genesys-forced-dark input, body.genesys-forced-dark textarea { background-color: #1e1e1e !important; color: #e2e8f0 !important; border: 1px solid #334155 !important; }
+    `;
+        if (!s) { s = document.createElement('style'); s.id = 'genesys-forced-dark-style'; document.head.appendChild(s); }
+        s.textContent = styleStr;
+        document.body.classList.add('genesys-forced-dark');
+    }
+    window.applyGenesysDarkMode = applyGenesysDarkMode; // Ensure it's globally accessible just in case
+
+
+
+    let CONFIG = {
+        CHECKMARK_THRESHOLD_MS: 70 * 1000, TIMER_UPDATE_INTERVAL_MS: 500, MAIN_LOOP_THROTTLE_MS: 1000,
+        INACTIVITY_CLIENT_ALERT_SECONDS: parseInt(ajaStorage.getItem('inactivityClientAlertSeconds') || '70', 10),
+        INACTIVITY_OPERATOR_ALERT_SECONDS: parseInt(ajaStorage.getItem('inactivityOperatorAlertSeconds') || '30', 10),
+        LONG_CONVO_ALERT_MIN: parseInt(ajaStorage.getItem('longConvoAlertMin') || '15', 10),
+        CONVERSATION_TARGET: parseInt(ajaStorage.getItem('gcp_conversationTarget') || '45', 10),
+
+        DARK_MODE: ajaStorage.getItem('gcp_darkMode') === 'true',
+        SOUND_ALERTS_ENABLED: ajaStorage.getItem('soundAlertsEnabled') !== 'false',
+        QUICK_REPLIES: JSON.parse(ajaStorage.getItem('quickReplies')) || initialQuickReplies,
+        // --- NOVOS ATALHOS ADICIONADOS AQUI ---
+        HOTKEYS: JSON.parse(ajaStorage.getItem('hotkeys')) || { copyInteraction: "Control+Shift+I", openSettings: "Control+Shift+S", toggleMiniDashboard: "Control+Shift+J", toggleLock: "Control+Shift+L", toggleDarkMode: "Control+Shift+D", quickGreeting: "Control+Shift+Q", exportData: "Control+Shift+E", toggleZenMode: "Control+Shift+Z", formatText: "Control+Shift+M" },
+        THEME_COLORS: JSON.parse(ajaStorage.getItem('gcp_themeColors_v2')) || JSON.parse(ajaStorage.getItem('timerColors')) || defaultThemeColors,
+        LAST_SCRIPT_VERSION: ajaStorage.getItem('lastScriptVersion') || '0', POPUP_POSITIONS: JSON.parse(ajaSessionStorage.getItem('popupPositions') || '{}'),
+        MINI_DASHBOARD_VISIBLE: ajaSessionStorage.getItem('miniDashboardVisible') !== 'false', MINI_DASHBOARD_MAXIMIZED: ajaSessionStorage.getItem('miniDashboardMaximized') === 'true', TOOLS_VISIBLE: ajaSessionStorage.getItem('toolsVisible') === 'true',
+        MESSAGES: { COPIED_SUCCESS: "Copiado com sucesso!", COPY_ERROR: "Erro ao copiar.", NOT_FOUND_INTERACTION_DATA: "Dados não encontrados.", INTERACTION_COPIED: "Interação (Nome, Telefone e Link) copiada!" },
+        PURECLOUD_SELECTORS: {
+            TOOLBAR: ['div.interaction-controls-primary', 'div[data-qa-id="interaction-controls-primary"]', '.actions-container', 'div[role="toolbar"]'], PARTICIPANT_NAME_BADGE: ['h3.participant-name', 'div.interaction-name-wrapper div.participant-name > span', 'p.participant-name', 'span[data-qa-id="participant-name"]', 'h2.participant-name'], NATIVE_COPY_BUTTON: ['button[aria-label="Copiar link da interação"]', '.copy-interaction-url-btn', 'button[data-qa-id="copy-interaction-link"]', '.copy-action-button'], INTERACTION_ID_EL: 'span[data-qa-id="interaction-id"], [data-qa-id="detail-value-interactionId"]', CONVERSATION_ROOT: '.interaction-content', CONVERSATION_CONTENT_WRAPPER: ['.interaction-content-wrapper', '.interaction-content'], SCRIPT_IFRAME: '.interaction-script-container.no-headers.non-call iframe', MESSAGING_GADGET_IFRAME: 'iframe[src*="messaging-gadget.html"]', INTERACTION_GROUP: ['div.interaction-group', 'div[data-qa-id="interaction-group-list-item"]'], SELECTED_INTERACTION_GROUP: ['div.interaction-group.is-selected', 'div[data-qa-id="interaction-group-list-item"].is-selected'], TRANSFER_BUTTON_SELECTOR: ['button[aria-label*="Transferir"]', 'button[data-qa-id="interaction-control-transfer"]'], EVALUATION_BUTTON_SELECTOR: ['button[aria-label*="Enviar avaliação"]', 'button[aria-label*="Enviar pesquisa"]', 'button[data-qa-id="interaction-control-disconnect"]', 'button.btn-main.container-inner'], CONVERSATION_LIST_CONTAINER: ['div.infrg-1_medium.purecloud-grid-layout-grid-cell.interaction-list-column', 'div.interaction-list', 'div[data-qa-id*="interaction-list-column"]'], NATIVE_TIMER_SELECTORS: ['.message-timestamp', '.duration', '.chat-message-group > div:last-child > span', '.chat-message-group > div:last-child > div', 'span[class*="timestamp"]', 'div[class*="time"]', 'span[class*="datetime"]', 'span[class*="date-time"]'], ICON_SELECTOR_CALL: 'gux-icon[icon-name="phone"]', ICON_SELECTOR_CHAT: 'gux-icon[icon-name="comments"]'
+        },
+        LAST_ENDED_INTERACTIONS: new Map()
+    };
+
+    const featureDescriptions = {
+        copyInteraction: { title: "Copiar Interação", description: "Copia nome, telefone e link.", hotkey: CONFIG.HOTKEYS.copyInteraction }, openSettings: { title: "Configurações", description: "Abre o painel de configurações.", hotkey: CONFIG.HOTKEYS.openSettings }, toggleMiniDashboard: { title: "Alternar Dashboard", description: "Oculta ou mostra o dashboard.", hotkey: CONFIG.HOTKEYS.toggleMiniDashboard }, toggleLock: { title: "Trava de Encerramento", description: "Adiciona escudo contra encerramento.", hotkey: CONFIG.HOTKEYS.toggleLock }, toggleDarkMode: { title: "Modo Escuro (Script)", description: "Ativa o tema escuro nos cronômetros.", hotkey: CONFIG.HOTKEYS.toggleDarkMode }, quickGreeting: { title: "Saudação Rápida", description: "Cola sua primeira Resposta Rápida.", hotkey: CONFIG.HOTKEYS.quickGreeting }, exportData: { title: "Exportar Atendimentos", description: "Baixa os dados do dia.", hotkey: CONFIG.HOTKEYS.exportData },
+        toggleZenMode: { title: "Modo Foco (Zen)", description: "Escurece a tela e foca apenas no chat atual.", hotkey: CONFIG.HOTKEYS.toggleZenMode }, formatText: { title: "Mágico Anti-Caps Lock", description: "Corrige texto MAIÚSCULO para Minúsculo.", hotkey: CONFIG.HOTKEYS.formatText }
+    };
+
+    let v4_counters = { balao: [] }; const V4_STORAGE_KEY = 'encerramentoCounters_v4_balao';
+
+    function loadV4Counters() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const storedData = JSON.parse(ajaStorage.getItem(V4_STORAGE_KEY) || '{}'); if (storedData.date === today) { v4_counters.balao = storedData.balao || []; } else { v4_counters = { balao: [] }; } }
+    function saveV4Counters() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const dataToSave = { date: today, balao: v4_counters.balao }; try { ajaStorage.setItem(V4_STORAGE_KEY, JSON.stringify(dataToSave)); } catch (e) { } }
+
+    async function autoRestoreFromCloud() {
+        if (!GOOGLE_SCRIPT_URL) return;
+        const stats = analyticsManager.calculateStats();
+        // Se localmente está vazio e ainda não tentamos restaurar nesta sessão
+        if (stats.count === 0 && !ajaSessionStorage.getItem('pcs_auto_restored')) {
+            console.log("[PCS] Iniciando auto-restauração da nuvem...");
+            try {
+                const currentUserName = getAgentName();
+                if (currentUserName === "Usuário Anônimo") return;
+
+                const params = new URLSearchParams({ type: 'restore_agent', user: currentUserName });
+                const response = await safeFetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+                if (!response.ok) return;
+                const res = await response.json();
+
+                if (res.status === 'success' && ((res.atendimentos && res.atendimentos.length > 0) || (res.encerrados && res.encerrados.length > 0))) {
+                    const storedData = analyticsManager.getData();
+                    storedData.conversations = [];
+                    
+                    if (res.atendimentos) {
+                        res.atendimentos.forEach(a => {
+                            const parts = a.horaFim.split(':');
+                            const dt = new Date();
+                            if (parts.length >= 2) dt.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+                            storedData.conversations.push({
+                                timestamp: dt.getTime(),
+                                duration: (parseInt(a.duracaoSegundos) || 0) * 1000,
+                                activeDuration: (parseInt(a.tmeSegundos) || 0) * 1000,
+                                participantName: a.cliente || 'N/A',
+                                phoneNumber: 'N/A',
+                                isRecurrence: a.recorrencia === 'Sim',
+                                endedByAgent: a.tipo || 'unknown',
+                                interactionUrl: a.link || 'N/A',
+                                interactionType: 'unknown'
+                            });
+                        });
+                    }
+                    
+                    analyticsManager.saveData(storedData);
+                    
+                    if (res.encerrados && res.encerrados.length > 0) {
+                        const novosEncerrados = res.encerrados.map(e => ({ timestamp: e.timestamp, participantName: e.participantName, interactionUrl: e.interactionUrl }));
+                        v4_counters.balao = novosEncerrados;
+                        ajaStorage.setItem(V4_STORAGE_KEY, JSON.stringify({ date: getBrazilTime(new Date()).toLocaleDateString('pt-BR'), balao: novosEncerrados }));
+                    }
+                    
+                    ajaSessionStorage.setItem('pcs_auto_restored', 'true');
+                    console.log("[PCS] Dados restaurados automaticamente com sucesso!");
+                    UI.createNotification("🔄 Dados sincronizados com a nuvem!", "success", 4000);
+                    
+                    // Atualiza o dashboard se estiver visível
+                    if (document.getElementById('purecloud-script-mini-dashboard')) {
+                        document.getElementById('purecloud-script-mini-dashboard')._updateStatsInternal();
+                    }
+                }
+            } catch (e) {
+                console.error("[PCS] Erro na auto-restauração:", e);
+            }
+        }
+    }
+
+    const validateConfigValue = (key, value) => {
+        const parsed = parseInt(value, 10);
+        switch (key) {
+            case 'CONVERSATION_TARGET': return !isNaN(parsed) && parsed >= 1 ? parsed : 45; case 'INACTIVITY_CLIENT_ALERT_SECONDS': return !isNaN(parsed) && parsed >= 30 ? parsed : 70; case 'INACTIVITY_OPERATOR_ALERT_SECONDS': return !isNaN(parsed) && parsed >= 10 ? parsed : 30; case 'LONG_CONVO_ALERT_MIN': return !isNaN(parsed) && parsed >= 5 ? parsed : 15; case 'DARK_MODE': return value === true || value === 'true'; case 'SOUND_ALERTS_ENABLED': return value === true || value === 'true';
+            case 'THEME_COLORS': if (typeof value !== 'object' || value === null) { return defaultThemeColors; } const validatedColors = { ...defaultThemeColors }; for (const colorKey in defaultThemeColors) { if (value.hasOwnProperty(colorKey)) { if (typeof value[colorKey] === 'string' && value[colorKey].match(/^#[0-9a-f]{6}$/i)) { validatedColors[colorKey] = value[colorKey]; } } } return validatedColors;
+            case 'HOTKEYS': if (typeof value === 'object' && value !== null) { return { copyInteraction: value.copyInteraction || "Control+Shift+I", openSettings: value.openSettings || "Control+Shift+S", toggleMiniDashboard: value.toggleMiniDashboard || "Control+Shift+J", toggleLock: value.toggleLock || "Control+Shift+L", toggleDarkMode: value.toggleDarkMode || "Control+Shift+D", quickGreeting: value.quickGreeting || "Control+Shift+Q", exportData: value.exportData || "Control+Shift+E", toggleZenMode: value.toggleZenMode || "Control+Shift+Z", formatText: value.formatText || "Control+Shift+M" }; } return CONFIG.HOTKEYS;
+            default: return value;
+        }
+    };
+    const saveData = () => {
+        try {
+            const dataToSave = analyticsManager.getData();
+            ajaStorage.setItem('gcp_conversationTarget', validateConfigValue('CONVERSATION_TARGET', CONFIG.CONVERSATION_TARGET)); ajaStorage.setItem('gcp_darkMode', validateConfigValue('DARK_MODE', CONFIG.DARK_MODE)); ajaStorage.setItem('soundAlertsEnabled', validateConfigValue('SOUND_ALERTS_ENABLED', CONFIG.SOUND_ALERTS_ENABLED)); ajaStorage.setItem('inactivityClientAlertSeconds', validateConfigValue('INACTIVITY_CLIENT_ALERT_SECONDS', CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS)); ajaStorage.setItem('inactivityOperatorAlertSeconds', validateConfigValue('INACTIVITY_OPERATOR_ALERT_SECONDS', CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS)); ajaStorage.setItem('longConvoAlertMin', validateConfigValue('LONG_CONVO_ALERT_MIN', CONFIG.LONG_CONVO_ALERT_MIN)); ajaStorage.setItem('hotkeys', JSON.stringify(validateConfigValue('HOTKEYS', CONFIG.HOTKEYS))); ajaStorage.setItem('gcp_themeColors_v2', JSON.stringify(validateConfigValue('THEME_COLORS', CONFIG.THEME_COLORS))); ajaStorage.setItem('lastScriptVersion', SCRIPT_VERSION); ajaStorage.setItem('dailyAnalytics_v2_data', JSON.stringify(dataToSave)); ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS)); ajaSessionStorage.setItem('miniDashboardVisible', CONFIG.MINI_DASHBOARD_VISIBLE); ajaSessionStorage.setItem('miniDashboardMaximized', CONFIG.MINI_DASHBOARD_MAXIMIZED); ajaSessionStorage.setItem('toolsVisible', CONFIG.TOOLS_VISIBLE);
+            saveV4Counters();
+        } catch (e) { if (e.name === 'QuotaExceededError') { UI.createNotification("Erro: Espaço de armazenamento cheio.", 'error', 10000); } }
+    };
+
+    const findEl = (selectors, parent = document) => { if (!Array.isArray(selectors)) selectors = [selectors]; for (const selector of selectors) { let el = parent.querySelector(selector); if (el) return el; } return null; };
+
+    const throttle = (func, limit) => { let inThrottle; return function (...args) { if (!inThrottle) { func.apply(this, args); inThrottle = true; setTimeout(() => inThrottle = false, limit); } }; };
+    const formatTime = num => String(num).padStart(2, '0');
+    const getBrazilTime = (date) => { try { const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'America/Fortaleza' }; const formatter = new Intl.DateTimeFormat('en-US', options); const parts = formatter.formatToParts(date); const year = parseInt(parts.find(p => p.type === 'year').value); const month = parseInt(parts.find(p => p.type === 'month').value) - 1; const day = parseInt(parts.find(p => p.type === 'day').value); const hour = parseInt(parts.find(p => p.type === 'hour').value); const minute = parseInt(parts.find(p => p.type === 'minute').value); const second = parseInt(parts.find(p => p.type === 'second').value); const brazilDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`; return new Date(brazilDateString + '-03:00'); } catch (e) { return date; } };
+
+    // --- UTILIDADES GERAIS ---
+    const escapeHTML = (str) => {
+        if (!str || typeof str !== 'string') return str;
+        return str.replace(/[&<>'"]/g,
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    };
+
+    const buildSpellOverlayHTML = (textoOriginal, errosEncontrados) => {
+        const texto = String(textoOriginal || '');
+        const errosOrdenados = [...(errosEncontrados || [])]
+            .sort((a, b) => (b.offset || 0) - (a.offset || 0));
+
+        if (errosOrdenados.length === 0) return escapeHTML(texto);
+
+        let htmlMarcado = '';
+        let cursor = texto.length;
+
+        errosOrdenados.forEach(err => {
+            let offsetVis = Number(err.offset) || 0;
+            let lengthVis = Number(err.length) || 0;
+            let classeCSS = 'spell-wavy-error';
+
+            if (lengthVis === 0 && offsetVis > 0) {
+                offsetVis -= 1;
+                lengthVis = 1;
+                classeCSS = 'spell-wavy-punct';
             }
 
-            // chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local') aplicarRegras(); });
-            if (window.self === window.top) {
-                setInterval(aplicarRegras, 500);
-                aplicarRegras();
+            const start = Math.max(0, Math.min(offsetVis, cursor));
+            const end = Math.max(start, Math.min(start + lengthVis, cursor));
+            htmlMarcado = escapeHTML(texto.substring(end, cursor)) + htmlMarcado;
+            htmlMarcado = `<mark class="${classeCSS}">${escapeHTML(texto.substring(start, end))}</mark>` + htmlMarcado;
+            cursor = start;
+        });
+
+        return escapeHTML(texto.substring(0, cursor)) + htmlMarcado;
+    };
+
+
+    function getAgentName() {
+        const selectors = [
+            'div.user-info .name', 
+            '[data-qa-id="user-profile-name"]',
+            'span.user-name',
+            'div.name span.entry-value'
+        ];
+        for (let sel of selectors) {
+            let el = document.querySelector(sel);
+            if (el && el.innerText.trim()) {
+                const name = el.innerText.trim();
+                ajaStorage.setItem('purecloudScript_lastAgentName', name);
+                return name;
             }
+        }
+        return ajaStorage.getItem('purecloudScript_lastAgentName') || "Usuário Anônimo";
+    }
 
-        })();
+    // --- PROCESSADOR DE VARIÁVEIS (MÁGICAS) ---
+    const templateProcessor = {
+        process: (text) => {
+            if (!text.includes('{')) return text;
+            const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
+            let { participantName } = documentExtractor.getNameAndNumber(selectedConvEl);
+            if (!participantName || participantName === 'N/A') participantName = 'Cliente';
+            let primeiroNome = participantName.split(' ')[0];
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo gerente.js:', e); }
+            const horaAtual = getBrazilTime(new Date()).getHours();
+            let saudacao = "Bom dia";
+            if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde";
+            else if (horaAtual >= 18 || horaAtual < 5) saudacao = "Boa noite";
 
+            // Aplica escapeHTML para segurança caso os nomes sejam usados em HTML posteriormente. 
+            // Para o chat de texto puro, escapeHTML pode injetar entities ampersand, 
+            // então o processador de chat apenas troca.
+            return text.replace(/{nome}/gi, participantName)
+                .replace(/{primeiro_nome}/gi, primeiroNome)
+                .replace(/{saudacao}/gi, saudacao);
+        }
+    };
+
+    const makeDraggable = (popup, header, popupName) => {
+        if (!header) header = popup;
+        let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
+
+        let enforceBounds = (top, left) => {
+            const vpW = window.innerWidth, vpH = window.innerHeight;
+            const pW = popup.offsetWidth || 300, pH = popup.offsetHeight || 300;
+            let safeT = Math.max(5, Math.min(vpH - pH - 5, top));
+            let safeL = Math.max(5, Math.min(vpW - pW - 5, left));
+            if (pW > vpW) safeL = 0; if (pH > vpH) safeT = 0;
+            return { top: safeT, left: safeL };
+        };
+
+        try {
+            if (typeof CONFIG === 'undefined') window.CONFIG = { POPUP_POSITIONS: {} };
+            if (!CONFIG.POPUP_POSITIONS) CONFIG.POPUP_POSITIONS = {};
+            let saved = ajaSessionStorage.getItem('qr_popupPositions') || ajaSessionStorage.getItem('popupPositions') || '{}';
+            CONFIG.POPUP_POSITIONS = JSON.parse(saved);
+        } catch (e) { }
+
+        popup.style.position = 'fixed';
+        popup.style.margin = '0';
+        popup.style.transform = 'none';
+
+        // Initial Positioning logic
+        if (popupName === 'quickReplyPopup') {
+            const dW = '650px', dH = '75vh';
+            popup.style.width = dW; popup.style.height = dH;
+            setTimeout(() => {
+                const safe = enforceBounds(Math.max(5, (window.innerHeight - popup.offsetHeight) / 2), Math.max(5, (window.innerWidth - popup.offsetWidth) / 2));
+                popup.style.top = safe.top + 'px'; popup.style.left = safe.left + 'px';
+            }, 50);
+        } else if (CONFIG && CONFIG.POPUP_POSITIONS && CONFIG.POPUP_POSITIONS[popupName]?.top && CONFIG.POPUP_POSITIONS[popupName]?.left) {
+            const safe = enforceBounds(parseFloat(CONFIG.POPUP_POSITIONS[popupName].top), parseFloat(CONFIG.POPUP_POSITIONS[popupName].left));
+            popup.style.top = safe.top + 'px'; popup.style.left = safe.left + 'px';
+            if (CONFIG.POPUP_POSITIONS[popupName].width) popup.style.width = CONFIG.POPUP_POSITIONS[popupName].width;
+            if (CONFIG.POPUP_POSITIONS[popupName].height) popup.style.height = CONFIG.POPUP_POSITIONS[popupName].height;
+        } else {
+            popup.style.top = '10%'; popup.style.left = '10%';
+        }
+
+        const savePos = () => {
+            if (popupName === 'quickReplyPopup' && !isDragging) return;
+            const rect = popup.getBoundingClientRect();
+            const safe = enforceBounds(rect.top, rect.left);
+            if (typeof CONFIG !== 'undefined' && CONFIG.POPUP_POSITIONS) {
+                CONFIG.POPUP_POSITIONS[popupName] = { top: safe.top + 'px', left: safe.left + 'px', width: popup.style.width, height: popup.style.height };
+                try {
+                    ajaSessionStorage.setItem('qr_popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
+                    ajaSessionStorage.setItem('popupPositions', JSON.stringify(CONFIG.POPUP_POSITIONS));
+                } catch (e) { }
+            }
+        };
+
+        header.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button') || e.target.closest('.compact-btn') || e.target.closest('input') || e.target.classList.contains('os-btn') || e.button !== 0) return;
+            e.preventDefault();
+            isDragging = true;
+            popup.style.transition = 'none';
+
+            const rect = popup.getBoundingClientRect();
+            popup.style.left = rect.left + 'px';
+            popup.style.top = rect.top + 'px';
+            popup.style.bottom = 'auto';
+            popup.style.right = 'auto';
+
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+        }, { passive: false });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const safe = enforceBounds(e.clientY - dragOffsetY, e.clientX - dragOffsetX);
+            popup.style.top = safe.top + 'px';
+            popup.style.left = safe.left + 'px';
+        }, { passive: false });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                savePos();
+            }
+        });
+
+        try {
+            const observer = new ResizeObserver(() => { if (!isDragging) savePos(); });
+            observer.observe(popup);
+        } catch (e) { }
+    };
+
+
+    const DataSyncer = {
+        QUEUE_KEY: 'genesys_offline_queue_v1',
+        async send(payload) { if (!GOOGLE_SCRIPT_URL) return; if (navigator.onLine) { try { await this._post(payload); } catch (e) { this._addToQueue(payload); } } else { this._addToQueue(payload); } this.updateIndicator(); },
+        async _post(payload) { 
+            return await safeFetch(GOOGLE_SCRIPT_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(payload) 
+            }); 
+        },
+        _addToQueue(payload) { let queue = JSON.parse(ajaStorage.getItem(this.QUEUE_KEY) || "[]"); payload._queuedAt = Date.now(); queue.push(payload); ajaStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue)); },
+        async processQueue() { if (!GOOGLE_SCRIPT_URL) return; if (!navigator.onLine) return; let queue = JSON.parse(ajaStorage.getItem(this.QUEUE_KEY) || "[]"); if (queue.length === 0) return; let failedQueue = []; for (let item of queue) { try { await this._post(item); await new Promise(r => setTimeout(r, 500)); } catch (e) { failedQueue.push(item); } } ajaStorage.setItem(this.QUEUE_KEY, JSON.stringify(failedQueue)); if (failedQueue.length === 0 && typeof UI !== 'undefined') { UI.createNotification("Sincronização offline concluída!", "success"); } this.updateIndicator(); },
+        updateIndicator() { let queue = JSON.parse(ajaStorage.getItem(this.QUEUE_KEY) || "[]"); let indicator = document.getElementById('offline-indicator'); if (queue.length > 0) { if (!indicator) { indicator = document.createElement('div'); indicator.id = 'offline-indicator'; indicator.style.cssText = "position:fixed; bottom:80px; right:20px; background:var(--purecloud-script-warn-color); color:#000; padding:8px 14px; border-radius:20px; font-size:12px; z-index:9999; box-shadow:0 4px 10px rgba(0,0,0,0.3); font-weight:bold; cursor:pointer;"; indicator.title = "Clique para tentar forçar o envio"; indicator.onclick = () => DataSyncer.processQueue(); document.body.appendChild(indicator); } indicator.innerText = `📡 ${queue.length} Pendentes`; indicator.style.display = 'block'; } else if (indicator) { indicator.style.display = 'none'; } }
+    };
+
+    const analyticsManager = {
+        getData() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const storedData = JSON.parse(ajaStorage.getItem('dailyAnalytics_v2_data') || '{}'); if (storedData.date !== today) { return { date: today, conversations: [], docCopies: 0, hotkeysUsed: [], baloonClicks: 0, transferClicks: 0, evaluatedClicks: 0, diagnosticRepliesUsed: 0 }; } storedData.conversations = (storedData.conversations || []).map(conv => ({ ...conv, activeDuration: conv.activeDuration || 0, isRecurrence: conv.isRecurrence || false, participantName: conv.participantName || 'N/A', phoneNumber: conv.phoneNumber || 'N/A', endedByAgent: conv.endedByAgent || 'HIBERNADO', interactionUrl: conv.interactionUrl || 'N/A', timestamp: typeof conv.timestamp === 'string' ? (new Date(conv.timestamp).getTime() || Date.now()) : conv.timestamp, interactionType: conv.interactionType || 'unknown' })); return storedData; },
+        saveData(data) { try { ajaStorage.setItem('dailyAnalytics_v2_data', JSON.stringify(data)); } catch (e) { log("Erro ao salvar dados:", e); } },
+        getAchievements() { return JSON.parse(ajaStorage.getItem('achievements_v2') || '{}'); },
+        logConversation(duration, activeDuration, participantName, phoneNumber, interactionUrl, classification, interactionType) {
+            const previousStats = this.calculateStats();
+            const data = this.getData();
+            const isRecurrence = phoneNumber !== 'N/A' && data.conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
+            data.conversations.push({ timestamp: Date.now(), duration: duration, activeDuration: activeDuration, participantName: participantName, phoneNumber: phoneNumber, isRecurrence: isRecurrence, endedByAgent: classification, interactionUrl: interactionUrl, interactionType: interactionType });
+            this.saveData(data); this._updateDashboard();
+
+            // --- CELEBRAÇÃO DE META VIRTUAL ---
+            const newStats = this.calculateStats();
+            if (previousStats.count < CONFIG.CONVERSATION_TARGET && newStats.count >= CONFIG.CONVERSATION_TARGET) {
+                effectsManager.triggerConfetti();
+                effectsManager.playSuccess();
+                UI.createNotification("🎉 Parabéns! Você atingiu sua meta diária de atendimentos!", "success", 8000);
+            }
+        },
+        logBaloonClick() { const data = this.getData(); data.baloonClicks = (data.baloonClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
+        logTransferClick() { const data = this.getData(); data.transferClicks = (data.transferClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
+        logEvaluatedClick() { const data = this.getData(); data.evaluatedClicks = (data.evaluatedClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
+        _updateDashboard() { if (document.getElementById('purecloud-script-mini-dashboard')) { document.getElementById('purecloud-script-mini-dashboard')._updateStatsInternal(); } },
+        calculateStats() { const data = this.getData(); const conversations = data.conversations; let completedConvos = conversations.filter(c => c.duration >= CONFIG.CHECKMARK_THRESHOLD_MS); const consolidatedConvos = completedConvos.filter(conv => !conv.isRecurrence); const uniqueCount = consolidatedConvos.length; const recurrenceCount = completedConvos.filter(conv => conv.isRecurrence).length; const baloonClicksCount = v4_counters.balao.length; if (completedConvos.length === 0) { return { count: 0, tma: '00:00', tme: '00:00', perHour: {}, first: 'N/A', last: 'N/A', docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, allConversations: conversations, endedByAgentCount: 0, recurrenceCount: 0, tmaSeconds: 0, tmeSeconds: 0 }; } const divisor = completedConvos.length > 0 ? completedConvos.length : 1; const totalDuration = completedConvos.reduce((sum, conv) => sum + conv.duration, 0); const tmaSeconds = Math.floor((totalDuration / divisor) / 1000); const totalActiveDuration = completedConvos.reduce((sum, conv) => sum + (conv.activeDuration || 0), 0); const tmeSeconds = Math.floor((totalActiveDuration / divisor) / 1000); const tma = `${formatTime(Math.floor(tmaSeconds / 60))}:${formatTime(tmaSeconds % 60)}`; const tme = `${formatTime(Math.floor(tmeSeconds / 60))}:${formatTime(tmeSeconds % 60)}`; const perHour = {}; for (let hour = 0; hour < 24; hour++) { perHour[hour] = 0; } completedConvos.forEach(conv => { const convDate = getBrazilTime(new Date(conv.timestamp)); const hour = convDate.getHours(); perHour[hour] = (perHour[hour] || 0) + 1; }); const sortedByTimestamp = [...completedConvos].sort((a, b) => b.timestamp - a.timestamp); const first = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[0].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; const last = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[sortedByTimestamp.length - 1].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; return { count: uniqueCount, tma, tme, perHour, first, last, docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, endedByAgentCount: 0, recurrenceCount: recurrenceCount, allConversations: conversations, tmaSeconds: tmaSeconds, tmeSeconds: tmeSeconds }; },
+        clearAllData() { ajaStorage.removeItem('dailyAnalytics_v2_data'); ajaStorage.removeItem('achievements_v2'); v4_counters = { balao: [] }; saveV4Counters(); UI.createMiniDashboard(); }
+    };
+
+
+    const documentExtractor = {
+        getNameAndNumber: (convEl = document) => { if (!convEl || convEl === document) { convEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP) || document; } const nameEl = findEl(CONFIG.PURECLOUD_SELECTORS.PARTICIPANT_NAME_BADGE, convEl); const rawText = nameEl?.textContent.trim() || 'N/A'; const match = rawText.match(/^(.*?)\s*\|\s*(\(\d{2}\)\s*\d{4,5}[-.\s]*\d{4,5}|\d{8,14})$/); let participantName = rawText; let phoneNumber = 'N/A'; if (match) { participantName = match[1].trim(); phoneNumber = match[2].replace(/\D/g, ''); } else { const numberMatch = rawText.match(/(\(\d{2}\)\s*\d{4,5}[-.\s]*\d{4,5}|\d{8,14})/); if (numberMatch) { phoneNumber = numberMatch[0].replace(/\D/g, ''); participantName = rawText.replace(numberMatch[0], '').replace(/|/g, '').trim() || 'N/A'; } } if (participantName.endsWith('|')) { participantName = participantName.slice(0, -1).trim(); } let formattedPhoneNumber = 'N/A'; if (phoneNumber.length === 11) { formattedPhoneNumber = `(${phoneNumber.substring(0, 2)}) ${phoneNumber.substring(2, 7)}-${phoneNumber.substring(7)}`; } else if (phoneNumber.length === 10) { formattedPhoneNumber = `(${phoneNumber.substring(0, 2)}) ${phoneNumber.substring(2, 6)}-${phoneNumber.substring(6)}`; } else if (phoneNumber !== 'N/A') { formattedPhoneNumber = phoneNumber; } return { participantName, phoneNumber: phoneNumber || 'N/A', formattedPhoneNumber: formattedPhoneNumber }; },
+        getInteractionId: (parentEl = document) => { const el = findEl(CONFIG.PURECLOUD_SELECTORS.INTERACTION_ID_EL, parentEl); return el?.textContent.trim().replace(/#/g, ''); },
+    };
+
+    async function copyTextToClipboard(text) { try { await navigator.clipboard.writeText(text); return true; } catch (err) { return false; } }
+    async function getNativeInteractionUrl() { const btn = findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON); if (!btn) return null; let originalClipboard = ''; try { originalClipboard = await navigator.clipboard.readText(); } catch (e) { } btn.click(); return new Promise(resolve => { setTimeout(async () => { let url = null; try { url = await navigator.clipboard.readText(); if (!url || !(url.includes('interactions/') || url.includes('conversations/'))) { url = null; } } catch (e) { url = null; } if (originalClipboard && url) { try { await navigator.clipboard.writeText(originalClipboard); } catch (e) { } } resolve(url); }, 200); }); }
+
+
+    // --- ENCONTRAR O CAMPO DE CHAT RAPIDAMENTE ---
+    function getChatInput() {
+        let chatInputField = null; const messagingIframe = document.querySelector(CONFIG.PURECLOUD_SELECTORS.MESSAGING_GADGET_IFRAME);
+        if (messagingIframe && messagingIframe.contentDocument) { chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]', messagingIframe.contentDocument); }
+        if (!chatInputField) { chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]'); }
+        return chatInputField;
+    }
+
+    const actions = {
+        copyInteraction: async () => {
+            const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
+            const { participantName, phoneNumber, formattedPhoneNumber } = documentExtractor.getNameAndNumber(selectedConvEl);
+            if (participantName === 'N/A' || !findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON)) { UI.createNotification(CONFIG.MESSAGES.NOT_FOUND_INTERACTION_DATA, 'error'); return; }
+            const url = await getNativeInteractionUrl();
+            if (url && (url.includes('interactions/') || url.includes('conversations/'))) {
+                const tData = conversationTimers.get(selectedConvEl);
+                if (tData) { tData.interactionUrl = url; tData.participantName = participantName; tData.phoneNumber = phoneNumber; UI.createNotification("Link salvo!", 'info', 1500); }
+                const nameAndPhone = formattedPhoneNumber !== 'N/A' ? `${participantName} | ${formattedPhoneNumber}` : (participantName !== 'N/A' ? participantName : 'Nome Indisponível');
+                const finalCopyText = `${nameAndPhone}\n${url}`;
+                if (await copyTextToClipboard(finalCopyText)) { UI.createNotification(CONFIG.MESSAGES.INTERACTION_COPIED, 'success'); } else { UI.createNotification(CONFIG.MESSAGES.COPY_ERROR, 'error'); }
+            } else {
+                UI.createNotification("Link não encontrado.", 'warn');
+                if (participantName !== 'N/A' && await copyTextToClipboard(participantName)) { UI.createNotification(`Nome (${participantName}) copiado.`, 'info'); }
+            }
+        },
+        openSettings: () => UI.createSettingsPanel(),
+        toggleMiniDashboard: () => { const dashboard = document.getElementById('purecloud-script-mini-dashboard'); if (dashboard) { clearInterval(dashboard._updateInterval); dashboard.remove(); CONFIG.MINI_DASHBOARD_VISIBLE = false; saveData(); } else { CONFIG.MINI_DASHBOARD_VISIBLE = true; saveData(); UI.createMiniDashboard(); } },
+        toggleLock: () => { const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP); if (!selectedConvEl) { UI.createNotification("Selecione uma conversa para destravar.", "warn"); return; } conversationLockManager.toggleLock(selectedConvEl); },
+        toggleDarkMode: () => {
+            CONFIG.DARK_MODE = !CONFIG.DARK_MODE;
+            saveData();
+        },
+        quickGreeting: () => { const chatInputField = getChatInput(); if (chatInputField) { chatInputField.value = templateProcessor.process(CONFIG.QUICK_REPLIES[0] ? CONFIG.QUICK_REPLIES[0].text : "Olá!"); chatInputField.dispatchEvent(new Event('input', { bubbles: true })); chatInputField.focus(); } else { UI.createNotification("Campo de chat não encontrado.", "warn"); } },
+        exportData: () => { const dataToExport = analyticsManager.getData().conversations; if (!dataToExport || dataToExport.length === 0) { UI.createNotification("Não há dados para exportar.", "warn"); return; } const filename = `purecloud_script_attendances_${getBrazilTime(new Date()).toISOString().split('T')[0]}.json`; const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification("Download iniciado!", "success"); },
+
+        // --- NOVAS AÇÕES: MODO FOCO E FORMATADOR DE TEXTO ---
+        toggleZenMode: () => {
+            document.body.classList.toggle('sys-zen-active');
+            const isActive = document.body.classList.contains('sys-zen-active');
+            UI.createNotification(`Modo Foco ${isActive ? 'Ativado 🧘' : 'Desativado'}`, "info");
+        },
+        formatText: () => {
+            const chatInputField = getChatInput();
+            if (chatInputField && chatInputField.value) {
+                // Transforma texto em minúsculo e capitaliza a primeira letra de cada frase
+                let txt = chatInputField.value.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
+                chatInputField.value = txt;
+                chatInputField.dispatchEvent(new Event('input', { bubbles: true }));
+                UI.createNotification("Texto formatado e corrigido! ✨", "success");
+            } else {
+                UI.createNotification("Nenhum texto para formatar no campo de chat.", "warn");
+            }
+        }
+    };
+
+
+    async function handleBalaoClick(e) { const endChatButton = findEl(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR); if (endChatButton && endChatButton.disabled) return; const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(document.body); let interactionUrl = 'N/A'; try { const urlFromButton = await getNativeInteractionUrl(); if (urlFromButton) { interactionUrl = urlFromButton; } else { const id = documentExtractor.getInteractionId(document.body); if (id && id !== 'N/A') { interactionUrl = `${window.location.origin}/directory/conversations/${id}`; } else { interactionUrl = window.location.href.includes('/conversations/') ? window.location.href : 'N/A'; } } } catch (error) { } v4_counters.balao.push({ timestamp: Date.now(), participantName: participantName, phoneNumber: phoneNumber, interactionUrl: interactionUrl }); saveV4Counters(); analyticsManager._updateDashboard(); }
+
+    const conversationLockManager = {
+        states: new Map(),
+        toggleLock: (selectedConvEl) => { const convState = conversationLockManager.states.get(selectedConvEl); if (!convState || !convState.isLocked) return; const lockButton = document.getElementById('purecloud-script-btn-toggleLock'); if (lockButton) { lockButton.classList.add('btn-feedback-click'); setTimeout(() => lockButton.classList.remove('btn-feedback-click'), 200); } convState.unlockClicks++; const clicksRemaining = LOCKDOWN_CONFIG.REQUIRED_CLICKS - convState.unlockClicks; if (clicksRemaining > 0) { UI.createNotification(`Mais ${clicksRemaining} vez(es) para destravar.`, "info", 1500); setTimeout(() => { conversationLockManager.updateLockButton(selectedConvEl); }, 0); } else { convState.isLocked = false; UI.createNotification("Conversa destravada!", "success"); setTimeout(() => { conversationLockManager.updateLockButton(selectedConvEl); }, 0); } },
+        updateLockButton: (conv) => { const currentConvState = conversationLockManager.states.get(conv); const endChatButton = findEl(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR); const lockButton = document.getElementById('purecloud-script-btn-toggleLock'); if (currentConvState && lockButton) { const ICON_SHIELD_LOCKED = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>'; const ICON_SHIELD_UNLOCKED = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path>'; lockButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${currentConvState.isLocked ? ICON_SHIELD_LOCKED : ICON_SHIELD_UNLOCKED}</svg>`; lockButton.disabled = !currentConvState.isLocked; lockButton.classList.toggle('lockdown-unlocked', !currentConvState.isLocked); lockButton.title = currentConvState.isLocked ? `Destravar Encerrar (Faltam ${LOCKDOWN_CONFIG.REQUIRED_CLICKS - currentConvState.unlockClicks} cliques)` : "Conversa Destravada."; if (endChatButton) { endChatButton.disabled = currentConvState.isLocked; endChatButton.classList.toggle('lockdown-disabled', currentConvState.isLocked); endChatButton.title = currentConvState.isLocked ? 'Bloqueado. Clique no escudo.' : 'Mensagens de término'; } } const getScriptIframeDoc = () => { const conversationRoot = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_ROOT); if (!conversationRoot) return null; const scriptIframe = findEl(CONFIG.PURECLOUD_SELECTORS.SCRIPT_IFRAME, conversationRoot); if (scriptIframe && scriptIframe.contentDocument) { return scriptIframe.contentDocument; } return null; }; const scriptDoc = getScriptIframeDoc(); const addAnalyticsListener = (btn, type) => { if (btn.dataset.gmListenerAdded || !currentConvState) return; btn.addEventListener('click', (e) => { if (btn.disabled) return; const id = documentExtractor.getInteractionId(); if (!id || id === 'N/A') return; if (type === 'TRANSFERIDO') { analyticsManager.logTransferClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'TRANSFERIDO', timestamp: Date.now() }); } else if (type === 'AVALIACAO') { analyticsManager.logEvaluatedClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'AVALIACAO', timestamp: Date.now() }); } }, { signal: currentConvState.controller.signal }); btn.dataset.gmListenerAdded = true; }; const addBalaoListener = (btn) => { if (btn.dataset.gmBalaoListenerAdded || !currentConvState) return; btn.addEventListener('click', handleBalaoClick, { signal: currentConvState.controller.signal }); btn.dataset.gmBalaoListenerAdded = true; }; document.querySelectorAll(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR.join(',')).forEach(btn => addBalaoListener(btn)); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.TRANSFER_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'TRANSFERIDO')); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); if (scriptDoc) { scriptDoc.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); } },
+        initLockState: (conv) => { if (!conversationLockManager.states.has(conv)) { conversationLockManager.states.set(conv, { isLocked: true, unlockClicks: 0, controller: new AbortController() }); } }
+    };
+
+    const conversationTimers = new Map();
+    let currentChatObserverInstance = null;
+    let currentChatInputField = null;
+
+    function updateTimerDisplay(timerData) {
+        if (!timerData.div?.isConnected || !timerData.numDiv?.isConnected || !timerData.bubblesContainer?.isConnected) { return; }
+        let currentElapsed; if (timerData.isPaused) { currentElapsed = timerData.pausedAt - timerData.startTime; } else { currentElapsed = Date.now() - timerData.startTime; }
+        const secs = Math.floor(currentElapsed / 1000); timerData.div.textContent = `${formatTime(Math.floor(secs / 60))}:${formatTime(secs % 60)}`;
+        timerData.div.classList.remove('paused-alert', 'inactive-client-alert', 'normal-timer', 'inactive-operator-alert'); timerData.div.style.removeProperty('animation');
+
+        if (timerData.isPaused) { timerData.div.classList.add('paused-alert'); } else {
+            const inactivityOperatorSeconds = (Date.now() - (timerData.lastOperatorActivityTimestamp || timerData.startTime)) / 1000;
+            const inactivityClientSeconds = (Date.now() - (timerData.lastCustomerReplyTimestamp || timerData.startTime)) / 1000;
+            if (inactivityOperatorSeconds >= CONFIG.INACTIVITY_OPERATOR_ALERT_SECONDS) {
+                timerData.div.classList.add('inactive-operator-alert'); if (!timerData.operatorAlertPlayed) { effectsManager.playBeep('inactive_operator'); timerData.operatorAlertPlayed = true; }
+            } else if (inactivityClientSeconds >= CONFIG.INACTIVITY_CLIENT_ALERT_SECONDS) {
+                timerData.div.classList.add('inactive-client-alert'); if (!timerData.clientAlertPlayed) { effectsManager.playBeep('inactive_client'); timerData.clientAlertPlayed = true; }
+            } else { timerData.div.classList.add('normal-timer'); timerData.operatorAlertPlayed = false; timerData.clientAlertPlayed = false; }
+        }
+        if (currentElapsed >= CONFIG.CHECKMARK_THRESHOLD_MS) {
+            if (!timerData.completedVisual) {
+                if (!timerData.checkmarkDiv) {
+                    const existents = timerData.bubblesContainer.querySelectorAll('.injected-checkmark');
+                    existents.forEach(e => e.remove());
+                    timerData.checkmarkDiv = document.createElement('div');
+                    timerData.checkmarkDiv.className = 'injected-element injected-checkmark';
+                    timerData.checkmarkDiv.innerHTML = '✔️';
+                    timerData.bubblesContainer.appendChild(timerData.checkmarkDiv);
+                } timerData.checkmarkDiv.style.display = 'flex'; timerData.completedVisual = true;
+            }
+        } else { if (timerData.checkmarkDiv) { timerData.checkmarkDiv.style.display = 'none'; timerData.completedVisual = false; } }
+
+        const longConvoMs = CONFIG.LONG_CONVO_ALERT_MIN * 60000;
+        if (currentElapsed >= (longConvoMs - 60000) && currentElapsed < longConvoMs) {
+            if (!timerData.div.classList.contains('warning-pulse-alert')) timerData.div.classList.add('warning-pulse-alert');
+        } else {
+            timerData.div.classList.remove('warning-pulse-alert');
+        }
+
+        if (currentElapsed > longConvoMs && !timerData.longConvoNotified) { UI.createNotification(`A conversa com ${timerData.participantName || 'o cliente'} está longa (${CONFIG.LONG_CONVO_ALERT_MIN} min).`, 'warn', 5000); timerData.longConvoNotified = true; }
+    }
+
+    const timerManager = {
+        globalIntervalId: null,
+        startGlobalTimer() {
+            if (!this.globalIntervalId) {
+                this.globalIntervalId = setInterval(() => {
+                    conversationTimers.forEach((tData) => {
+                        updateTimerDisplay(tData);
+                    });
+                }, CONFIG.TIMER_UPDATE_INTERVAL_MS);
+            }
+        },
+        initTimer(convEl, index, total) {
+            let tData = conversationTimers.get(convEl); if (!tData) {
+                let bubblesContainer = convEl.querySelector('.injected-bubbles-container'); let tDiv = convEl.querySelector('.injected-conversation-timer'); let nDiv = convEl.querySelector('.injected-conversation-number'); let checkmarkDiv = convEl.querySelector('.injected-checkmark'); let recurrenceDiv = convEl.querySelector('.injected-recurrence-icon'); let iconDiv = convEl.querySelector('.injected-interaction-icon');
+                if (!bubblesContainer) { bubblesContainer = document.createElement('div'); bubblesContainer.className = 'injected-bubbles-container'; nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.appendChild(nDiv); iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '❔'; bubblesContainer.appendChild(iconDiv); tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); let contentWrapper = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_CONTENT_WRAPPER, convEl); if (contentWrapper) { contentWrapper.appendChild(bubblesContainer); } else { convEl.appendChild(bubblesContainer); } setTimeout(() => { if (contentWrapper && !contentWrapper.contains(bubblesContainer)) { contentWrapper.appendChild(bubblesContainer); } else if (!convEl.contains(bubblesContainer)) { convEl.appendChild(bubblesContainer); } }, 100); } else { if (!nDiv) { nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.prepend(nDiv); } if (!iconDiv) { iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '❔'; if (nDiv && nDiv.nextSibling) { bubblesContainer.insertBefore(iconDiv, nDiv.nextSibling); } else { bubblesContainer.appendChild(iconDiv); } } if (!tDiv) { tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); } }
+                const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(convEl); const interactionId = documentExtractor.getInteractionId(convEl);
+                const isRecurrence = phoneNumber !== 'N/A' && analyticsManager.getData().conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
+                if (isRecurrence) { if (!recurrenceDiv) { recurrenceDiv = document.createElement('div'); recurrenceDiv.className = 'injected-element injected-recurrence-icon'; recurrenceDiv.innerHTML = '🔁'; recurrenceDiv.title = 'Cliente recorrente hoje'; bubblesContainer.appendChild(recurrenceDiv); } recurrenceDiv.style.display = 'flex'; } else if (recurrenceDiv) { recurrenceDiv.style.display = 'none'; }
+                tData = { div: tDiv, numDiv: nDiv, iconDiv: iconDiv, checkmarkDiv: checkmarkDiv, recurrenceDiv: recurrenceDiv, bubblesContainer: bubblesContainer, element: convEl, creationTime: Date.now(), startTime: Date.now(), pausedAt: Date.now(), isPaused: true, completedVisual: false, tmaLogged: false, activeDuration: 0, activeSessionStart: null, lastOperatorActivityTimestamp: Date.now(), lastCustomerReplyTimestamp: Date.now(), longConvoNotified: false, operatorAlertPlayed: false, clientAlertPlayed: false, participantName: participantName, phoneNumber: phoneNumber, interactionUrl: 'N/A', interactionId: interactionId, isRecurrence: isRecurrence, interactionType: 'unknown' };
+                conversationTimers.set(convEl, tData);
+            }
+            tData.numDiv.textContent = total - index;
+            if (tData.isRecurrence && tData.recurrenceDiv) { tData.recurrenceDiv.style.display = 'flex'; }
+            return tData;
+        },
+        updateState(tData, isSelected) { if (isSelected) { if (tData.isPaused) { tData.startTime += (Date.now() - tData.pausedAt); tData.isPaused = false; tData.activeSessionStart = Date.now(); tData.lastOperatorActivityTimestamp = Date.now(); } } else { if (!tData.isPaused) { if (tData.activeSessionStart) { tData.activeDuration += (Date.now() - tData.activeSessionStart); tData.activeSessionStart = null; } tData.pausedAt = Date.now(); tData.isPaused = true; } } updateTimerDisplay(tData); },
+        cleanupTimers(activeConversationElements) {
+            const timersToDelete = []; const AGENT_END_WINDOW_MS = 5000;
+            conversationTimers.forEach((timerData, convEl) => {
+                if (!document.body.contains(convEl)) {
+                    // clearInterval(timerData.intervalId); -> agora usamos o Global Timer
+                    if (!timerData.tmaLogged) {
+                        if (!timerData.isPaused && timerData.activeSessionStart) { timerData.activeDuration += (Date.now() - timerData.activeSessionStart); timerData.activeSessionStart = null; }
+                        const duration = Date.now() - timerData.creationTime; const currentTime = Date.now();
+                        const clickData = CONFIG.LAST_ENDED_INTERACTIONS.get(timerData.interactionId); let classification = 'HIBERNADO';
+                        if (clickData && (currentTime - clickData.timestamp) < AGENT_END_WINDOW_MS) { if (clickData.type === 'BALAO') { classification = 'BALAO'; } else if (clickData.type === 'TRANSFERIDO') { classification = 'TRANSFERIDO'; } else if (clickData.type === 'AVALIACAO') { classification = 'AVALIACAO'; } CONFIG.LAST_ENDED_INTERACTIONS.delete(timerData.interactionId); }
+                        analyticsManager.logConversation(duration, timerData.activeDuration, timerData.participantName, timerData.phoneNumber, timerData.interactionUrl, classification, timerData.interactionType);
+                        timerData.tmaLogged = true; if (CONFIG.LAST_ENDED_INTERACTIONS.has(timerData.interactionId)) { CONFIG.LAST_ENDED_INTERACTIONS.delete(timerData.interactionId); }
+                    }
+                    timersToDelete.push(convEl); timerData.div?.remove(); timerData.numDiv?.remove(); timerData.iconDiv?.remove(); timerData.checkmarkDiv?.remove(); timerData.recurrenceDiv?.remove(); timerData.bubblesContainer?.remove();
+                }
+            });
+            timersToDelete.forEach(convEl => { conversationTimers.delete(convEl); const lockState = conversationLockManager.states.get(convEl); if (lockState && lockState.controller) lockState.controller.abort(); conversationLockManager.states.delete(convEl); });
+        }
+    }
+
+    function observeCurrentChatMessages(timerData) {
+        if (currentChatObserverInstance) { currentChatObserverInstance.disconnect(); currentChatObserverInstance = null; } if (currentChatInputField) { currentChatInputField.removeEventListener('input', handleOperatorActivity); currentChatInputField.removeEventListener('keypress', handleOperatorActivity); currentChatInputField = null; } let chatMessagesContainer = null; let chatInputField = null; const messagingIframe = document.querySelector(CONFIG.PURECLOUD_SELECTORS.MESSAGING_GADGET_IFRAME); if (messagingIframe && messagingIframe.contentDocument) { try { chatMessagesContainer = findEl('.chat-messages-container', messagingIframe.contentDocument); chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]', messagingIframe.contentDocument); } catch (e) { } } if (!chatMessagesContainer) { chatMessagesContainer = findEl('.chat-messages-container'); chatInputField = findEl('textarea[aria-label="Digitar uma mensagem"]'); }
+
+        const handleOperatorActivity = (e) => {
+            if (timerData.lastOperatorActivityTimestamp !== Date.now()) { timerData.lastOperatorActivityTimestamp = Date.now(); updateTimerDisplay(timerData); }
+
+            // --- LÓGICA DE SNIPPETS (AUTO-EXPANSÃO DE TEXTO) ---
+            if (e && e.type === 'input' && chatInputField) {
+                let val = chatInputField.value;
+                let replaced = false;
+                CONFIG.QUICK_REPLIES.forEach(qr => {
+                    // Verifica se o operador digitou o atalho com um espaço no final
+                    if (qr.shortcut && val.includes(qr.shortcut + ' ')) {
+                        val = val.replace(qr.shortcut + ' ', templateProcessor.process(qr.text) + ' ');
+                        replaced = true;
+                    }
+                });
+                if (replaced) {
+                    chatInputField.value = val;
+                    chatInputField.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        };
+
+        if (chatMessagesContainer) { if (chatMessagesContainer.dataset.observedByScript === 'true') { if (chatInputField && currentChatInputField !== chatInputField) { chatInputField.addEventListener('input', handleOperatorActivity); chatInputField.addEventListener('keypress', handleOperatorActivity); currentChatInputField = chatInputField; } return; } currentChatObserverInstance = new MutationObserver((mutations) => { for (const mutation of mutations) { if (mutation.type === 'childList' && mutation.addedNodes.length > 0) { const newClientMessages = Array.from(mutation.addedNodes).filter(node => node.nodeType === 1 && node.matches('.chat-message-group.remote')); if (newClientMessages.length > 0) { timerData.lastCustomerReplyTimestamp = Date.now(); updateTimerDisplay(timerData); } } } }); currentChatObserverInstance.observe(chatMessagesContainer, { childList: true, subtree: true }); chatMessagesContainer.dataset.observedByScript = 'true'; if (chatInputField) { chatInputField.addEventListener('input', handleOperatorActivity); chatInputField.addEventListener('keypress', handleOperatorActivity); currentChatInputField = chatInputField; } }
+    }
+
+    function mainLoop() {
+        const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }
+        let conversationsNodeList = document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', ')); const sortedConversationsArray = Array.from(conversationsNodeList).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+        const activeConversationElements = new Set(sortedConversationsArray); timerManager.cleanupTimers(activeConversationElements); const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
+        sortedConversationsArray.forEach((conv, index) => {
+            const nativeTimeElementsInConv = conv.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.NATIVE_TIMER_SELECTORS.join(', ')); nativeTimeElementsInConv.forEach(el => { if (el.classList.contains('injected-element') || el.classList.contains('injected-bubbles-container')) { return; } if (el.textContent.match(/\d+\s*(min|hr|seg|now|agora)/i) || el.matches('.duration, .message-timestamp')) { el.style.display = 'none'; } });
+            const tData = timerManager.initTimer(conv, index, sortedConversationsArray.length);
+            const isCall = conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CALL); const isChat = conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CHAT);
+            if (tData.iconDiv) { if (isCall) { tData.iconDiv.innerHTML = '📞'; tData.iconDiv.title = 'Ligação'; tData.interactionType = 'call'; } else if (isChat) { tData.iconDiv.innerHTML = '💬'; tData.iconDiv.title = 'Chat'; tData.interactionType = 'chat'; } else { tData.iconDiv.innerHTML = '❔'; tData.iconDiv.title = 'Interação'; tData.interactionType = 'unknown'; } }
+            const isSelected = conv === selectedConvEl; timerManager.updateState(tData, isSelected); conversationLockManager.initLockState(conv); if (isSelected) { observeCurrentChatMessages(tData); conversationLockManager.updateLockButton(conv); }
+        });
+        if (!selectedConvEl) { const pepperButton = document.getElementById('purecloud-script-btn-endCustomer'); if (pepperButton) pepperButton.title = 'Selecione uma conversa para encerrar'; }
+        if (CONFIG.MINI_DASHBOARD_VISIBLE) { UI.createMiniDashboard(); }
+        if (CONFIG.TOOLS_VISIBLE) { UI.createAgentToolsPanel(); }
+    }
+
+    const getHotkeyCombo = (e) => { const pressedKeys = []; if (e.ctrlKey) pressedKeys.push('Control'); if (e.shiftKey) pressedKeys.push('Shift'); if (e.altKey) pressedKeys.push('Alt'); const key = e.key === ' ' ? 'Space' : (e.key.length === 1 ? e.key.toUpperCase() : e.key); if (!['Control', 'Shift', 'Alt', 'Meta'].includes(key)) { pressedKeys.push(key); } const primaryKey = pressedKeys.pop(); pressedKeys.sort(); if (primaryKey) pressedKeys.push(primaryKey); return pressedKeys.join('+'); };
+    const keyboardEventHandler = (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) { return; } const currentCombo = getHotkeyCombo(e); if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) { return; } for (const actionName in CONFIG.HOTKEYS) { if (CONFIG.HOTKEYS[actionName] === currentCombo) { e.preventDefault(); if (actions[actionName]) { actions[actionName](); UI.createNotification(featureDescriptions[actionName]?.title || actionName, 'info', 1000); return; } } } };
+
+
+    function createToolbarUI(toolbar) {
+        if (toolbar.dataset.scriptVersion === SCRIPT_VERSION) { return; } toolbar.querySelectorAll('.purecloud-script-custom-btn, #purecloud-script-toolbar-counter, .purecloud-script-menu-container').forEach(el => el.remove()); toolbar.dataset.scriptVersion = SCRIPT_VERSION;
+        const createMainToolbarBtn = (id, title, svg, onClick) => { const btn = document.createElement("button"); btn.id = id; btn.className = 'purecloud-script-custom-btn'; btn.title = title; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${svg}</svg>`; btn.onclick = onClick; btn; toolbar.appendChild(btn); return btn; };
+        createMainToolbarBtn('purecloud-script-btn-copyInteraction', featureDescriptions.copyInteraction.title, '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/>', actions.copyInteraction);
+        createMainToolbarBtn('purecloud-script-btn-openSettings', featureDescriptions.openSettings.title, '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>', actions.openSettings);
+    }
+
+
+    const UI = {};
+
+    const defaultTheme = { bgPrimary: '#ffffff', bgSecondary: '#f8fafc', textPrimary: '#1e293b', textSecondary: '#64748b', borderColor: '#e2e8f0', accent: '#6366f1', accentText: '#ffffff', success: '#10b981', error: '#ef4444', warn: '#f59e0b', info: '#3b82f6', timerBg: '#f8fafc', timerNormalText: '#1e293b', timerActiveText: '#6366f1', timerPausedText: '#f59e0b', timerInactiveClientText: '#ef4444', timerCompletedBg: '#10b981', miniDashboardProgress: '#10b981' };
+    let theme;
+    try {
+        theme = JSON.parse(ajaStorage.getItem('gcp_themeColors_v2')) || JSON.parse(ajaStorage.getItem('timerColors')) || defaultTheme;
+    } catch (e) { theme = defaultTheme; }
+
+
+    const CONFIG_CSS = {
+        VARIAVEIS: `
+            :root { 
+                --purecloud-script-bg-primary: ${theme.bgPrimary}; --purecloud-script-bg-secondary: ${theme.bgSecondary}
+            .gcp-tema-escuro { 
+                --purecloud-script-bg-primary: #121212 !important; 
+                --purecloud-script-bg-secondary: #1e1e1e !important; 
+                --purecloud-script-text-primary: #e2e8f0 !important; 
+                --purecloud-script-text-secondary: #94a3b8 !important; 
+                --purecloud-script-border-color: #334155 !important; 
+                --purecloud-script-header-bg: #0f172a !important; 
+                --purecloud-script-bubble-bg-normal: #1e1e1e !important; 
+                --purecloud-script-bubble-text-normal: #ffffff !important; 
+                --purecloud-script-shadow-color: rgba(0,0,0,0.8) !important;
+            }
+            ; --purecloud-script-text-primary: ${theme.textPrimary}; --purecloud-script-text-secondary: ${theme.textSecondary}; --purecloud-script-border-color: ${theme.borderColor}; --purecloud-script-accent-color: ${theme.accent}; --purecloud-script-accent-text: ${theme.accentText}; --purecloud-script-success-color: ${theme.success}; --purecloud-script-error-color: ${theme.error}; --purecloud-script-warn-color: ${theme.warn}; --purecloud-script-info-color: ${theme.info}; --purecloud-script-bubble-bg-normal: ${theme.timerBg}; --purecloud-script-bubble-bg-selected: ${theme.accent}; --purecloud-script-bubble-text-normal: ${theme.timerNormalText}; --purecloud-script-bubble-text-active: ${theme.timerActiveText}; --purecloud-script-bubble-text-paused: ${theme.timerPausedText}; --purecloud-script-bubble-text-timer-inactive: ${theme.timerInactiveClientText}; --purecloud-script-shadow-color: rgba(0,0,0,0.08); --mini-dashboard-progress-color: ${theme.miniDashboardProgress}; --font-family-modern: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            }
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        `,
+        ZEN_MODE: `
+            body.sys-zen-active { background-color: #121212 !important; }
+            body.sys-zen-active .sidebar, body.sys-zen-active .navbar, body.sys-zen-active .topbar, body.sys-zen-active header { opacity: 0.15; pointer-events: none; transition: opacity 0.4s ease; }
+            body.sys-zen-active .interaction-list { opacity: 0.15; transition: opacity 0.4s ease; }
+            body.sys-zen-active .interaction-list:hover { opacity: 1; }
+            body.sys-zen-active .interaction-content-wrapper { box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); z-index: 9999; position: relative; border-radius: 8px; }
+        `,
+        ANIMATIONS: `
+            @keyframes alertPulseGlow { 0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); transform: scale(1); } 50% { transform: scale(1.02); } 70% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); } 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); transform: scale(1); } }
+            @keyframes warningPulseGlow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
+            .warning-pulse-alert { animation: warningPulseGlow 1.5s infinite !important; border-color: var(--purecloud-script-warn-color) !important; color: #000 !important; background-color: var(--purecloud-script-warn-color) !important; }
+            @keyframes fadeInRight { from { opacity: 0; transform: translateX(120%); } to { opacity: 0.98; transform: translateX(0); } } 
+            @keyframes fadeEffect { from {opacity: 0; transform: translateY(5px);} to {opacity: 1; transform: translateY(0);} }
+        `,
+        SCROLLBAR: `
+            .purecloud-script-popup, .purecloud-script-notification, .injected-element { font-family: var(--font-family-modern); }
+            .panel-content, .mini-dashboard-content, .details-table-wrapper, .chart-scroll-container, .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+            .panel-content::-webkit-scrollbar, .mini-dashboard-content::-webkit-scrollbar, .details-table-wrapper::-webkit-scrollbar, .chart-scroll-container::-webkit-scrollbar, .hide-scrollbar::-webkit-scrollbar { display: none; }
+            textarea::-webkit-scrollbar { width: 6px; height: 6px; }
+            textarea::-webkit-scrollbar-track { background: transparent; }
+            textarea::-webkit-scrollbar-thumb { background-color: var(--purecloud-script-border-color); border-radius: 10px; }
+        `,
+        BUTTONS: `
+            .purecloud-script-button { background-color: var(--purecloud-script-accent-color); color: var(--purecloud-script-accent-text); border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); } 
+            .purecloud-script-button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); filter: brightness(1.05); }
+            .purecloud-script-button:active { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .purecloud-script-button.button-danger { background-color: var(--purecloud-script-error-color); color: #fff; }
+        `,
+        NOTIFICATIONS: `
+            .purecloud-script-notification { position: relative; z-index: 10005; width: 320px; padding: 16px 20px; margin: 12px; border-radius: 12px; box-shadow: 0 10px 25px var(--purecloud-script-shadow-color); font-size: 0.9em; font-weight: 500; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); opacity: 0.98; transition: opacity 0.3s, transform 0.3s; animation: fadeInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); } 
+            #purecloud-script-notification-container { position: fixed; top: 15px; right: 15px; z-index: 10004; } 
+            .purecloud-script-notification-success { border-left: 4px solid var(--purecloud-script-success-color); } .purecloud-script-notification-error { border-left: 4px solid var(--purecloud-script-error-color); } .purecloud-script-notification-info { border-left: 4px solid var(--purecloud-script-info-color); } .purecloud-script-notification-warn { border-left: 4px solid var(--purecloud-script-warn-color); }
+        `,
+        BUBBLES: `
+            .injected-element { font-weight: 600; font-size: 11px !important; padding: 2px 8px !important; border-radius: 12px; display: flex; align-items: center; justify-content: center; height: 22px; line-height: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05) !important; transition: all 0.3s ease; white-space: nowrap; background-color: var(--purecloud-script-bubble-bg-normal) !important; color: var(--purecloud-script-bubble-text-normal) !important; }
+            .injected-bubbles-container { position: absolute; bottom: 6px; left: 12px; display: flex; gap: 6px; z-index: 10; pointer-events: none; user-select: none; } 
+            .interaction-content-wrapper, .interaction-content { position: relative !important; padding-bottom: 28px !important; }
+            .injected-conversation-number { min-width: 22px; } .injected-interaction-icon { font-size: 11px !important; }
+            .injected-bubbles-container:has(.injected-conversation-timer.normal-timer) .injected-element { color: var(--purecloud-script-bubble-text-active) !important; }
+            .injected-bubbles-container:has(.injected-conversation-timer.paused-alert) .injected-element { color: var(--purecloud-script-bubble-text-paused) !important; }
+            .injected-bubbles-container:has(.injected-conversation-timer.inactive-client-alert) .injected-element, .injected-bubbles-container:has(.injected-conversation-timer.inactive-operator-alert) .injected-element { color: var(--purecloud-script-bubble-text-timer-inactive) !important; border-color: var(--purecloud-script-bubble-text-timer-inactive) !important; animation: alertPulseGlow 1.5s infinite ease-out; }
+            .injected-checkmark { background-color: var(--purecloud-script-success-color) !important; color: #fff !important; }
+            .injected-recurrence-icon { background-color: var(--purecloud-script-warn-color) !important; color: #000 !important; } 
+            /* Regra removida para evitar o "bug do cronômetro roxo" ao selecionar a conversa */
+            /* div.interaction-group.is-selected .injected-element { background-color: var(--purecloud-script-bubble-bg-selected) !important; color: var(--purecloud-script-accent-text) !important; border-color: rgba(255,255,255,0.2) !important; box-shadow: 0 4px 10px rgba(0,0,0,0.15); } */
+        `,
+        PANELS: `
+            /* Paleta Customizada por Módulo */
+            .purecloud-script-settings-panel { --purecloud-script-header-bg: #475569; --purecloud-script-header-text: #ffffff; }
+            #purecloud-script-tools-panel { --purecloud-script-header-bg: #7c3aed; --purecloud-script-header-text: #ffffff; }
+            
+            .purecloud-script-popup { position: fixed; background: var(--purecloud-script-bg-primary); border-radius: 16px; box-shadow: 0 16px 40px var(--purecloud-script-shadow-color); z-index: 10002; display: flex; flex-direction: column; border: 1px solid var(--purecloud-script-border-color); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); margin: 0; overflow: hidden; } 
+            .purecloud-script-settings-panel { resize: none; width: 90%; max-width: 850px; min-height: 550px; height: 85vh; } 
+            #purecloud-script-tools-panel { width: 400px; height: auto; max-height: 85vh; resize: both; min-width: 280px; min-height: 250px; }
+            .panel-header { cursor: move; background: var(--purecloud-script-header-bg, var(--purecloud-script-bg-secondary)); padding: 16px 20px; border-bottom: 1px solid var(--purecloud-script-border-color); display: flex; justify-content: space-between; align-items: center; } 
+            .panel-header h2, .panel-header h3 { margin: 0; color: var(--purecloud-script-header-text, var(--purecloud-script-text-primary)); font-size: 16px; font-weight: 700; letter-spacing: -0.5px; } 
+            .panel-header-buttons { display: flex; gap: 8px; } 
+            .panel-header-btn { background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.9em; cursor: pointer; color: var(--purecloud-script-header-text, var(--purecloud-script-text-secondary)); transition: all 0.2s; } 
+            .panel-header-btn:hover { color: #fff; background: rgba(255,255,255,0.1); transform: scale(1.1); } 
+            .panel-content { padding: 24px; overflow-y: auto; flex-grow: 1; background: var(--purecloud-script-bg-primary); color: var(--purecloud-script-text-primary); } 
+            .panel-footer { padding: 16px 24px; background: var(--purecloud-script-bg-secondary); border-top: 1px solid var(--purecloud-script-border-color); text-align: right; }
+            .panel-content h4 { color: var(--purecloud-script-text-primary); font-size: 1.1em; margin-top: 15px; margin-bottom: 10px; border-bottom: 1px solid var(--purecloud-script-border-color); padding-bottom: 5px; }
+            .purecloud-script-tabs { display: flex; flex-wrap: wrap; background: var(--purecloud-script-bg-secondary); border-bottom: 1px solid var(--purecloud-script-border-color); padding: 0 10px; overflow-x: hidden; } 
+            .purecloud-script-tab-button { background-color: transparent; color: var(--purecloud-script-text-secondary); border: none; padding: 10px 14px; cursor: pointer; transition: all 0.2s ease; font-size: 0.95em; font-weight: 600; position: relative; display: flex; align-items: center; gap: 6px; white-space: nowrap; } 
+            .purecloud-script-tab-button svg { width: 16px; height: 16px; transition: stroke 0.2s ease; }
+            .purecloud-script-tab-button::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 3px; background-color: var(--purecloud-script-accent-color); transition: width 0.3s ease; border-radius: 3px 3px 0 0; }
+            .purecloud-script-tab-button.active { color: var(--purecloud-script-accent-color); } .purecloud-script-tab-button.active::after { width: 80%; }
+            .purecloud-script-tab-button:hover:not(.active) { color: var(--purecloud-script-text-primary); } 
+            .purecloud-script-tab-content { display: none; animation: fadeEffect 0.4s; flex-direction: column; flex-grow: 1; } 
+            .purecloud-script-tab-content.active { display: flex; }
+            .settings-group { margin-bottom: 24px; display: flex; flex-direction: column; } 
+            .settings-group label { color: var(--purecloud-script-text-primary); font-size: 0.95em; margin-bottom: 8px; font-weight: 600; } 
+            .settings-group input[type="number"], .settings-group input[type="text"], textarea { background: var(--purecloud-script-bg-primary); color: var(--purecloud-script-text-primary); border: 1px solid var(--purecloud-script-border-color); padding: 10px 14px; border-radius: 8px; transition: all 0.2s; width: 100%; box-sizing: border-box; font-size: 0.95em; font-family: inherit;} 
+            .settings-group input:focus, textarea:focus { border-color: var(--purecloud-script-accent-color); outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        `,
+        TABLES_COLORS: `
+            .details-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; } 
+            .details-table th, .details-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--purecloud-script-border-color); } 
+            .details-table th { background-color: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); font-weight: 600; } 
+            .details-table tr:hover { background-color: rgba(0, 0, 0, 0.02); } 
+            .recurrence-tag, .first-tag { padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.8em; display: inline-block; } 
+            .recurrence-tag { background-color: var(--purecloud-script-warn-color); color: #000; } .first-tag { background-color: var(--purecloud-script-success-color); color: #fff; } 
+            .is-recurrence-row { opacity: 0.85; } 
+            .details-table th.col-num, .details-table td.col-num { text-align: right; width: 40px; font-weight: bold; color: var(--purecloud-script-text-secondary); } 
+            .details-table th.col-type, .details-table td.col-type { text-align: center; width: 40px; font-size: 1.2em; }
+            .theme-section { margin-bottom: 24px; } .theme-section h4 { margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--purecloud-script-border-color); color: var(--purecloud-script-text-primary); } 
+            .settings-group.color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; } 
+            .color-picker-group { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--purecloud-script-bg-secondary); border: 1px solid var(--purecloud-script-border-color); border-radius: 8px; } 
+            .color-picker-group label { margin-bottom: 0; font-size: 0.85em; color: var(--purecloud-script-text-secondary); margin-right: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+            .color-picker-group input[type="color"] { min-width: 44px; height: 28px; padding: 2px; border: 1px solid var(--purecloud-script-border-color); cursor: pointer; background: var(--purecloud-script-bg-primary); border-radius: 4px; flex-shrink: 0; } 
+        `,
+        DASHBOARD: `
+            .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-bottom: 24px; } 
+            .stat-item { background: var(--purecloud-script-bg-secondary); padding: 18px; border-radius: 12px; border: 1px solid var(--purecloud-script-border-color); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; } 
+            .stat-item:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(0,0,0,0.06); }
+            .stat-item span { font-size: 0.85em; color: var(--purecloud-script-text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;} 
+            .stat-item strong { font-size: 1.8em; display: block; margin-top: 8px; color: var(--purecloud-script-accent-color); }
+            .analytics-chart-container-main { padding: 15px 0 5px 0; } .chart-scroll-container { overflow-x: auto; width: 100%; padding-bottom: 5px; } 
+            .chart-bars-wrapper { display: flex; align-items: flex-end; height: 150px; min-width: 800px; padding-bottom: 20px; border-bottom: 1px solid var(--purecloud-script-border-color); } 
+            .chart-bar-wrapper { width: 4.1666%; margin-right: 1px; text-align: center; position: relative; font-size: 0.7em; height: 100%; flex-shrink: 0; } 
+            .chart-bar { background-color: var(--purecloud-script-accent-color); border-radius: 4px 4px 0 0; transition: height 0.4s ease-out; } 
+            .bar-count { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.9em; font-weight: bold; color: var(--purecloud-script-text-primary); } 
+            .bar-label { position: absolute; bottom: -20px; left: 0; width: 100%; color: var(--purecloud-script-text-secondary); font-size: 1.1em; }
+            div.interaction-group{position:relative!important;} 
+            #purecloud-script-mini-dashboard { padding: 0; background-color: var(--purecloud-script-bg-primary) !important; border: 1px solid var(--purecloud-script-border-color); } 
+            #purecloud-script-mini-dashboard.collapsed { border-radius: 50px; box-shadow: 0 6px 16px var(--purecloud-script-shadow-color); height: 42px; padding: 0 16px; width: auto; min-width: 80px; cursor: move; overflow: hidden; } 
+            #purecloud-script-mini-dashboard.expanded { --purecloud-script-header-bg: #0284c7; --purecloud-script-header-text: #ffffff; border-radius: 16px; width: 320px; max-width: 320px; cursor: default; resize: none; bottom: auto; left: auto; } 
+            .mini-dashboard-header { height: 100%; padding: 8px 16px; display: flex; align-items: center; justify-content: center; background-color: transparent; border-bottom: none; border-radius: inherit; transition: all 0.2s; } 
+            #purecloud-script-mini-dashboard.collapsed .mini-dashboard-header { cursor: move; } 
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-header { height: 46px; background-color: var(--purecloud-script-header-bg); border-bottom: 1px solid var(--purecloud-script-border-color); justify-content: space-between; cursor: move; }
+            .mini-dashboard-content { padding: 15px; background-color: var(--purecloud-script-bg-primary); border-radius: 0 0 16px 16px; flex-grow: 1; overflow-y: auto; display: none; } 
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-content { display: block; } 
+            .counter-display { display: flex; align-items: center; flex-grow: 1; margin-right: 0; overflow: hidden; justify-content: center; gap: 8px; } 
+            #purecloud-script-mini-dashboard.expanded .counter-display { justify-content: flex-start; margin-right: 10px; } 
+            .counter-text { color: var(--purecloud-script-text-primary); font-weight: 700; font-size: 1.15em; white-space: nowrap; } 
+            #purecloud-script-mini-dashboard.expanded .counter-text { color: var(--purecloud-script-header-text); }
+            #purecloud-script-mini-dashboard.expanded .stat-icon { color: var(--purecloud-script-header-text) !important; }
+            .progress-bar-container-compact { flex-grow: 1; height: 6px; border-radius: 3px; background-color: var(--purecloud-script-border-color); display: none; } 
+            #purecloud-script-mini-dashboard.expanded .progress-bar-container-compact { display: block; overflow: visible; } 
+            .progress-bar-compact { background: linear-gradient(90deg, var(--purecloud-script-accent-color), var(--mini-dashboard-progress-color)); border-radius: 3px; height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 8px rgba(14, 165, 233, 0.4); }
+            .mini-dashboard-controls { display: flex; align-items: center; gap: 6px; } 
+            #purecloud-script-mini-dashboard.collapsed .mini-dashboard-controls { display: none; } 
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-controls { display: flex; } 
+            .compact-btn { border-radius: 6px; width: 28px; height: 28px; background: var(--purecloud-script-bg-secondary); border: 1px solid var(--purecloud-script-border-color); color: var(--purecloud-script-text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; padding: 0; } 
+            .compact-btn:hover { background: var(--purecloud-script-border-color); color: var(--purecloud-script-accent-color); }
+            #purecloud-script-mini-dashboard.expanded .compact-btn { background: transparent; border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
+            #purecloud-script-mini-dashboard.expanded .compact-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+            .stats-grid-original.mini-dashboard-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 0; } 
+            .stat-label { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--purecloud-script-text-secondary); font-size: 0.8em; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; } 
+            .stat-icon { width: 14px; height: 14px; color: var(--purecloud-script-accent-color); stroke-width: 2px; }
+            .stat-item-original strong { font-size: 1.4em; color: var(--purecloud-script-text-primary); font-weight: 700; }
+            .stat-item-original { text-align: center; background: linear-gradient(145deg, var(--purecloud-script-bg-secondary), var(--purecloud-script-bg-primary)); padding: 14px 10px; border-radius: 12px; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--purecloud-script-border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; } 
+            .stat-item-original:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); border-color: var(--purecloud-script-accent-color); }
+        `,
+        TOOLBAR: `
+            .purecloud-script-custom-btn { background: var(--purecloud-script-bg-secondary) !important; border: 1px solid var(--purecloud-script-border-color) !important; border-radius: 8px !important; margin: 0 4px !important; height: 34px; padding: 0 10px !important; transition: all 0.2s ease !important; cursor: pointer; display: inline-flex; align-items: center; color: var(--purecloud-script-text-secondary) !important; order: 3; position: relative; overflow: hidden; }
+            .purecloud-script-custom-btn:hover { background: var(--purecloud-script-accent-color) !important; color: #fff !important; transform: translateY(-2px) !important; box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; border-color: transparent !important; }
+            .purecloud-script-custom-btn:active { transform: translateY(0) !important; box-shadow: none !important; }
+            .purecloud-script-custom-btn svg { stroke: currentColor !important; width: 18px; height: 18px; flex-shrink: 0; } 
+        `,
+        SPELL_PRO: `
+            #spell-overlay-layer { position: absolute; pointer-events: none; color: transparent !important; background: transparent !important; z-index: 2147483640; overflow: hidden; white-space: pre-wrap; word-wrap: break-word; }
+            .spell-wavy-error { text-decoration: underline wavy #ef4444;  text-decoration-skip-ink: none; text-underline-offset: 3px; }
+            .spell-wavy-punct { border-bottom: 2px dashed #10b981;  display: inline-block; min-width: 4px; }
+            #spell-badge { position: absolute; width: 22px; height: 22px; border-radius: 50%; color: white; display: none; align-items: center; justify-content: center; font-family: sans-serif; font-size: 11px; font-weight: bold; z-index: 2147483645; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); background: #ef4444; transition: all 0.2s ease; }
+            #spell-badge.loading { background: #f59e0b; animation: spellPulse 1.5s infinite; }
+            #spell-badge.clean { background: #10b981; }
+            #spell-badge:hover { transform: scale(1.1); box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
+            @keyframes spellPulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+            
+            #spell-inline-popup { position: absolute; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 250px; display: none; flex-direction: column; z-index: 2147483648; font-family: sans-serif; overflow: hidden; animation: spellPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+            @keyframes spellPopIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+            .popup-header { background: #f8fafc; padding: 10px 12px; font-size: 11px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; letter-spacing: 0.5px; }
+            .popup-body { padding: 12px; }
+            .popup-sug-btn { width: 100%; text-align: left; padding: 8px 12px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+            .popup-sug-btn:hover { background: #dbeafe; border-color: #93c5fd; }
+            .popup-footer { display: flex; gap: 5px; padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e5e7eb; }
+            .popup-action-btn { flex: 1; padding: 6px; font-size: 11px; border: 1px solid #e5e7eb; background: white; border-radius: 4px; cursor: pointer; color: #475569; transition: background 0.2s; }
+            .popup-action-btn:hover { background: #f1f5f9; color: #0f172a; }
+            #btn-rewrite { font-weight: 600; color: #8b5cf6; border-color: #ede9fe; background: #f5f3ff; }
+            #btn-rewrite:hover { background: #ede9fe; }
+            .ai-loading { background: linear-gradient(90deg, #f5f3ff, #ddd6fe, #f5f3ff); background-size: 200% 100%; animation: spellAILoading 1.5s infinite linear; pointer-events: none; }
+            @keyframes spellAILoading { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+            #spell-main-panel { --purecloud-script-header-bg: #059669; --purecloud-script-header-text: #ffffff; position: fixed; top: 80px; right: 20px; width: 340px; max-height: 80vh; background: white; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e5e7eb; z-index: 2147483649; display: none; flex-direction: column; font-family: sans-serif; overflow: hidden; }
+            .panel-header-top { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--purecloud-script-header-bg, #f8fafc); border-bottom: 1px solid #e5e7eb; }
+            .panel-title { font-weight: 700; color: var(--purecloud-script-header-text, #0f172a); display: flex; align-items: center; gap: 8px; }
+            .btn-fix-all { background: white; color: var(--purecloud-script-header-bg, #3b82f6); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+            .btn-fix-all:hover { background: #f1f5f9; }
+            .panel-tabs { display: flex; border-bottom: 1px solid #e5e7eb; padding: 0 10px; }
+            .tab-active { padding: 10px 15px; font-size: 12px; font-weight: 600; color: #10b981; border-bottom: 2px solid #10b981; cursor: default; }
+            .panel-body { overflow-y: auto; padding: 10px; background: #f1f5f9; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+            .panel-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+            .card-category { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 6px; display: block; }
+            .card-change { font-size: 14px; color: #0f172a; line-height: 1.5; }
+            .card-wrong { text-decoration: line-through; color: #ef4444; background: #fef2f2; padding: 2px 4px; border-radius: 4px; }
+            .card-right { color: #10b981; background: #ecfdf5; padding: 2px 4px; border-radius: 4px; font-weight: 500; cursor: pointer; transition: background 0.2s; border: 1px dashed #6ee7b7; margin-left: 5px; }
+            .card-right:hover { background: #d1fae5; border-style: solid; }
+        `
+    };
+
+
+    function injectCss() {
+        document.getElementById('purecloud-script-injected-style')?.remove();
+        const theme = validateConfigValue('THEME_COLORS', CONFIG.THEME_COLORS);
+        const css = Object.values(CONFIG_CSS).join('\n');
+
+        // Substituindo as variáveis lidas do theme no texto do CSS
+        const processedCss = css.replace(/\$\{theme\.([a-zA-Z]+)\}/g, (match, p1) => theme[p1]);
+
+        const style = document.createElement('style');
+        style.id = 'purecloud-script-injected-style';
+        document.head.appendChild(style);
+        style.textContent = processedCss;
+    }
+
+    function initializeDailyCounters(forceReset = false) {
+        const todayKey = getBrazilTime(new Date()).toLocaleDateString('pt-BR');
+        const lastSavedDate = ajaStorage.getItem('purecloudScript_lastActivityDate');
+        if (lastSavedDate !== todayKey || forceReset) { 
+            ajaStorage.setItem('purecloudScript_lastActivityDate', todayKey); 
+            analyticsManager.clearAllData(); 
+        } else { 
+            analyticsManager.getData(); 
+            loadV4Counters(); 
+        }
+    }
+
+
+    function sincronizarDadosComPlanilha() {
+        if (typeof analyticsManager === 'undefined' || typeof v4_counters === 'undefined') return;
+        let currentUserName = getAgentName(); 
+        const stats = analyticsManager.calculateStats();
+        const analyticsPayload = { conversasUnicas: stats.count, tmaGeral: stats.tma, tmeAtivo: stats.tme, encAgente: stats.baloonClicks, inicio: stats.last, ultima: stats.first, meta: CONFIG.CONVERSATION_TARGET, transferidos: stats.transferClicks, tmaGeralSegundos: stats.tmaSeconds || 0, tmeAtivoSegundos: stats.tmeSeconds || 0 };
+        DataSyncer.send({ type: 'analytics', user: currentUserName, stats: analyticsPayload });
+        const atendimentosPayload = analyticsManager.getData().conversations.map(conv => ({ tipo: conv.interactionType || 'unknown', horaFim: new Date(conv.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), cliente: conv.participantName, tme: (() => { const s = Math.floor(conv.activeDuration / 1000); return `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}` })(), tmeSegundos: Math.floor(conv.activeDuration / 1000), duracaoSegundos: Math.floor((conv.duration || 0) / 1000), recorrencia: conv.isRecurrence ? 'Sim' : 'Não', link: conv.interactionUrl || 'N/A' }));
+        DataSyncer.send({ type: 'atendimento', user: currentUserName, atendimentos: atendimentosPayload });
+        if (v4_counters.balao.length > 0) { DataSyncer.send({ type: 'encerrados', user: currentUserName, encerrados: v4_counters.balao }); }
+    }
+
+    const isMainFrame = (window.self === window.top);
+
+    const initialize = () => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['SHOW_AGENT_TOOLS'], function (result) {
+                iniciarScript(result.SHOW_AGENT_TOOLS !== false);
+            });
+        } else {
+            iniciarScript(true);
+        }
+    };
+
+    function iniciarScript(mostrarFerramentas) {
+        // Inicialização em TODOS OS FRAMES (CAR e Corretor)
+        // Corretor único inicializado pelo módulo tools/corretor.
+        
+        // Inicialização APENAS NO TOP FRAME (Dashboards, Menus, IA)
+        if (isMainFrame) {
+            effectsManager.init();
+            timerManager.startGlobalTimer();
+
+            // --- SISTEMA DE INTEGRAÇÃO MODULAR (EXTENSÃO CHROME) ---
+            window.PCScript = window.PCScript || {};
+            window.PCScript.Integrador = {
+                Config: CONFIG,
+                UI: {
+                    notificar: UI.createNotification,
+                    alternarDarkMode: actions.toggleDarkMode
+                },
+                Estilo: {
+                    geradorCSS: CONFIG_CSS
+                },
+                Audio: {
+                    tocarSom: (tipo) => effectsManager.playBeep(tipo),
+                    sucesso: () => effectsManager.playSuccess()
+                },
+                Estado: {
+                    conversasAtivas: timerManager.activeTimers,
+                    getMétricas: () => analyticsManager.getData()
+                }
+            };
+
+            setInterval(() => DataSyncer.processQueue(), 60000);
+            setTimeout(() => DataSyncer.updateIndicator(), 3000);
+            setTimeout(sincronizarDadosComPlanilha, 15000); // Sincroniza mais cedo ao iniciar
+            setInterval(sincronizarDadosComPlanilha, 5 * 60 * 1000); // Sincroniza a cada 5 min em vez de 10
+
+            if (mostrarFerramentas) {
+                initializeDailyCounters();
+                saveData();
+                injectCss();
+                document.addEventListener('keydown', keyboardEventHandler);
+                document.addEventListener('click', () => effectsManager.init(), { once: true });
+                let targetNode = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_LIST_CONTAINER);
+                if (!targetNode) { targetNode = document.body; }
+                const mainObserver = new MutationObserver(throttle(mainLoop, CONFIG.MAIN_LOOP_THROTTLE_MS));
+                setTimeout(() => { mainObserver.observe(targetNode, { childList: true, subtree: true, attributes: true }); }, 500);
+                setTimeout(mainLoop, 100);
+                setTimeout(autoRestoreFromCloud, 2000); // Tenta restaurar 2s após carregar
+                if (CONFIG.MINI_DASHBOARD_VISIBLE) {
+                    setTimeout(() => {
+                        UI.createMiniDashboard();
+                        if (CONFIG.TOOLS_VISIBLE) UI.createAgentToolsPanel();
+                    }, 4000);
+                }
+            }
+        }
+    }
+
+    // Shared initialization runs after module setup.
+
+
+    /* ============================================================== 
+       ⬇️ INJEÇÃO DOS MÓDULOS DA EXTENSÃO ⬇️ 
+       (Limpeza e conversão automática de estilos) 
+       ============================================================== */
+
+
+
+const moduleContext = Object.create(null);
+Object.defineProperties(moduleContext, {
+"CONFIG": { get: () => CONFIG },
+"CONFIG_CSS": { get: () => CONFIG_CSS },
+"DEBUG_MODE": { get: () => DEBUG_MODE },
+"DataSyncer": { get: () => DataSyncer },
+"GOOGLE_SCRIPT_URL": { get: () => GOOGLE_SCRIPT_URL },
+"LOCKDOWN_CONFIG": { get: () => LOCKDOWN_CONFIG },
+"SCRIPT_VERSION": { get: () => SCRIPT_VERSION },
+"UI": { get: () => UI },
+"USEFUL_LINKS": { get: () => USEFUL_LINKS },
+"V4_STORAGE_KEY": { get: () => V4_STORAGE_KEY },
+"actions": { get: () => actions },
+"ajaSessionStorage": { get: () => ajaSessionStorage },
+"ajaStorage": { get: () => ajaStorage },
+"analyticsManager": { get: () => analyticsManager },
+"applyGenesysDarkMode": { get: () => applyGenesysDarkMode },
+"autoRestoreFromCloud": { get: () => autoRestoreFromCloud },
+"buildSpellOverlayHTML": { get: () => buildSpellOverlayHTML },
+"conversationLockManager": { get: () => conversationLockManager },
+"conversationTimers": { get: () => conversationTimers },
+"copyTextToClipboard": { get: () => copyTextToClipboard },
+"createToolbarUI": { get: () => createToolbarUI },
+"currentChatInputField": { get: () => currentChatInputField },
+"currentChatObserverInstance": { get: () => currentChatObserverInstance },
+"defaultTheme": { get: () => defaultTheme },
+"defaultThemeColors": { get: () => defaultThemeColors },
+"documentExtractor": { get: () => documentExtractor },
+"effectsManager": { get: () => effectsManager },
+"escapeHTML": { get: () => escapeHTML },
+"featureDescriptions": { get: () => featureDescriptions },
+"findEl": { get: () => findEl },
+"formatTime": { get: () => formatTime },
+"getAgentName": { get: () => getAgentName },
+"getBrazilTime": { get: () => getBrazilTime },
+"getChatInput": { get: () => getChatInput },
+"getHotkeyCombo": { get: () => getHotkeyCombo },
+"getNativeInteractionUrl": { get: () => getNativeInteractionUrl },
+"handleBalaoClick": { get: () => handleBalaoClick },
+"iniciarScript": { get: () => iniciarScript },
+"initialQuickReplies": { get: () => initialQuickReplies },
+"initialize": { get: () => initialize },
+"initializeDailyCounters": { get: () => initializeDailyCounters },
+"injectCss": { get: () => injectCss },
+"isMainFrame": { get: () => isMainFrame },
+"keyboardEventHandler": { get: () => keyboardEventHandler },
+"loadV4Counters": { get: () => loadV4Counters },
+"log": { get: () => log },
+"mainLoop": { get: () => mainLoop },
+"makeDraggable": { get: () => makeDraggable },
+"observeCurrentChatMessages": { get: () => observeCurrentChatMessages },
+"safeFetch": { get: () => safeFetch },
+"saveData": { get: () => saveData },
+"saveV4Counters": { get: () => saveV4Counters },
+"sincronizarDadosComPlanilha": { get: () => sincronizarDadosComPlanilha },
+"templateProcessor": { get: () => templateProcessor },
+"theme": { get: () => theme },
+"throttle": { get: () => throttle },
+"timerManager": { get: () => timerManager },
+"updateTimerDisplay": { get: () => updateTimerDisplay },
+"v4_counters": { get: () => v4_counters },
+"validateConfigValue": { get: () => validateConfigValue }
+});
+window.AjaModular.start(moduleContext);
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initialize); } else { initialize(); }
 
     } // Fim startScript()
 })();
@@ -10196,7 +10204,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         button.onclick = (event) => {
             event.preventDefault();
             event.stopPropagation();
-            abrirCorretor();
+            window.AjaModular.open('corretor');
         };
 
         const carButton = document.getElementById('uni-btn-car');
@@ -11800,7 +11808,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     style.textContent=`
         #uni-menu-container {height:60px!important;flex-direction:column!important}
         #uni-menu-container:not([style]) {bottom:100px!important}
-        #uni-menu-container .uni-fab-actions {position:absolute;bottom:72px;right:0;margin:0;max-height:calc(100vh - 110px);overflow-y:auto;overflow-x:hidden;padding:8px 6px;width:62px;box-sizing:border-box}
+        #uni-menu-container .uni-fab-actions {position:absolute;bottom:72px;right:0;margin:0;max-height:max(80px, calc(100vh - 240px));flex-direction:column!important;justify-content:flex-start!important;overflow-y:auto;overflow-x:hidden;padding:8px 6px;width:62px;box-sizing:border-box}
         #uni-menu-container .uni-fab-btn {flex-shrink:0}
         #uni-menu-container .uni-fab-main {flex-shrink:0}
     `;document.head.appendChild(style);
