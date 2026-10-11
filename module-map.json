@@ -1,0 +1,294 @@
+[
+  {
+    "id": "ui-createNotification",
+    "file": "src/ui/components/createNotification.js",
+    "after": [],
+    "shared": []
+  },
+  {
+    "id": "ui-renderBarChart",
+    "file": "src/ui/components/renderBarChart.js",
+    "after": [],
+    "shared": []
+  },
+  {
+    "id": "ui-renderAnalyticsContent",
+    "file": "src/ui/components/renderAnalyticsContent.js",
+    "after": [],
+    "shared": [
+      "CONFIG",
+      "UI",
+      "analyticsManager",
+      "copyTextToClipboard",
+      "getBrazilTime"
+    ]
+  },
+  {
+    "id": "ui-renderDetailsContent",
+    "file": "src/ui/components/renderDetailsContent.js",
+    "after": [],
+    "shared": [
+      "CONFIG",
+      "actions",
+      "analyticsManager",
+      "escapeHTML",
+      "formatTime",
+      "getBrazilTime"
+    ]
+  },
+  {
+    "id": "ui-renderClosedDetailsContent",
+    "file": "src/ui/components/renderClosedDetailsContent.js",
+    "after": [],
+    "shared": [
+      "UI",
+      "escapeHTML",
+      "getBrazilTime",
+      "v4_counters"
+    ]
+  },
+  {
+    "id": "ui-renderThemeContent",
+    "file": "src/ui/components/renderThemeContent.js",
+    "after": [],
+    "shared": [
+      "UI",
+      "defaultThemeColors"
+    ]
+  },
+  {
+    "id": "ui-createSettingsPanel",
+    "file": "src/ui/components/createSettingsPanel.js",
+    "after": [],
+    "shared": [
+      "CONFIG",
+      "UI",
+      "analyticsManager",
+      "createToolbarUI",
+      "featureDescriptions",
+      "findEl",
+      "getHotkeyCombo",
+      "injectCss",
+      "makeDraggable",
+      "saveData",
+      "validateConfigValue"
+    ]
+  },
+  {
+    "id": "ui-createAgentToolsPanel",
+    "file": "src/ui/components/createAgentToolsPanel.js",
+    "after": [],
+    "shared": [
+      "CONFIG",
+      "UI"
+    ]
+  },
+  {
+    "id": "ui-createMiniDashboard",
+    "file": "src/ui/components/createMiniDashboard.js",
+    "after": [],
+    "shared": [
+      "CONFIG",
+      "UI",
+      "ajaStorage",
+      "analyticsManager",
+      "makeDraggable",
+      "saveData"
+    ]
+  },
+  {
+    "id": "lembretes",
+    "file": "src/tools/lembretes.js",
+    "after": [],
+    "shared": []
+  },
+  {
+    "id": "links-uteis",
+    "file": "src/tools/links-uteis.js",
+    "after": [],
+    "shared": []
+  },
+  {
+    "id": "historico-documentos",
+    "file": "src/tools/historico-documentos.js",
+    "after": [],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "notepad",
+    "file": "src/tools/notepad.js",
+    "after": [],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "compatibility",
+    "file": "src/tools/compatibility.js",
+    "after": [],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "bar",
+    "file": "src/tools/bar.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage",
+      "safeFetch"
+    ]
+  },
+  {
+    "id": "extrator",
+    "file": "src/tools/extrator.js",
+    "after": [
+      "compatibility",
+      "historico-documentos"
+    ],
+    "shared": []
+  },
+  {
+    "id": "espelho",
+    "file": "src/tools/espelho.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "UI"
+    ]
+  },
+  {
+    "id": "protocolos",
+    "file": "src/tools/protocolos.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaSessionStorage",
+      "ajaStorage",
+      "safeFetch"
+    ]
+  },
+  {
+    "id": "respostas",
+    "file": "src/tools/respostas.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaSessionStorage",
+      "ajaStorage",
+      "safeFetch"
+    ]
+  },
+  {
+    "id": "pausas",
+    "file": "src/tools/pausas.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "car",
+    "file": "src/tools/car.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "ia",
+    "file": "src/tools/ia.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage",
+      "escapeHTML"
+    ]
+  },
+  {
+    "id": "monitor",
+    "file": "src/tools/monitor.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": []
+  },
+  {
+    "id": "corretor",
+    "file": "src/tools/corretor.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage",
+      "buildSpellOverlayHTML",
+      "safeFetch"
+    ]
+  },
+  {
+    "id": "ferramentas",
+    "file": "src/tools/ferramentas.js",
+    "after": [
+      "compatibility",
+      "notepad",
+      "extrator",
+      "historico-documentos",
+      "links-uteis",
+      "lembretes"
+    ],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "central",
+    "file": "src/tools/central.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "menu",
+    "file": "src/tools/menu.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": [
+      "ajaStorage"
+    ]
+  },
+  {
+    "id": "gerente",
+    "file": "src/tools/gerente.js",
+    "after": [
+      "compatibility"
+    ],
+    "shared": []
+  },
+  {
+    "id": "calculadora",
+    "file": "src/tools/calculadora.js",
+    "after": [
+      "menu"
+    ],
+    "shared": [
+      "ajaStorage",
+      "safeFetch"
+    ]
+  }
+]

@@ -1,6 +1,28 @@
 {
   "environment": "Chromium in-app browser, isolated local fixture, simulated fetch responses",
-  "passed": [
+  "not_tested": [
+    "Production Genesys DOM",
+    "Real Gemini key",
+    "Microphone permission and speech recognition",
+    "All legacy workflows"
+  ],
+  "version": "1.1.0",
+  "current_passed": [
+    "All 29 factory modules initialized without reported errors",
+    "Repeated runtime produces one menu",
+    "Calculator separated from menu: 2 + 3 = 5",
+    "Notepad text persists across reload",
+    "Unified tools panel opens",
+    "Protocols panel opens",
+    "Responses panel opens through public operation",
+    "Assistant setup opens",
+    "Queue monitor opens",
+    "Spell panel opens",
+    "BAR panel opens",
+    "Existing CAR command expands after Space",
+    "Central de Ajuda opens through module operation"
+  ],
+  "previous_version_passed": [
     "Repeated runtime script produces a single spell panel",
     "Menu opens after clock initialization, without overlap",
     "Spell panel opens from menu",
@@ -13,6 +35,5 @@
     "Assistant setup opens",
     "Queue monitor opens",
     "BAR command interface opens"
-  ],
-  "not_tested": ["Production Genesys DOM", "Real Gemini key", "Microphone permission and speech recognition", "All legacy workflows"]
+  ]
 }

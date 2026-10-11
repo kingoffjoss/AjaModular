@@ -19,14 +19,18 @@ Para extensão Chrome/Edge: baixe o ZIP do repositório, extraia e selecione a p
 | `tools` | Build e testes sem dependências externas |
 | `runtime` | Bundle gerado; não editar diretamente |
 
-Os arquivos `.js.inc` são módulos de fonte compilados na ordem de `build-order.json`. Preservam o escopo lexical do legado e suas dependências; não devem ser carregados isoladamente como scripts ou ES modules. Os arquivos `.js` de corretor/UI têm escopos próprios. Essa separação permite manutenção por ferramenta sem alterar o contrato compartilhado do legado. O carregador e a extensão usam o mesmo bundle gerado.
+Cada ferramenta em `src/tools/*.js` registra sua própria função de inicialização. Variáveis locais ficam isoladas; acesso ao núcleo usa `ctx`, com referências atualizadas. O registro em `src/core/module-registry.js` resolve dependências, evita inicialização duplicada e registra falhas por módulo. O menu chama operações públicas `open()`, sem conter a implementação da calculadora.
+
+`module-map.json` mostra arquivos e dependências. `build-order.json` define a montagem. Os componentes de dashboard, configurações, gráficos e notificações ficam em `src/ui/components`. Bloco de notas, lembretes, links e histórico têm módulos próprios. Toolbar e menu utilizam o mesmo painel de ferramentas; existe um único extrator e um único proprietário do F2.
+
+O núcleo compartilhado de chat, métricas e temporizadores ainda usa fragmentos `.js.inc` por responsabilidade. As ferramentas não compartilham suas variáveis locais com esses fragmentos. A extensão e o favorito usam um bundle gerado para distribuição; edite o arquivo de fonte da ferramenta, nunca o bundle.
 
 ```sh
 npm run build
 npm test
 ```
 
-Edite os módulos, gere o bundle, rode os testes e publique também o bundle. Não publique chaves ou dados de atendimento. O gerenciador administrativo aponta para este novo repositório e aceita credencial somente quando fornecida explicitamente pelo usuário.
+Edite o módulo, gere o bundle, rode os testes e publique também o bundle. O build recusa registros duplicados, dependências ausentes/circulares e ferramentas fora do mapa. Os testes verificam que uma falha de inicialização não impede módulos independentes. Não publique chaves ou dados de atendimento. O gerenciador administrativo aponta para este novo repositório e aceita credencial somente quando fornecida explicitamente pelo usuário.
 
 ## Correções integradas
 
