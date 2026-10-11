@@ -29,6 +29,15 @@ env.dragMouseDown(event);env.elementDrag({...event,clientX:105});assert.equal(en
 env.elementDrag({...event,clientX:134,clientY:94});assert.equal(panel.style.left,'130px');assert.equal(panel.style.top,'90px');assert.equal(panel.style.transition,'none');assert.equal(document.onmousemove,moves);assert.equal(document.onmouseup,ups);
 env.closeDragElement();assert.equal(saved,1);assert.equal(document.body.style.userSelect,'text');assert.equal(panel.style.transition,'all .2s');assert.ok(!documentListeners.mousemove&&!documentListeners.mouseup&&!listeners.blur);checks.push('Drag uses bounding rectangle, movement threshold, own listeners and cleanup');
 assert.ok(source.includes("else if ('Notification' in window && Notification.permission === 'denied')"));assert.ok(source.includes("e.code === 'Digit1'"));checks.push('Initialization guards unsupported notifications and shortcut handles Shift+1');
+const delegate=source.match(/const t = e.target.closest\('button'\), n = e.target.closest\('([^']+)'\)/)[1];
+assert.ok(delegate.split(', ').includes('span#btn-tema-gerenciador'));
+const classes=new Set(['cc-escurinho']);const stored={};
+const configPanel={classList:{toggle(name,force){const enabled=force===undefined?!classes.has(name):force;if(enabled)classes.add(name);else classes.delete(name);return enabled;},remove:name=>classes.delete(name)}};
+const themeButton={};const themeEnv={cC:configPanel,configThemeButton:themeButton,ctx:{ajaStorage:{setItem:(key,value)=>stored[key]=value}}};
+vm.createContext(themeEnv);const themeStart=source.indexOf('if (configThemeButton) configThemeButton.onclick');const themeEnd=source.indexOf('                const bF',themeStart);vm.runInContext(source.slice(themeStart,themeEnd),themeEnv);
+themeButton.onclick();assert.ok(classes.has('local-light-mode'));assert.ok(!classes.has('cc-escurinho'));assert.equal(stored.GERCONFIG_THEME,'light');
+themeButton.onclick();assert.ok(!classes.has('local-light-mode'));assert.ok(classes.has('cc-escurinho'));assert.equal(stored.GERCONFIG_THEME,'dark');
+checks.push('Manager theme button reaches click handler and configuration theme toggles and persists both ways');
 return checks;
 };
 if(require.main===module)console.log(JSON.stringify({passed:true,checks:module.exports()},null,2));
