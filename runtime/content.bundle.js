@@ -8508,9 +8508,39 @@ window.AjaModular.register('relogio', [], function() {
     return {clampPosition, keepOnScreen, snapshot, render, start};
 });
 
+window.AjaModular.register('mensagens-termino', [], function (ctx) {
+    const ID = 'ajamodular-mensagens-termino';
+    function activate() {
+        const native = document.querySelector('#call-control-end-sms-button, button[aria-label="Mensagens de término"]');
+        if (!native || native.disabled || native.getAttribute('aria-disabled') === 'true' || native.getClientRects().length === 0) {
+            alert('O botão oficial Mensagens de término não está disponível. Selecione uma conversa no Genesys.');
+            return;
+        }
+        native.click();
+    }
+    function mount(toolbar) {
+        if (!toolbar) return null;
+        document.getElementById('purecloud-script-btn-toggleLock')?.remove();
+        let button = document.getElementById(ID);
+        if (!button) {
+        button = document.createElement('button'); button.id = ID; button.type = 'button'; button.className = 'purecloud-script-custom-btn';
+        button.textContent = 'X'; button.title = 'Mensagens de término'; button.setAttribute('aria-label', 'Abrir mensagens de término');
+        button.style.cssText = 'flex-shrink:0;width:36px;height:36px;background:#d93b3b;color:white;border:0;border-radius:8px;cursor:pointer;font:bold 18px sans-serif;';
+        button.onclick = activate;
+        }
+        const native = toolbar.querySelector('#call-control-end-sms-button, button[aria-label="Mensagens de término"]');
+        if (native) {
+            if (native.nextElementSibling !== button) native.insertAdjacentElement('afterend', button);
+        } else if (button.parentElement !== toolbar) toolbar.appendChild(button);
+        return button;
+    }
+    function open() { return mount(ctx.findEl(ctx.CONFIG.PURECLOUD_SELECTORS.TOOLBAR)); }
+    return {open, mount, activate};
+});
+
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.4)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.5)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8532,7 +8562,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.1.4';
+    const SCRIPT_VERSION = 'AjaModular_1.1.5';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -8638,7 +8668,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     };
 
 
-    const LOCKDOWN_CONFIG = { REQUIRED_CLICKS: 5, END_CHAT_BUTTON_SELECTOR: ['#call-control-end-sms-button', 'button[aria-label="Mensagens de término"]'], BALAO_BUTTON_SELECTOR_V4: 'button[aria-label="Mensagens de término"]' };
+    const LOCKDOWN_CONFIG = { END_CHAT_BUTTON_SELECTOR: ['#call-control-end-sms-button', 'button[aria-label="Mensagens de término"]'], BALAO_BUTTON_SELECTOR_V4: 'button[aria-label="Mensagens de término"]' };
 
     // --- VARIÁVEIS E LINKS ÚTEIS ---
     const initialQuickReplies = [
@@ -8695,7 +8725,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         SOUND_ALERTS_ENABLED: ajaStorage.getItem('soundAlertsEnabled') !== 'false',
         QUICK_REPLIES: JSON.parse(ajaStorage.getItem('quickReplies')) || initialQuickReplies,
         // --- NOVOS ATALHOS ADICIONADOS AQUI ---
-        HOTKEYS: JSON.parse(ajaStorage.getItem('hotkeys')) || { copyInteraction: "Control+Shift+I", openSettings: "Control+Shift+S", toggleMiniDashboard: "Control+Shift+J", toggleLock: "Control+Shift+L", toggleDarkMode: "Control+Shift+D", quickGreeting: "Control+Shift+Q", exportData: "Control+Shift+E", toggleZenMode: "Control+Shift+Z", formatText: "Control+Shift+M" },
+        HOTKEYS: JSON.parse(ajaStorage.getItem('hotkeys')) || { copyInteraction: "Control+Shift+I", openSettings: "Control+Shift+S", toggleMiniDashboard: "Control+Shift+J", toggleDarkMode: "Control+Shift+D", quickGreeting: "Control+Shift+Q", exportData: "Control+Shift+E", toggleZenMode: "Control+Shift+Z", formatText: "Control+Shift+M" },
         THEME_COLORS: JSON.parse(ajaStorage.getItem('gcp_themeColors_v2')) || JSON.parse(ajaStorage.getItem('timerColors')) || defaultThemeColors,
         LAST_SCRIPT_VERSION: ajaStorage.getItem('lastScriptVersion') || '0', POPUP_POSITIONS: JSON.parse(ajaSessionStorage.getItem('popupPositions') || '{}'),
         MINI_DASHBOARD_VISIBLE: ajaSessionStorage.getItem('miniDashboardVisible') !== 'false', MINI_DASHBOARD_MAXIMIZED: ajaSessionStorage.getItem('miniDashboardMaximized') === 'true', TOOLS_VISIBLE: ajaSessionStorage.getItem('toolsVisible') === 'true',
@@ -8707,7 +8737,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     };
 
     const featureDescriptions = {
-        copyInteraction: { title: "Copiar Interação", description: "Copia nome, telefone e link.", hotkey: CONFIG.HOTKEYS.copyInteraction }, openSettings: { title: "Configurações", description: "Abre o painel de configurações.", hotkey: CONFIG.HOTKEYS.openSettings }, toggleMiniDashboard: { title: "Alternar Dashboard", description: "Oculta ou mostra o dashboard.", hotkey: CONFIG.HOTKEYS.toggleMiniDashboard }, toggleLock: { title: "Trava de Encerramento", description: "Adiciona escudo contra encerramento.", hotkey: CONFIG.HOTKEYS.toggleLock }, toggleDarkMode: { title: "Modo Escuro (Script)", description: "Ativa o tema escuro nos cronômetros.", hotkey: CONFIG.HOTKEYS.toggleDarkMode }, quickGreeting: { title: "Saudação Rápida", description: "Cola sua primeira Resposta Rápida.", hotkey: CONFIG.HOTKEYS.quickGreeting }, exportData: { title: "Exportar Atendimentos", description: "Baixa os dados do dia.", hotkey: CONFIG.HOTKEYS.exportData },
+        copyInteraction: { title: "Copiar Interação", description: "Copia nome, telefone e link.", hotkey: CONFIG.HOTKEYS.copyInteraction }, openSettings: { title: "Configurações", description: "Abre o painel de configurações.", hotkey: CONFIG.HOTKEYS.openSettings }, toggleMiniDashboard: { title: "Alternar Dashboard", description: "Oculta ou mostra o dashboard.", hotkey: CONFIG.HOTKEYS.toggleMiniDashboard }, toggleDarkMode: { title: "Modo Escuro (Script)", description: "Ativa o tema escuro nos cronômetros.", hotkey: CONFIG.HOTKEYS.toggleDarkMode }, quickGreeting: { title: "Saudação Rápida", description: "Cola sua primeira Resposta Rápida.", hotkey: CONFIG.HOTKEYS.quickGreeting }, exportData: { title: "Exportar Atendimentos", description: "Baixa os dados do dia.", hotkey: CONFIG.HOTKEYS.exportData },
         toggleZenMode: { title: "Modo Foco (Zen)", description: "Escurece a tela e foca apenas no chat atual.", hotkey: CONFIG.HOTKEYS.toggleZenMode }, formatText: { title: "Mágico Anti-Caps Lock", description: "Corrige texto MAIÚSCULO para Minúsculo.", hotkey: CONFIG.HOTKEYS.formatText }
     };
 
@@ -8782,7 +8812,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         switch (key) {
             case 'CONVERSATION_TARGET': return !isNaN(parsed) && parsed >= 1 ? parsed : 45; case 'INACTIVITY_CLIENT_ALERT_SECONDS': return !isNaN(parsed) && parsed >= 30 ? parsed : 70; case 'INACTIVITY_OPERATOR_ALERT_SECONDS': return !isNaN(parsed) && parsed >= 10 ? parsed : 30; case 'LONG_CONVO_ALERT_MIN': return !isNaN(parsed) && parsed >= 5 ? parsed : 15; case 'DARK_MODE': return value === true || value === 'true'; case 'SOUND_ALERTS_ENABLED': return value === true || value === 'true';
             case 'THEME_COLORS': if (typeof value !== 'object' || value === null) { return defaultThemeColors; } const validatedColors = { ...defaultThemeColors }; for (const colorKey in defaultThemeColors) { if (value.hasOwnProperty(colorKey)) { if (typeof value[colorKey] === 'string' && value[colorKey].match(/^#[0-9a-f]{6}$/i)) { validatedColors[colorKey] = value[colorKey]; } } } return validatedColors;
-            case 'HOTKEYS': if (typeof value === 'object' && value !== null) { return { copyInteraction: value.copyInteraction || "Control+Shift+I", openSettings: value.openSettings || "Control+Shift+S", toggleMiniDashboard: value.toggleMiniDashboard || "Control+Shift+J", toggleLock: value.toggleLock || "Control+Shift+L", toggleDarkMode: value.toggleDarkMode || "Control+Shift+D", quickGreeting: value.quickGreeting || "Control+Shift+Q", exportData: value.exportData || "Control+Shift+E", toggleZenMode: value.toggleZenMode || "Control+Shift+Z", formatText: value.formatText || "Control+Shift+M" }; } return CONFIG.HOTKEYS;
+            case 'HOTKEYS': if (typeof value === 'object' && value !== null) { return { copyInteraction: value.copyInteraction || "Control+Shift+I", openSettings: value.openSettings || "Control+Shift+S", toggleMiniDashboard: value.toggleMiniDashboard || "Control+Shift+J", toggleDarkMode: value.toggleDarkMode || "Control+Shift+D", quickGreeting: value.quickGreeting || "Control+Shift+Q", exportData: value.exportData || "Control+Shift+E", toggleZenMode: value.toggleZenMode || "Control+Shift+Z", formatText: value.formatText || "Control+Shift+M" }; } return CONFIG.HOTKEYS;
             default: return value;
         }
     };
@@ -9058,7 +9088,6 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         },
         openSettings: () => UI.createSettingsPanel(),
         toggleMiniDashboard: () => { const dashboard = document.getElementById('purecloud-script-mini-dashboard'); if (dashboard) { clearInterval(dashboard._updateInterval); dashboard.remove(); CONFIG.MINI_DASHBOARD_VISIBLE = false; saveData(); } else { CONFIG.MINI_DASHBOARD_VISIBLE = true; saveData(); UI.createMiniDashboard(); } },
-        toggleLock: () => { const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP); if (!selectedConvEl) { UI.createNotification("Selecione uma conversa para destravar.", "warn"); return; } conversationLockManager.toggleLock(selectedConvEl); },
         toggleDarkMode: () => {
             CONFIG.DARK_MODE = !CONFIG.DARK_MODE;
             saveData();
@@ -9089,11 +9118,10 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
     async function handleBalaoClick(e) { const endChatButton = findEl(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR); if (endChatButton && endChatButton.disabled) return; const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(document.body); let interactionUrl = 'N/A'; try { const urlFromButton = await getNativeInteractionUrl(); if (urlFromButton) { interactionUrl = urlFromButton; } else { const id = documentExtractor.getInteractionId(document.body); if (id && id !== 'N/A') { interactionUrl = `${window.location.origin}/directory/conversations/${id}`; } else { interactionUrl = window.location.href.includes('/conversations/') ? window.location.href : 'N/A'; } } } catch (error) { } v4_counters.balao.push({ timestamp: Date.now(), participantName: participantName, phoneNumber: phoneNumber, interactionUrl: interactionUrl }); saveV4Counters(); analyticsManager._updateDashboard(); }
 
-    const conversationLockManager = {
+    const conversationListenerManager = {
         states: new Map(),
-        toggleLock: (selectedConvEl) => { const convState = conversationLockManager.states.get(selectedConvEl); if (!convState || !convState.isLocked) return; const lockButton = document.getElementById('purecloud-script-btn-toggleLock'); if (lockButton) { lockButton.classList.add('btn-feedback-click'); setTimeout(() => lockButton.classList.remove('btn-feedback-click'), 200); } convState.unlockClicks++; const clicksRemaining = LOCKDOWN_CONFIG.REQUIRED_CLICKS - convState.unlockClicks; if (clicksRemaining > 0) { UI.createNotification(`Mais ${clicksRemaining} vez(es) para destravar.`, "info", 1500); setTimeout(() => { conversationLockManager.updateLockButton(selectedConvEl); }, 0); } else { convState.isLocked = false; UI.createNotification("Conversa destravada!", "success"); setTimeout(() => { conversationLockManager.updateLockButton(selectedConvEl); }, 0); } },
-        updateLockButton: (conv) => { const currentConvState = conversationLockManager.states.get(conv); const endChatButton = findEl(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR); const lockButton = document.getElementById('purecloud-script-btn-toggleLock'); if (currentConvState && lockButton) { const ICON_SHIELD_LOCKED = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>'; const ICON_SHIELD_UNLOCKED = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path>'; lockButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${currentConvState.isLocked ? ICON_SHIELD_LOCKED : ICON_SHIELD_UNLOCKED}</svg>`; lockButton.disabled = !currentConvState.isLocked; lockButton.classList.toggle('lockdown-unlocked', !currentConvState.isLocked); lockButton.title = currentConvState.isLocked ? `Destravar Encerrar (Faltam ${LOCKDOWN_CONFIG.REQUIRED_CLICKS - currentConvState.unlockClicks} cliques)` : "Conversa Destravada."; if (endChatButton) { endChatButton.disabled = currentConvState.isLocked; endChatButton.classList.toggle('lockdown-disabled', currentConvState.isLocked); endChatButton.title = currentConvState.isLocked ? 'Bloqueado. Clique no escudo.' : 'Mensagens de término'; } } const getScriptIframeDoc = () => { const conversationRoot = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_ROOT); if (!conversationRoot) return null; const scriptIframe = findEl(CONFIG.PURECLOUD_SELECTORS.SCRIPT_IFRAME, conversationRoot); if (scriptIframe && scriptIframe.contentDocument) { return scriptIframe.contentDocument; } return null; }; const scriptDoc = getScriptIframeDoc(); const addAnalyticsListener = (btn, type) => { if (btn.dataset.gmListenerAdded || !currentConvState) return; btn.addEventListener('click', (e) => { if (btn.disabled) return; const id = documentExtractor.getInteractionId(); if (!id || id === 'N/A') return; if (type === 'TRANSFERIDO') { analyticsManager.logTransferClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'TRANSFERIDO', timestamp: Date.now() }); } else if (type === 'AVALIACAO') { analyticsManager.logEvaluatedClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'AVALIACAO', timestamp: Date.now() }); } }, { signal: currentConvState.controller.signal }); btn.dataset.gmListenerAdded = true; }; const addBalaoListener = (btn) => { if (btn.dataset.gmBalaoListenerAdded || !currentConvState) return; btn.addEventListener('click', handleBalaoClick, { signal: currentConvState.controller.signal }); btn.dataset.gmBalaoListenerAdded = true; }; document.querySelectorAll(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR.join(',')).forEach(btn => addBalaoListener(btn)); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.TRANSFER_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'TRANSFERIDO')); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); if (scriptDoc) { scriptDoc.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); } },
-        initLockState: (conv) => { if (!conversationLockManager.states.has(conv)) { conversationLockManager.states.set(conv, { isLocked: true, unlockClicks: 0, controller: new AbortController() }); } }
+        updateListeners: (conv) => { const currentConvState = conversationListenerManager.states.get(conv); const getScriptIframeDoc = () => { const conversationRoot = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_ROOT); if (!conversationRoot) return null; const scriptIframe = findEl(CONFIG.PURECLOUD_SELECTORS.SCRIPT_IFRAME, conversationRoot); if (scriptIframe && scriptIframe.contentDocument) { return scriptIframe.contentDocument; } return null; }; const scriptDoc = getScriptIframeDoc(); const addAnalyticsListener = (btn, type) => { if (btn.dataset.gmListenerAdded || !currentConvState) return; btn.addEventListener('click', (e) => { if (btn.disabled) return; const id = documentExtractor.getInteractionId(); if (!id || id === 'N/A') return; if (type === 'TRANSFERIDO') { analyticsManager.logTransferClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'TRANSFERIDO', timestamp: Date.now() }); } else if (type === 'AVALIACAO') { analyticsManager.logEvaluatedClick(); CONFIG.LAST_ENDED_INTERACTIONS.set(id, { type: 'AVALIACAO', timestamp: Date.now() }); } }, { signal: currentConvState.controller.signal }); btn.dataset.gmListenerAdded = true; }; const addBalaoListener = (btn) => { if (btn.dataset.gmBalaoListenerAdded || !currentConvState) return; btn.addEventListener('click', handleBalaoClick, { signal: currentConvState.controller.signal }); btn.dataset.gmBalaoListenerAdded = true; }; document.querySelectorAll(LOCKDOWN_CONFIG.END_CHAT_BUTTON_SELECTOR.join(',')).forEach(btn => addBalaoListener(btn)); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.TRANSFER_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'TRANSFERIDO')); document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); if (scriptDoc) { scriptDoc.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.EVALUATION_BUTTON_SELECTOR.join(',')).forEach(btn => addAnalyticsListener(btn, 'AVALIACAO')); } },
+        initState: (conv) => { if (!conversationListenerManager.states.has(conv)) { conversationListenerManager.states.set(conv, { controller: new AbortController() }); } }
     };
 
     const conversationTimers = new Map();
@@ -9180,7 +9208,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     timersToDelete.push(convEl); timerData.div?.remove(); timerData.numDiv?.remove(); timerData.iconDiv?.remove(); timerData.checkmarkDiv?.remove(); timerData.recurrenceDiv?.remove(); timerData.bubblesContainer?.remove();
                 }
             });
-            timersToDelete.forEach(convEl => { conversationTimers.delete(convEl); const lockState = conversationLockManager.states.get(convEl); if (lockState && lockState.controller) lockState.controller.abort(); conversationLockManager.states.delete(convEl); });
+            timersToDelete.forEach(convEl => { conversationTimers.delete(convEl); const lockState = conversationListenerManager.states.get(convEl); if (lockState && lockState.controller) lockState.controller.abort(); conversationListenerManager.states.delete(convEl); });
         }
     }
 
@@ -9220,7 +9248,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
             const tData = timerManager.initTimer(conv, index, sortedConversationsArray.length);
             const isCall = conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CALL); const isChat = conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CHAT);
             if (tData.iconDiv) { if (isCall) { tData.iconDiv.innerHTML = '📞'; tData.iconDiv.title = 'Ligação'; tData.interactionType = 'call'; } else if (isChat) { tData.iconDiv.innerHTML = '💬'; tData.iconDiv.title = 'Chat'; tData.interactionType = 'chat'; } else { tData.iconDiv.innerHTML = '❔'; tData.iconDiv.title = 'Interação'; tData.interactionType = 'unknown'; } }
-            const isSelected = conv === selectedConvEl; timerManager.updateState(tData, isSelected); conversationLockManager.initLockState(conv); if (isSelected) { observeCurrentChatMessages(tData); conversationLockManager.updateLockButton(conv); }
+            const isSelected = conv === selectedConvEl; timerManager.updateState(tData, isSelected); conversationListenerManager.initState(conv); if (isSelected) { observeCurrentChatMessages(tData); conversationListenerManager.updateListeners(conv); }
         });
         if (!selectedConvEl) { const pepperButton = document.getElementById('purecloud-script-btn-endCustomer'); if (pepperButton) pepperButton.title = 'Selecione uma conversa para encerrar'; }
         if (CONFIG.MINI_DASHBOARD_VISIBLE) { UI.createMiniDashboard(); }
@@ -9232,10 +9260,11 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
 
     function createToolbarUI(toolbar) {
-        if (toolbar.dataset.scriptVersion === SCRIPT_VERSION) { return; } toolbar.querySelectorAll('.purecloud-script-custom-btn, #purecloud-script-toolbar-counter, .purecloud-script-menu-container').forEach(el => el.remove()); toolbar.dataset.scriptVersion = SCRIPT_VERSION;
+        if (toolbar.dataset.scriptVersion === SCRIPT_VERSION) { window.AjaModular.get('mensagens-termino').mount(toolbar); return; } toolbar.querySelectorAll('.purecloud-script-custom-btn, #purecloud-script-toolbar-counter, .purecloud-script-menu-container').forEach(el => el.remove()); toolbar.dataset.scriptVersion = SCRIPT_VERSION;
         const createMainToolbarBtn = (id, title, svg, onClick) => { const btn = document.createElement("button"); btn.id = id; btn.className = 'purecloud-script-custom-btn'; btn.title = title; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${svg}</svg>`; btn.onclick = onClick; btn; toolbar.appendChild(btn); return btn; };
         createMainToolbarBtn('purecloud-script-btn-copyInteraction', featureDescriptions.copyInteraction.title, '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/>', actions.copyInteraction);
         createMainToolbarBtn('purecloud-script-btn-openSettings', featureDescriptions.openSettings.title, '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>', actions.openSettings);
+        window.AjaModular.get('mensagens-termino').mount(toolbar);
     }
 
 
@@ -9586,7 +9615,7 @@ Object.defineProperties(moduleContext, {
 "applyGenesysDarkMode": { get: () => applyGenesysDarkMode },
 "autoRestoreFromCloud": { get: () => autoRestoreFromCloud },
 "buildSpellOverlayHTML": { get: () => buildSpellOverlayHTML },
-"conversationLockManager": { get: () => conversationLockManager },
+"conversationListenerManager": { get: () => conversationListenerManager },
 "conversationTimers": { get: () => conversationTimers },
 "copyTextToClipboard": { get: () => copyTextToClipboard },
 "createToolbarUI": { get: () => createToolbarUI },
