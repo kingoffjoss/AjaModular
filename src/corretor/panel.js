@@ -554,7 +554,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         button.onclick = (event) => {
             event.preventDefault();
             event.stopPropagation();
-            abrirCorretor();
+            window.AjaModular.open('corretor');
         };
 
         const carButton = document.getElementById('uni-btn-car');
