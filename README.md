@@ -2,7 +2,7 @@
 
 Versão independente das ferramentas Brisanet do AjaExtension. Origem: commit `e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b` de `kingoffjoss/AjaExtension`, preservado sem alterações.
 
-## Relógio flutuante — versão 1.1.1
+## Relógio flutuante — versão 1.1.2
 
 Correções de arraste com eventos próprios, proteção dos controles do cabeçalho, reposicionamento ao abrir/redimensionar, atualização imediata e cores por status. A lógica visual do relógio fica em `src/tools/relogio.js`; os botões e agendamentos continuam em `src/tools/pausas.js`.
 
@@ -67,3 +67,5 @@ Não houve login no Genesys, teste real com chave Gemini, uso de microfone nem v
 ## Publicação
 
 GitHub Pages: branch `main`, pasta `/ (root)`. A raiz contém `.nojekyll`. O runtime e os dados JSON são publicados neste repositório. O AjaExtension mantém seu próprio carregador, publicação e favoritos.
+
+Na versão 1.1.2, os botões de tema do Gerenciador e de Config & Histórico alternam entre claro e escuro e salvam a preferência.
