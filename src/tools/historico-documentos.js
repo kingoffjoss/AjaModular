@@ -15,6 +15,7 @@ return { record, mount(panel) {
                             let history = [];
                             try { history = JSON.parse(ctx.ajaStorage.getItem('purecloudScript_idHistory') || '[]'); } catch (e) { }
 
+                            if (!Array.isArray(history)) history = [];
                             if (history.length === 0) {
                                 list.innerHTML = '<span style="color:var(--purecloud-script-text-secondary); font-size:0.85em;">Nenhum documento salvo ainda.</span>';
                                 return;
