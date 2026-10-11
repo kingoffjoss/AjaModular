@@ -1,4 +1,4 @@
-// Shared dependencies: ajaStorage
+// Shared dependencies: ajaStorage, CONFIG, saveData
 window.AjaModular.register("ferramentas", ["compatibility","notepad","extrator","historico-documentos","links-uteis","lembretes"], function(ctx) {
     /* --- MÓDULO ANEXADO: FERRAMENTAS.JS --- */
     try {
@@ -181,8 +181,7 @@ window.AjaModular.register("ferramentas", ["compatibility","notepad","extrator",
                         panel.style.left = '100px';
 
                         panel.querySelector('#closeToolsBtn').onclick = () => { 
-                            panel.style.display = 'none'; 
-                            if (window.spellCheckerModule) window.spellCheckerModule.ocultarTudo();
+                            window.AjaModular.get('ferramentas').close();
                         };
 
                         const USEFUL_LINKS = [
@@ -206,8 +205,9 @@ const switchToolsTab = (tabId) => {
 window.AjaModular.get('links-uteis').mount(panel, USEFUL_LINKS);
 window.AjaModular.get('lembretes').mount(panel, notify);
                     } else {
-                        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+                        panel.style.display = 'flex';
                     }
+                    return panel;
                 }
             };
         })();
@@ -216,5 +216,11 @@ window.AjaModular.get('lembretes').mount(panel, notify);
 
 
 
-return { open() { return window.UI_tools.createAgentToolsPanel(); } };
+function setVisible(visible) {
+    if (ctx.CONFIG.TOOLS_VISIBLE !== visible) { ctx.CONFIG.TOOLS_VISIBLE = visible; ctx.saveData(); }
+}
+return {
+    open() { setVisible(true); return window.UI_tools.createAgentToolsPanel(); },
+    close() { setVisible(false); const panel = document.getElementById('purecloud-script-tools-panel'); if (panel) panel.style.display = 'none'; }
+};
 });
