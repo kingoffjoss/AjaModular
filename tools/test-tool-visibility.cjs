@@ -1,0 +1,22 @@
+'use strict';
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
+module.exports=function(){
+ const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8'),factories={};
+ const panel={style:{display:'none'},note:'Anotação preservada',tab:'links'};let saves=0;
+ const context={CONFIG:{TOOLS_VISIBLE:false},UI:{},saveData:()=>saves++};
+ const document={head:{appendChild(){}},createElement:()=>({}),getElementById:()=>panel};
+ const window={AjaModular:{register:(id,dependencies,factory)=>factories[id]=factory}};
+ const sandbox={window,document,console};vm.createContext(sandbox);
+ vm.runInContext(read('src/tools/ferramentas.js'),sandbox);const tool=factories.ferramentas(context);
+ window.AjaModular.get=()=>tool;window.AjaModular.open=()=>tool.open();
+ vm.runInContext(read('src/ui/components/createAgentToolsPanel.js'),sandbox);factories['ui-createAgentToolsPanel'](context);
+ const mini=read('src/ui/components/createMiniDashboard.js');const handler=mini.match(/dashboard\.querySelector\('#mini-dashboard-tools-btn'\)\.onclick = \(e\) => \{([\s\S]*?)\n\s*\};/)[1];
+ sandbox.ctx=context;sandbox.e={stopPropagation(){}};
+ vm.runInContext(handler,sandbox);assert.equal(panel.style.display,'flex');assert.equal(context.CONFIG.TOOLS_VISIBLE,true);
+ for(let i=0;i<30;i++)context.UI.createAgentToolsPanel();
+ assert.equal(panel.style.display,'flex');assert.equal(panel.note,'Anotação preservada');assert.equal(panel.tab,'links');
+ vm.runInContext(handler,sandbox);assert.equal(panel.style.display,'none');assert.equal(context.CONFIG.TOOLS_VISIBLE,false);
+ for(let i=0;i<30;i++)context.UI.createAgentToolsPanel();assert.equal(panel.style.display,'none');
+ tool.open();assert.equal(panel.style.display,'flex');tool.close();assert.equal(panel.style.display,'none');assert.ok(saves<10);
+ return ['Mini dashboard opens tools; repeated timer refresh preserves visibility, notes and tab; explicit close stays closed'];
+};
