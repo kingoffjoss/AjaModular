@@ -77,3 +77,7 @@ CAR usa campo de mensagem com expansão vertical. Configurações do corretor t�
 ## Versão 1.1.4
 
 Configurações do corretor fecham pelo X e por Escape. Ferramentas do Agente usam abertura idempotente: atualizações dos cronômetros não alternam a visibilidade. Fechar sincroniza a preferência e preserva a janela para reabrir com a mesma aba e anotações.
+
+## Versão 1.1.5
+
+Módulo mensagens-termino: botão X ao lado do botão oficial Mensagens de término, respeitando seu estado desabilitado. Removidos o escudo e o bloqueio criado pelo AjaModular.

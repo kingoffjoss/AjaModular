@@ -1,1 +1,1 @@
-javascript:(()=>{const s=document.createElement('script');s.src='https://kingoffjoss.github.io/AjaModular/Loader.js?v=1.1.4';s.onerror=()=>alert('Não foi possível carregar AjaModular. Verifique a publicação e a rede.');document.documentElement.appendChild(s)})();
+javascript:(()=>{const s=document.createElement('script');s.src='https://kingoffjoss.github.io/AjaModular/Loader.js?v=1.1.5';s.onerror=()=>alert('Não foi possível carregar AjaModular. Verifique a publicação e a rede.');document.documentElement.appendChild(s)})();
