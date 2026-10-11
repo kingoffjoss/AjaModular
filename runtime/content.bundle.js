@@ -1,8 +1,64 @@
 (function(){ if(window.__AJA_MODULAR_RUNTIME__) return; window.__AJA_MODULAR_RUNTIME__=true;
+(function(){
+'use strict';
+const prefix='ajamodular:', reserved=prefix+'maintenance:', recovery=reserved+'recovery';
+const arrays=new Set(['quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
+const objects=new Set(['hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
+const extensionKeys=['car_data_v8_master','car_theme_v8','agentName','IA_THEME','geminiHistory','ajamodular_enabled','SHOW_AGENT_TOOLS','MOD_CRONOMETROS','MOD_PAUSAS','MOD_PROTOCOLOS','MOD_RESPOSTAS','MOD_BAR','MOD_IA','MOD_CAR','MOD_ID','MOD_MENU','MOD_CALC'];
+const secret=k=>/api.?key|geminikey|token|password|senha|credential/i.test(k);
+function valid(key,value){
+ const name=key.startsWith(prefix)?key.slice(prefix.length):key;
+ if(typeof value!=='string') throw Error('Valor inválido: '+name);
+ let parsed;
+ if(arrays.has(name)||objects.has(name)){parsed=JSON.parse(value);if(arrays.has(name)&&!Array.isArray(parsed))throw Error('Lista inválida: '+name);if(objects.has(name)&&(!parsed||Array.isArray(parsed)||typeof parsed!=='object'))throw Error('Configuração inválida: '+name);}
+ if(name==='pr_protocolos'||name==='qr_quickReplies') {if(parsed.some(x=>!x||typeof x.title!=='string'||typeof x.text!=='string'))throw Error('Catálogo inválido: '+name);}
+ if(name==='gerenciadorPausas_horarios'&&parsed.some(x=>!x||!/^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora)||typeof x.status!=='string'))throw Error('Horário inválido');
+ if(name==='dailyAnalytics_v2_data'&&parsed.conversations!==undefined&&!Array.isArray(parsed.conversations))throw Error('Histórico de conversas inválido');
+ if(name==='encerramentoCounters_v4_balao'&&parsed.balao!==undefined&&!Array.isArray(parsed.balao))throw Error('Contadores inválidos');
+ if(name==='car_data_v8_master'&&Object.values(parsed).some(x=>typeof x!=='string'))throw Error('Comando CAR inválido');
+ return value;
+}
+function adapter(storage){return {getItem(key){const value=storage.getItem(prefix+key);if(value===null)return null;try{return valid(key,value);}catch(error){
+ // Never overwrite an earlier recovery entry or discard data when the recovery write fails.
+ const backup=reserved+'invalid:'+key;
+ try {if(storage.getItem(backup)===null)storage.setItem(backup,value);storage.removeItem(prefix+key);}catch(e){console.error('[AjaModular] Não foi possível preservar dados',e);}
+ console.warn('[AjaModular] Dado preservado para recuperação: '+key,error);return null;
+}},setItem:(key,value)=>storage.setItem(prefix+key,String(value)),removeItem:key=>storage.removeItem(prefix+key)};}
+function collect(storage){const data={};for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith(prefix)&&!key.startsWith(reserved)&&!secret(key))data[key]=storage.getItem(key);}return data;}
+function chromeRead(){return new Promise((resolve,reject)=>{if(!window.chrome?.storage?.local)return resolve({});chrome.storage.local.get(extensionKeys,data=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve(JSON.parse(JSON.stringify(data))));});}
+function chromeWrite(data){return new Promise((resolve,reject)=>{if(!Object.keys(data).length)return resolve();if(!window.chrome?.storage?.local)return reject(Error('Este backup contém dados da extensão. Importe pela extensão.'));chrome.storage.local.set(data,()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve());});}
+async function snapshot(){return {format:'AjaModular-backup',schema:1,createdAt:new Date().toISOString(),local:collect(localStorage),session:collect(sessionStorage),extension:await chromeRead()};}
+function validate(data){
+ if(!data||data.format!=='AjaModular-backup'||data.schema!==1)throw Error('Backup AjaModular incompatível');
+ for(const section of ['local','session','extension'])if(!data[section]||Array.isArray(data[section])||typeof data[section]!=='object')throw Error('Seção inválida: '+section);
+ for(const section of ['local','session'])for(const [key,value]of Object.entries(data[section])){if(!key.startsWith(prefix)||key.startsWith(reserved)||secret(key))throw Error('Chave não permitida: '+key);valid(key,value);}
+ for(const [key,value]of Object.entries(data.extension)){if(!extensionKeys.includes(key))throw Error('Configuração da extensão inválida');if(key==='car_data_v8_master')valid(key,JSON.stringify(value));else if(key==='geminiHistory'&&!Array.isArray(value))throw Error('Histórico IA inválido');else if((key.startsWith('MOD_')||['ajamodular_enabled','SHOW_AGENT_TOOLS'].includes(key))&&typeof value!=='boolean')throw Error('Preferência inválida');else if(key==='agentName'&&typeof value!=='string')throw Error('Nome inválido');else if(['car_theme_v8','IA_THEME'].includes(key)&&!['dark','light'].includes(value))throw Error('Tema CAR inválido');}
+ return data;
+}
+async function apply(data,replace=false){validate(data);const old=await snapshot();const undo=[];
+ // Preserve the complete prior state before changing any live settings.
+ localStorage.setItem(recovery,JSON.stringify(old));
+ try{if(replace)for(const [name,storage]of [['local',localStorage],['session',sessionStorage]])for(const key of Object.keys(collect(storage)))if(!Object.hasOwn(data[name],key)){undo.push([storage,key,storage.getItem(key)]);storage.removeItem(key);}
+ for(const [name,storage]of [['local',localStorage],['session',sessionStorage]])for(const [key,value]of Object.entries(data[name])){undo.push([storage,key,storage.getItem(key)]);storage.setItem(key,value);}await chromeWrite(data.extension);if(replace&&window.chrome?.storage?.local){const missing=Object.keys(old.extension).filter(k=>!Object.hasOwn(data.extension,k));if(missing.length)await new Promise((resolve,reject)=>chrome.storage.local.remove(missing,()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve()));}}
+ catch(error){for(const [storage,key,value]of undo.reverse())value===null?storage.removeItem(key):storage.setItem(key,value);throw error;}
+}
+async function restore(){const value=localStorage.getItem(recovery);if(!value)throw Error('Nenhum backup anterior disponível');await apply(JSON.parse(value),true);}
+window.AjaModularData=Object.freeze({adapter,valid,snapshot,validate,apply,restore});
+})();
+
 (function () {
 'use strict';
 const definitions = new Map(), instances = new Map(), failures = new Map();
 let context;
+const styleRoots={menu:'#uni-menu-container,#qr-trigger-button,#pr-trigger-button,#bau-trigger-button,#gemini-float-btn,#monitor-trigger-btn,#central-trigger-btn,#car-float-btn',bar:'#bau-rede,#bau-trigger-button',car:'#car-panel,#car-float-btn',ia:'#gemini-wrapper',monitor:'.queue-monitor-container,#monitor-trigger-btn',central:'#central-dashboard,.central-modal-overlay,#central-trigger-btn',protocolos:'.pr-script-base-popup,#pr-trigger-button,#pr-script-notification-container',respostas:'.qr-script-popup,#qr-trigger-button,#qr-script-notification-container',pausas:'#pausa-script-container,#pausa-script-config-container,#pausa-script-confirm-dialog',corretor:'#spell-main-panel,#spell-badge,#spell-inline-popup,#spell-overlay-layer',ferramentas:'#purecloud-script-tools-panel'};
+function isolateStyles(id,previous){
+ const roots=styleRoots[id];if(!roots||!document.querySelectorAll)return;
+ for(const style of document.querySelectorAll('style'))if(!previous.has(style)&&style.dataset.ajaScoped!==id){
+  style.dataset.ajaOwner=id;
+  function scope(rules){for(const rule of rules||[]){if(rule.selectorText){const original=rule.selectorText;rule.selectorText=original===':root'?roots:':where('+roots+'):is('+original+'), :where('+roots+') :is('+original+')';}else if(rule.cssRules&&!(typeof CSSKeyframesRule!=='undefined'&&rule instanceof CSSKeyframesRule))scope(rule.cssRules);}}
+  try{scope(style.sheet?.cssRules);style.dataset.ajaScoped=id;}catch(error){console.warn('[AjaModular] Estilo não isolado: '+id,error);}
+ }
+}
 function register(id, dependencies, factory) {
     if (definitions.has(id)) throw new Error('Módulo duplicado: ' + id);
     if (!Array.isArray(dependencies) || typeof factory !== 'function') throw new TypeError('Contrato inválido: ' + id);
@@ -20,7 +76,9 @@ function start(shared) {
         active.add(id);
         try {
             definition.dependencies.forEach(load);
+            const previous = new Set(document.querySelectorAll?.('style') || []);
             const instance = definition.factory(context) || {};
+            isolateStyles(id,previous);
             instances.set(id, instance);
             return instance;
         } catch (error) { failures.set(id, error); throw error; }
@@ -31,6 +89,7 @@ function start(shared) {
         catch (error) { console.error('[AjaModular] Falha no módulo ' + id, error); }
     }
     document.documentElement.dataset.ajaModules = JSON.stringify(status());
+    if(failures.size)window.AjaModularNotice?.('Há módulos com falha. Abra Manutenção no menu para conferir.');
 }
 function get(id) {
     if (!instances.has(id)) throw new Error('Módulo indisponível: ' + id);
@@ -42,12 +101,19 @@ function open(id) {
         const instance = get(id);
         if (typeof instance.open !== 'function') throw new Error('Módulo sem ação de abertura: ' + id);
         return instance.open();
-    } catch (error) { console.error('[AjaModular] ' + id, error); }
+    } catch (error) { console.error('[AjaModular] ' + id, error); window.AjaModularNotice?.('Não foi possível abrir '+id+'. Consulte Manutenção no menu.'); }
+}
+function scopeStyle(id,style){if(!style||!document.querySelectorAll)return;delete style.dataset.ajaScoped;isolateStyles(id,new Set([...document.querySelectorAll('style')].filter(x=>x!==style)));}
+function retry() {
+    if (!context) throw new Error('A inicialização ainda não começou');
+    failures.clear();
+    start(context); // Healthy instances are retained, never initialized twice.
+    return status();
 }
 function status() {
     return Array.from(definitions.keys(), id => ({id, ready: instances.has(id), error: failures.get(id)?.message || null}));
 }
-window.AjaModular = Object.freeze({register, start, get, open, status});
+window.AjaModular = Object.freeze({register, start, get, open, status, retry, scopeStyle});
 })();
 
 (function () {
@@ -708,6 +774,7 @@ window.AjaModular.register("compatibility", [], function(ctx) {
             const style = document.createElement('style');
             style.textContent = css;
             (document.head || document.body).appendChild(style);
+            return style;
         };
 
         window.GM_setClipboard = function (text) {
@@ -765,7 +832,7 @@ window.AjaModular.register("compatibility", [], function(ctx) {
 
         window.unsafeWindow = window;
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo compatibility.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo compatibility.js:', e); throw e; }
 
 
 });
@@ -1722,7 +1789,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
             const styleSheet = document.createElement("style");
             styleSheet.id = "bau-rede-styles";
             styleSheet.innerText = styles;
-            document.head.appendChild(styleSheet);
+            document.head.appendChild(styleSheet); window.AjaModular.scopeStyle('bar',styleSheet);
             document.body.appendChild(bauElement);
 
             // --- 5. ATIVAR A LÓGICA V20.1 ---
@@ -1738,6 +1805,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
             // O closeBtn ainda precisa da sua própria função para fechar diretamente.
             closeBtn.onclick = function () {
                 bauElement.style.display = 'none';
+                const triggerBtn = document.getElementById('bau-trigger-button');
                 if (triggerBtn && getComputedStyle(triggerBtn).opacity !== '0') { // VERIFICACAO NOVA
                     triggerBtn.style.display = 'flex';
                 }
@@ -2236,7 +2304,7 @@ window.AjaModular.register("bar", ["compatibility"], function(ctx) {
         }
     })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo bar.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo bar.js:', e); throw e; }
 
 
 
@@ -2443,7 +2511,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo extrator.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo extrator.js:', e); throw e; }
 
 
 
@@ -2548,7 +2616,7 @@ window.AjaModular.register("espelho", ["compatibility"], function(ctx) {
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo espelho.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo espelho.js:', e); throw e; }
 
 
 
@@ -3327,12 +3395,12 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
             .pr-quick-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; margin-top: 8px; }
             .pr-quick-filters label { display: flex; align-items: center; gap: 6px; font-size: 0.85em; font-weight: 500; color: var(--pr-text-primary); cursor: pointer; }
         `;
-                    const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+                    const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('protocolos',style);
                 };
 
                 const initialize = async () => {
                     await loadData(); injectCss();
-                    setTimeout(() => { UI.createTriggerButton(); document.addEventListener('keydown', keyboardEventHandler); }, 2000);
+                    UI.createTriggerButton(); document.addEventListener('keydown', keyboardEventHandler);
                 };
 
                 if (window.self === window.top) {
@@ -3340,7 +3408,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                 }
             }
         })();
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo protocolos.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo protocolos.js:', e); throw e; }
 
 
 
@@ -3845,7 +3913,7 @@ let publicApi;
              .qr-script-popup .settings-group-inline { display: flex; align-items: center; gap: 8px; margin-left: auto; } .qr-script-popup .settings-group-inline.appearance-toggle { margin-left: 0; margin-bottom: 10px; border-bottom: 1px solid var(--cor-borda); padding-bottom: 10px;} .qr-script-popup .settings-group-inline label { margin-bottom: 0; font-size: 0.8em; color: var(--cor-texto-primario); font-weight: 500; letter-spacing: 0.2px; } .qr-script-popup .switch { position: relative; display: inline-block; width: 36px; height: 18px; } .qr-script-popup .switch input { opacity: 0; width: 0; height: 0; } .qr-script-popup .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--cor-fundo-terciario); border: 1px solid var(--cor-borda); transition: .4s; } .qr-script-popup .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: white; transition: .4s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); } body.rr-escurinho .qr-script-popup .slider:before { background-color: var(--cor-texto-desabilitado); } .qr-script-popup input:checked + .slider { background-color: var(--cor-acento-primario); border-color: var(--cor-acento-primario); box-shadow: 0 0 3px var(--cor-acento-primario)88; } body.rr-escurinho .qr-script-popup input:checked + .slider:before { /*bg-removido*/; } .qr-script-popup input:focus + .slider { box-shadow: 0 0 1px var(--cor-acento-primario); } .qr-script-popup input:checked + .slider:before { transform: translateX(18px); } .qr-script-popup .slider.round { border-radius: 18px; } .qr-script-popup .slider.round:before { border-radius: 50%; }
              .qr-script-popup ::-webkit-scrollbar { width: 6px; height: 6px; } .qr-script-popup ::-webkit-scrollbar-track { background: var(--cor-fundo-secundario); } .qr-script-popup ::-webkit-scrollbar-thumb { background: var(--cor-borda); border-radius: 3px; border: 1px solid var(--cor-fundo-secundario); } .qr-script-popup ::-webkit-scrollbar-thumb:hover { background: var(--cor-texto-desabilitado); }
         `;
-                if (typeof GM_addStyle !== "undefined") { GM_addStyle(css); } else { let style = document.getElementById('qr-script-injected-style'); if (!style) { style = document.createElement('style'); style.id = 'qr-script-injected-style'; document.head.appendChild(style); } style.textContent = css; }
+                if (typeof GM_addStyle !== "undefined") { const style=GM_addStyle(css); window.AjaModular.scopeStyle('respostas',style); } else { let style = document.getElementById('qr-script-injected-style'); if (!style) { style = document.createElement('style'); style.id = 'qr-script-injected-style'; document.head.appendChild(style); } style.textContent = css; window.AjaModular.scopeStyle('respostas',style); }
             };
 
             // --- Inicialização (MODIFICADA V2.4.9) ---
@@ -3879,7 +3947,7 @@ let publicApi;
 
         })(); // --- FIM DO ISOLAMENTO (V5) ---
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo respostas.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo respostas.js:', e); throw e; }
 
 
 
@@ -5136,7 +5204,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
         })(); // Fim do IIFE
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo pausas.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo pausas.js:', e); throw e; }
 
 
 });
@@ -5231,8 +5299,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 
                 .car-body { flex: 1; display: flex; flex-direction: column; padding: 15px; gap: 10px; overflow: hidden; background: var(--bg-panel); border-radius: 0 0 15px 15px; }
                 
-                .info-box { display: none; background: var(--box-bg); border: 1px solid var(--box-border); color: var(--box-text); padding: 12px; border-radius: 8px; font-size: 12px; margin-bottom: 5px; animation: fadeIn 0.3s; flex-shrink: 0; }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+                .info-box { display: none; background: var(--box-bg); border: 1px solid var(--box-border); color: var(--box-text); padding: 12px; border-radius: 8px; font-size: 12px; margin-bottom: 5px; animation: carFadeIn 0.3s; flex-shrink: 0; }
+                @keyframes carFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         
                 #car-panel, #car-panel * { box-sizing: border-box; }
                 #car-panel { max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
@@ -5288,7 +5356,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
 
                 const styleSheet = document.createElement("style");
                 styleSheet.innerText = styles;
-                document.head.appendChild(styleSheet);
+                document.head.appendChild(styleSheet); window.AjaModular.scopeStyle('car',styleSheet);
 
                 const container = document.createElement('div');
                 container.id = 'car-panel';
@@ -5545,7 +5613,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
             console.log("[CAR v3.1] Módulo Híbrido Carregado.");
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo car.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo car.js:', e); throw e; }
 
 
 
@@ -5738,7 +5806,7 @@ window.AjaModular.register("ia", ["compatibility"], function(ctx) {
             .chat-ai { align-self: flex-start; background-color: var(--ia-card); border: 1px solid var(--ia-border); }
         `;
 
-                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('ia',style);
 
                 // --- 3. HTML (Com Blindagem Anti-Autofill) ---
                 const widgetHTML = `
@@ -6458,7 +6526,7 @@ Telecine	Telecine filmes erros APP app.
             }
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ia.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ia.js:', e); throw e; }
 
 
 
@@ -6597,9 +6665,11 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
                 return { isOpen: false, text: `FECHADO (Abre ${startStr})`, color: "#ef4444", badge: "Fechado", timeStr: `${startStr} - ${endStr}` };
             }
 
+            let monitorIntervals=[];
+            function closeMonitor(){monitorIntervals.forEach(clearInterval);monitorIntervals=[];document.querySelector('.queue-monitor-container')?.remove();}
             function createInterface() {
                 const existing = document.querySelector('.queue-monitor-container');
-                if (existing) { existing.remove(); return; }
+                if (existing) { closeMonitor(); return; }
 
                 const container = document.createElement("div");
                 container.className = 'queue-monitor-container';
@@ -6627,7 +6697,7 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
                 document.body.appendChild(container);
                 makeDraggable(container, container.querySelector('.monitor-header'));
 
-                container.querySelector('.close-btn').onclick = () => container.remove();
+                container.querySelector('.close-btn').onclick = closeMonitor;
                 const tabs = container.querySelectorAll('.tab-btn');
                 tabs.forEach(tab => {
                     tab.onclick = () => {
@@ -6640,7 +6710,7 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
                 document.getElementById('monitor-search').addEventListener('input', renderQueues);
 
                 const update = () => { if (!document.body.contains(container)) return; updateTime(); renderQueues(); };
-                update(); setInterval(update, 10000); setInterval(updateTime, 1000);
+                update(); monitorIntervals=[setInterval(update,10000),setInterval(updateTime,1000)];
             }
 
             function updateTime() {
@@ -6776,14 +6846,14 @@ window.AjaModular.register("monitor", ["compatibility"], function(ctx) {
             .q-body { margin-bottom: 10px; } .q-title { font-weight: 600; color: #f1f5f9; font-size: 14px; margin-bottom: 3px; } .q-desc { font-size: 12px; color: #64748b; line-height: 1.3; font-style: italic; }
             .q-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding-top: 8px; border-top: 1px solid #334155; } .status-pill { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; } .q-time { color: #cbd5e1; font-family: 'JetBrains Mono', monospace; }
         `;
-                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+                const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('monitor',style);
             }
 
             injectCss();
             createTriggerButton();
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo monitor.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo monitor.js:', e); throw e; }
 
 
 
@@ -7228,11 +7298,11 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                 window.log("[CORRETOR PRO] Iniciando tracker do corretor...");
                 spellCheckerModule.init();
                 window.AjaModularSetupSpell?.();
-            }, 2000);
+            }, 0);
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo corretor.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo corretor.js:', e); throw e; }
 
 
 
@@ -7453,7 +7523,7 @@ window.AjaModular.get('lembretes').mount(panel, notify);
             };
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ferramentas.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo ferramentas.js:', e); throw e; }
 
 
 
@@ -7842,7 +7912,7 @@ window.AjaModular.register("central", ["compatibility"], function(ctx) {
             .wiki-body { margin-top: 10px; } .wiki-body ul, .wiki-body ol { margin-left: 20px; margin-top: 5px; padding-left: 0; }
 
         `;
-                document.head.appendChild(style);
+                document.head.appendChild(style); window.AjaModular.scopeStyle('central',style);
             }
 
             // Injeção de CSS
@@ -7861,7 +7931,7 @@ window.AjaModular.register("central", ["compatibility"], function(ctx) {
             createTriggerButton();
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo central.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo central.js:', e); throw e; }
 
 
 
@@ -7938,6 +8008,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
         .uni-fab-btn:hover { transform: scale(1.15); z-index: 2; }
         
         /* Cores dos Botões */
+        #uni-btn-maintenance, #uni-btn-off { background:#334155; }
         #uni-btn-id { background: linear-gradient(135deg, #667eea, #764ba2); }
         #uni-btn-bar { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
         #uni-btn-pr { background: linear-gradient(135deg, #d4fc79, #96e6a1); color: #333; }
@@ -7963,7 +8034,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
         /* Calculadora usa Shadow DOM - sem CSS externo necessário */
     `;
 
-            const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+            const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); window.AjaModular.scopeStyle('menu',style);
 
             // --- LIMPEZA DE LIXO E CONFLITOS ---
             if (document.getElementById('uni-menu-container')) document.getElementById('uni-menu-container').remove();
@@ -7975,6 +8046,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             const div = document.createElement('div'); div.id = 'uni-menu-container';
             div.innerHTML = `
         <div class="uni-fab-actions">
+            <button class="uni-fab-btn" id="uni-btn-maintenance" data-label="Manutenção" aria-label="Manutenção">⚙️</button>
             
             <button class="uni-fab-btn" id="uni-btn-calc" data-label="Calculadora"><span style="font-size:24px;">🧮</span></button>
             <button class="uni-fab-btn" id="uni-btn-off" data-label="Simulação de desligar" aria-label="Simulação de desligar"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10"></path><path d="M5.6 5.6a9 9 0 1 0 12.8 0"></path></svg></button>
@@ -8034,7 +8106,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             try { const savedPos = ctx.ajaStorage.getItem('uniMenuPos'); if (savedPos) { const p = JSON.parse(savedPos); container.style.left = p.left; container.style.top = p.top; container.style.bottom = 'auto'; container.style.right = 'auto'; } } catch (e) { }
 
             // Navigation uses module contracts rather than private trigger identifiers.
-const routes = { 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'ferramentas', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
+const routes = { 'uni-btn-maintenance':'manutencao', 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'ferramentas', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
 for (const [buttonId, moduleId] of Object.entries(routes)) {
     document.getElementById(buttonId).onclick = () => window.AjaModular.open(moduleId);
 }
@@ -8042,7 +8114,7 @@ for (const [buttonId, moduleId] of Object.entries(routes)) {
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo menu.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo menu.js:', e); throw e; }
 
 
 });
@@ -8117,7 +8189,7 @@ window.AjaModular.register("gerente", ["compatibility"], function(ctx) {
 
         })();
 
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo gerente.js:', e); }
+    } catch (e) { console.error('[BUILDER] Erro fatal no módulo gerente.js:', e); throw e; }
 
 
 });
@@ -8517,9 +8589,31 @@ window.AjaModular.register('simulacao-desligar', [], function () {
     return {open};
 });
 
+window.AjaModular.register('manutencao', [], function(){
+ let panel,busy=false;
+ function download(name,data){const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ function message(text){panel.querySelector('[role="status"]').textContent=text;}
+ async function run(action){if(busy)return;busy=true;const buttons=[...panel.querySelectorAll('button')];buttons.forEach(x=>x.disabled=true);try{await action();}catch(error){message(error.message);}finally{busy=false;buttons.forEach(x=>x.disabled=false);}}
+ function render(){const list=panel.querySelector('#aja-module-health');list.replaceChildren();for(const item of window.AjaModular.status()){const row=document.createElement('li');row.textContent=item.id+': '+(item.ready?'pronto':item.error||'aguardando');list.appendChild(row);}}
+ function open(){
+ if(panel?.isConnected){panel.showModal();render();return;}
+ panel=document.createElement('dialog');panel.id='aja-maintenance';panel.innerHTML=`<header><strong>Manutenção das ferramentas</strong><button data-close aria-label="Fechar">×</button></header><main><h3>Backup e recuperação</h3><p>O backup reúne configurações, catálogos, favoritos, horários e anotações deste navegador. Chaves de API não são incluídas.</p><button id="aja-export">Exportar backup</button> <button id="aja-import">Importar backup</button> <button id="aja-recover">Recuperar antes da última importação</button><input type="file" accept=".json,application/json" hidden><p>Após importar ou recuperar, recarregue a página para aplicar. A importação mantém os dados que não estão no arquivo.</p><p role="status" aria-live="polite"></p><h3>Módulos</h3><button id="aja-retry">Tentar carregar módulos com falha</button><ul id="aja-module-health"></ul><button id="aja-diagnostic">Exportar diagnóstico</button><h3>Dados preservados</h3><p>Dados inválidos são preservados para revisão, sem impedir o carregamento das ferramentas.</p><button id="aja-invalid">Exportar dados preservados</button></main>`;
+ document.body.appendChild(panel);panel.querySelector('[data-close]').onclick=()=>panel.close();
+ panel.querySelector('#aja-export').onclick=()=>run(async()=>{download('AjaModular-backup.json',await window.AjaModularData.snapshot());message('Backup exportado.');});
+ const input=panel.querySelector('input');panel.querySelector('#aja-import').onclick=()=>input.click();
+ input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
+ panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
+ panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.2.0',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
+ panel.showModal();render();
+ }
+ return {open};
+});
+
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.1.7)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.2.0)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8535,13 +8629,13 @@ window.AjaModular.register('simulacao-desligar', [], function () {
 
 (function () {
     'use strict';
-const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
-const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
+const ajaStorage = window.AjaModularData.adapter(window.localStorage);
+const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.1.7';
+    const SCRIPT_VERSION = 'AjaModular_1.2.0';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -9110,6 +9204,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     function updateTimerDisplay(timerData) {
         if (!timerData.div?.isConnected || !timerData.numDiv?.isConnected || !timerData.bubblesContainer?.isConnected) { return; }
         let currentElapsed; if (timerData.isPaused) { currentElapsed = timerData.pausedAt - timerData.startTime; } else { currentElapsed = Date.now() - timerData.startTime; }
+        currentElapsed = Math.max(0, currentElapsed);
         const secs = Math.floor(currentElapsed / 1000); timerData.div.textContent = `${formatTime(Math.floor(secs / 60))}:${formatTime(secs % 60)}`;
         timerData.div.classList.remove('paused-alert', 'inactive-client-alert', 'normal-timer', 'inactive-operator-alert'); timerData.div.style.removeProperty('animation');
 
@@ -9147,8 +9242,11 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
     const timerManager = {
         globalIntervalId: null,
+        refreshAll() { conversationTimers.forEach(updateTimerDisplay); },
         startGlobalTimer() {
             if (!this.globalIntervalId) {
+                document.addEventListener('visibilitychange', () => { if (!document.hidden) this.refreshAll(); });
+                window.addEventListener('pageshow', () => this.refreshAll());
                 this.globalIntervalId = setInterval(() => {
                     conversationTimers.forEach((tData) => {
                         updateTimerDisplay(tData);
@@ -9643,8 +9741,8 @@ if (document.readyState === 'loading') { document.addEventListener('DOMContentLo
     } // Fim startScript()
 })();
 
-const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
-const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
+const ajaStorage = window.AjaModularData.adapter(window.localStorage);
+const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 // --- GESTOR DE JANELAS (Z-INDEX GLOBAL) ---
 (function () {
     let baseZIndex = 10000;
@@ -11107,8 +11205,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 })();
 (function aplicarTemaBrisanetGlobal() {
     'use strict';
-const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
-const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.sessionStorage.setItem('ajamodular:' + k,v), removeItem: k => window.sessionStorage.removeItem('ajamodular:' + k) };
+const ajaStorage = window.AjaModularData.adapter(window.localStorage);
+const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
 
     const STYLE_ID = 'aja-brisanet-theme-patch';
@@ -11838,6 +11936,41 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
         #uni-menu-container .uni-fab-main {flex-shrink:0}
     `;document.head.appendChild(style);
     for(const button of document.querySelectorAll('#uni-menu-container .uni-fab-btn')) button.setAttribute('aria-label',button.dataset.label || button.id);
+})();
+
+(function(){
+'use strict';
+const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','#purecloud-script-mini-dashboard','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal'];
+const selector=roots.join(',');let sequence=2147483000;const ranks=new WeakMap();let shown=new Set();
+const closeSelector='[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
+function visible(node){return node.getClientRects().length&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&(!node.matches('dialog')||node.open)&&(!node.matches('#calc-modal')||node.classList.contains('calc-visible'));}
+function close(node){if(node.matches('#aja-maintenance,#ajamodular-settings')){node.close();return true;}if(node.id==='calc-modal'){node.shadowRoot?.getElementById('close-btn')?.click();return true;}const button=node.querySelector(closeSelector);if(button){button.click();return true;}return false;}
+function constrain(node){if(!visible(node)||node.matches('dialog,.central-modal'))return;const rect=node.getBoundingClientRect();if(rect.left<0||rect.top<0||rect.right>innerWidth||rect.bottom>innerHeight){node.style.left=Math.max(0,Math.min(rect.left,innerWidth-rect.width-8))+'px';node.style.top=Math.max(0,Math.min(rect.top,innerHeight-rect.height-8))+'px';node.style.right='auto';node.style.bottom='auto';}}
+function refresh(){const current=new Set();document.querySelectorAll(selector).forEach(node=>{if(visible(node)){current.add(node);if(!shown.has(node))ranks.set(node,++sequence);constrain(node);}});shown=current;}
+document.addEventListener('pointerdown',event=>{const node=event.target.closest?.(selector);if(node){ranks.set(node,++sequence);if(!node.matches('dialog'))node.style.setProperty('z-index',String(sequence),'important');}},true);
+document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;refresh();const nodes=[...document.querySelectorAll(selector)].filter(visible);const modal=nodes.findLast(x=>x.matches('dialog[open]'));const top=modal||nodes.sort((a,b)=>(ranks.get(a)||0)-(ranks.get(b)||0)).at(-1);if(top&&close(top)){event.preventDefault();event.stopImmediatePropagation();}},true);
+window.addEventListener('resize',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+// Observe insertion/opening only. Text updates from clocks do not trigger window creation or toggling.
+let pending=false;new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'?r.target.matches(selector):[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches(selector)||n.querySelector(selector))))&&!pending){pending=true;requestAnimationFrame(()=>{pending=false;refresh();});}}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','style']});
+const style=document.createElement('style');style.textContent=`
+:is(${selector}) {box-sizing:border-box!important;min-width:0!important;min-height:0!important;max-width:calc(100vw - 16px)!important;max-height:calc(100vh - 16px)!important;isolation:isolate}
+:is(${selector}) * {box-sizing:border-box}
+:is(${selector}) :is(input,textarea,select) {min-width:0;max-width:100%}
+:is(${selector}) textarea {resize:vertical}
+#pausa-script-conteudo {min-width:0!important;max-width:100%}
+#aja-maintenance {width:620px;padding:0;border:1px solid #2873a5;border-radius:12px;background:#102a43;color:#fff;font:14px system-ui;}
+#aja-maintenance:not([open]) {display:none!important}
+#aja-maintenance::backdrop {background:#0008}
+#aja-maintenance header {display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#0057b8;color:#fff}
+#aja-maintenance main {padding:18px;overflow:auto;max-height:calc(100vh - 110px)}
+#aja-maintenance button {font:inherit;background:#0057b8;color:#fff;border:1px solid #57a5e0;border-radius:6px;padding:8px 12px;cursor:pointer;margin:3px 0}
+#aja-maintenance h3,#aja-maintenance strong,#aja-maintenance p {color:inherit}
+#aja-maintenance [role=status] {color:#8ee9a5;white-space:pre-wrap}
+#aja-maintenance input[hidden] {display:none!important}
+#aja-maintenance button:focus-visible {outline:3px solid #ffb347}
+`;document.head.appendChild(style);
+window.AjaModularNotice=text=>{const note=document.createElement('div');note.setAttribute('role','alert');note.textContent=text;Object.assign(note.style,{position:'fixed',bottom:'20px',left:'20px',zIndex:'2147483647',background:'#102a43',color:'#fff',padding:'16px',borderRadius:'8px',maxWidth:'360px'});document.body.appendChild(note);setTimeout(()=>note.remove(),7000);};
+window.AjaModularWindows=Object.freeze({close,constrain});
 })();
 
 })();
