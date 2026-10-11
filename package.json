@@ -1,1 +1,1 @@
-{"name":"aja-modular","version":"1.3.0","private":true,"scripts":{"build":"node tools/build.cjs","test":"node tools/test.cjs"}}
+{"name":"aja-modular","version":"1.3.1","private":true,"scripts":{"build":"node tools/build.cjs","test":"node tools/test.cjs"}}
