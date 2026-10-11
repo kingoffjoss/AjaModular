@@ -81,3 +81,7 @@ Configurações do corretor fecham pelo X e por Escape. Ferramentas do Agente us
 ## Versão 1.1.5
 
 Módulo mensagens-termino: botão X ao lado do botão oficial Mensagens de término, respeitando seu estado desabilitado. Removidos o escudo e o bloqueio criado pelo AjaModular.
+
+## Versão 1.1.6
+
+Removido o módulo do botão X. AjaModular não acrescenta botão de encerramento nem escudo de bloqueio à barra.

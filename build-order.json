@@ -326,15 +326,6 @@
       "file": "src/tools/relogio.js",
       "after": [],
       "shared": []
-    },
-    {
-      "id": "mensagens-termino",
-      "file": "src/tools/mensagens-termino.js",
-      "after": [],
-      "shared": [
-        "CONFIG",
-        "findEl"
-      ]
     }
   ]
 }
