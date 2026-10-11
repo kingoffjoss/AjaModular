@@ -37,6 +37,7 @@
     "Isolated syntax: gerente",
     "Isolated syntax: calculadora",
     "Isolated syntax: relogio",
+    "Isolated syntax: simulacao-desligar",
     "Manifest references",
     "Single checker and settings owner",
     "Module dependency graph, contracts and complete tool coverage",

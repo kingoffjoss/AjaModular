@@ -85,3 +85,7 @@ Módulo mensagens-termino: botão X ao lado do botão oficial Mensagens de térm
 ## Versão 1.1.6
 
 Removido o módulo do botão X. AjaModular não acrescenta botão de encerramento nem escudo de bloqueio à barra.
+
+## Versão 1.1.7
+
+Botão de simulação de desligar no menu, em módulo separado. Exibe apenas uma mensagem; não encerra conversas e não intercepta requisições.

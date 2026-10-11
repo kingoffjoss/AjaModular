@@ -326,6 +326,12 @@
       "file": "src/tools/relogio.js",
       "after": [],
       "shared": []
+    },
+    {
+      "id": "simulacao-desligar",
+      "file": "src/tools/simulacao-desligar.js",
+      "after": [],
+      "shared": []
     }
   ]
 }
