@@ -73,3 +73,7 @@ Na versão 1.1.2, os botões de tema do Gerenciador e de Config & Histórico alt
 ## Versão 1.1.3
 
 CAR usa campo de mensagem com expansão vertical. Configurações do corretor têm layout próprio e tema claro/escuro. Protocolos e Respostas incluem os catálogos dentro do código gerado, sem buscar dados de links. Fonte dos catálogos: kingoffjoss/Meus-Scripts. Preferências e listas personalizadas existentes têm prioridade. Gerenciar Protocolos oferece restaurar padrão, importar e exportar JSON.
+
+## Versão 1.1.4
+
+Configurações do corretor fecham pelo X e por Escape. Ferramentas do Agente usam abertura idempotente: atualizações dos cronômetros não alternam a visibilidade. Fechar sincroniza a preferência e preserva a janela para reabrir com a mesma aba e anotações.

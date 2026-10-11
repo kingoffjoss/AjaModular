@@ -1,12 +1,14 @@
 {
-  "version": "1.1.3",
+  "version": "1.1.4",
   "passed": true,
   "checks": [
     "CAR textarea resizes vertically; panel clientWidth equals scrollWidth",
     "328 embedded protocols render and populate settings",
     "423 embedded replies populate settings; appearance tab opens",
     "Checker settings fit dialog and both themes work",
-    "No errors recorded in isolated browser fixture"
+    "No errors recorded in isolated browser fixture",
+    "Checker settings removed after X and Escape; reopens correctly",
+    "Agent tools remain visible on repeated open and close/reopen correctly"
   ],
   "liveGenesysTest": false
 }

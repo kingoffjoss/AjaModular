@@ -60,7 +60,8 @@
     "Initialization guards unsupported notifications and shortcut handles Shift+1",
     "Manager theme button reaches click handler and configuration theme toggles and persists both ways",
     "protocolos defaults load without network and preserve saved custom items and favorites",
-    "respostas defaults load without network and preserve saved custom items and favorites"
+    "respostas defaults load without network and preserve saved custom items and favorites",
+    "Mini dashboard opens tools; repeated timer refresh preserves visibility, notes and tab; explicit close stays closed"
   ],
   "sourceCommit": "e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b",
   "liveGenesysTest": false,

@@ -250,7 +250,9 @@
       "lembretes"
     ],
     "shared": [
-      "ajaStorage"
+      "CONFIG",
+      "ajaStorage",
+      "saveData"
     ]
   },
   {
