@@ -199,18 +199,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
 
                 // --- DADOS ---
                 const loadData = async () => {
-                    let protocolsLoaded = false;
-                    try {
-                        const localProtocols = ctx.ajaStorage.getItem('pr_protocolos');
-                        if (localProtocols) {
-                            const parsed = JSON.parse(localProtocols);
-                            if (Array.isArray(parsed) && parsed.length > 0) { CONFIG.PROTOCOLOS = parsed; protocolsLoaded = true; }
-                        }
-                    } catch (e) { ctx.ajaStorage.removeItem('pr_protocolos'); }
-
-                    if (!protocolsLoaded) {
-                        CONFIG.PROTOCOLOS = JSON.parse(JSON.stringify(initialProtocolos));
-                    }
+                    CONFIG.PROTOCOLOS = window.AjaModularCatalogStore.load(ctx.ajaStorage,'pr_protocolos',initialProtocolos,'Protocolos');
 
                     try {
                         CONFIG.LAST_COPIED_PROTOCOLO = ctx.ajaStorage.getItem('pr_lastCopiedProtocol') || '';
@@ -223,11 +212,11 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                         CONFIG.PR_DARK_MODE = false;
                     }
 
-                    CONFIG.PROTOCOLOS = CONFIG.PROTOCOLOS.map(r => ({ ...r, isFavorite: r.isFavorite || false, requiredData: r.requiredData || [] }));
+                    CONFIG.PROTOCOLOS = window.AjaModularCatalogStore.normalize(CONFIG.PROTOCOLOS);
                     CONFIG.PROTOCOLOS.forEach(reply => { requiredTagsMap[reply.title] = (Array.isArray(reply.requiredData) ? reply.requiredData : []).map(tag => typeof tag === 'string' ? tag.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase() : ''); });
                 };
 
-                const saveData = () => { try { ctx.ajaStorage.setItem('pr_protocolos', JSON.stringify(CONFIG.PROTOCOLOS)); ctx.ajaStorage.setItem('pr_lastCopiedProtocol', CONFIG.LAST_COPIED_PROTOCOLO); ctx.ajaStorage.setItem('pr_recentProtocols_v1', JSON.stringify(CONFIG.RECENT_PROTOCOLOS)); ctx.ajaStorage.setItem('pr_darkMode', CONFIG.PR_DARK_MODE); } catch (e) { } };
+                const saveData = () => { try { CONFIG.PROTOCOLOS=window.AjaModularCatalogStore.save(ctx.ajaStorage,'pr_protocolos',CONFIG.PROTOCOLOS,'Protocolos'); ctx.ajaStorage.setItem('pr_lastCopiedProtocol', CONFIG.LAST_COPIED_PROTOCOLO); ctx.ajaStorage.setItem('pr_recentProtocols_v1', JSON.stringify(CONFIG.RECENT_PROTOCOLOS)); ctx.ajaStorage.setItem('pr_darkMode', CONFIG.PR_DARK_MODE); } catch (e) { window.AjaModularReportError?.('Protocolos — configurações',e); } };
 
                 const logUsedProtocolo = (title, text) => {
                     const MAX = 5;
@@ -390,7 +379,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                         let currentCategory = 'all'; let currentSearchTerm = ''; let activeTagFilter = null; let activeQuickFilters = [];
 
                         const getReplyDataTags = (title) => { const r = CONFIG.PROTOCOLOS.find(p => p.title === title); return r?.requiredData || []; };
-                        const highlightText = (text, keywords) => { if (!keywords || keywords.length === 0 || !text) { return text; } const regexKeywords = keywords.map(kw => escapeRegExp(kw)).join('|'); const regex = new RegExp(`(${regexKeywords})`, 'gi'); return text.replace(regex, '<span class="pr-highlight">$1</span>'); };
+                        const highlightText = (text, keywords) => { const safe=window.AjaModularCatalogStore.escapeHTML(text); if (!keywords || keywords.length === 0 || !text) { return safe; } const regexKeywords = keywords.map(kw => escapeRegExp(window.AjaModularCatalogStore.escapeHTML(kw))).join('|'); const regex = new RegExp(`(${regexKeywords})`, 'gi'); return safe.replace(regex, '<span class="pr-highlight">$1</span>'); };
 
                         const populateReplies = (category, searchTerm, tagFilter) => {
                             const name = documentExtractor.getParticipantName(); const id = documentExtractor.getInteractionId(); resultsContainer.innerHTML = ''; let filteredReplies = []; let headerText = ''; const lowerSearch = searchTerm ? searchTerm.toLowerCase() : ''; const searchKeywords = lowerSearch ? lowerSearch.split(/\s+/).filter(k => k) : []; if (searchTerm) { const scored = []; CONFIG.PROTOCOLOS.forEach(reply => { const lt = reply.title.toLowerCase(); const ltxt = reply.text.toLowerCase(); let score = 0; if (lt.startsWith(lowerSearch)) { score += 1000; } else if (lt.includes(lowerSearch)) { score += 100; } let keywordsFoundCount = 0; searchKeywords.forEach(kw => { if (lt.includes(kw)) { score += 20; keywordsFoundCount++; } else if (ltxt.includes(kw)) { score += 5; keywordsFoundCount++; } }); if (searchKeywords.length > 1 && keywordsFoundCount === searchKeywords.length) { score += 50; } if (score > 0) scored.push({ ...reply, score }); }); scored.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)); filteredReplies = scored; headerText = `Busca por "${searchTerm}"`; } else if (tagFilter) { let base = CONFIG.PROTOCOLOS; if (category && !['all', 'favorites', 'recent', 'search'].includes(category)) { base = base.filter(r => r.title.startsWith(category + ' - ')); } filteredReplies = base.filter(r => getReplyDataTags(r.title).includes(tagFilter)); const catLabel = categoryDisplayMap[category] || category; headerText = `Filtro Tag: "${tagFilter.replace(/_/g, ' ')}"` + (category && !['all', 'search'].includes(category) ? ` em ${catLabel}` : ''); filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'favorites') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.isFavorite); headerText = categoryDisplayMap['favorites']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'recent') { const titles = CONFIG.RECENT_PROTOCOLOS.map(r => r.title); filteredReplies = CONFIG.PROTOCOLOS.filter(r => titles.includes(r.title)).sort((a, b) => titles.indexOf(a.title) - titles.indexOf(b.title)); headerText = categoryDisplayMap['recent']; } else if (category && category !== 'all') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.title.startsWith(category + ' - ')); headerText = categoryDisplayMap[category] || `Categoria: ${category}`; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else { filteredReplies = [...CONFIG.PROTOCOLOS]; headerText = categoryDisplayMap['all']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } if (activeQuickFilters.length > 0) { headerText += ` (Filtros: ${activeQuickFilters.join(', ')})`; filteredReplies = filteredReplies.filter(reply => { const lowerTextAndTitle = (reply.title + ' ' + reply.text).toLowerCase(); return activeQuickFilters.every(filterKeyword => lowerTextAndTitle.includes(filterKeyword)); }); } if (filteredReplies.length === 0) { resultsContainer.innerHTML = `<p class="pr-no-results">Nenhum protocolo encontrado.</p>`; return; } resultsContainer.innerHTML = `<h4 class="pr-results-header">${headerText} (${filteredReplies.length})</h4>`;

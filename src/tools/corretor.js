@@ -145,12 +145,7 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                     window.spellCheckerModule = this; // Expoe para limpeza global
                     // Arraste pertence somente a ui/corretor-interaction.
 
-                    // Loop de Segurança (Mão de Ferro) - Verifica a cada 300ms se o campo sumiu
-                    setInterval(() => {
-                        if (this.ultimoCampo && !this.isVisible(this.ultimoCampo)) {
-                            this.ocultarTudo();
-                        }
-                    }, 300);
+                    // O observador de campos abaixo também detecta quando o editor desaparece.
                 },
                 rastrearCampos() {
                     document.addEventListener('focusin', (e) => {
