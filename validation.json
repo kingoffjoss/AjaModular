@@ -74,6 +74,7 @@
     "Presence clicks slotted labels and records only platform-confirmed changes; missing, disabled and unconfirmed targets fail safely",
     "Scheduled pauses default to confirmation, support persisted automatic mode and switching back, retain logout confirmation and handle storage failures",
     "Yoda action uses current visible Scripts link and refuses missing, unrelated and hidden links",
+    "Voice punctuation preserves technical data, handles accented spoken punctuation and conservative commas, and distinguishes AI from offline/basic fallback",
     "Loader upgrades old instances, discovers late frames, survives inaccessible siblings, reloads replaced documents and cleans up; discovers late/replaced messaging frames in nested open shadow roots",
     "Clock status, duration, invalid date and backward time handling",
     "Saved/off-screen positions and windows larger than viewport",
