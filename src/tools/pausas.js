@@ -75,6 +75,23 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             const STORAGE_KEY_POS_MAIN = 'gerenciadorPausas_posMain';
             const STORAGE_KEY_POS_CONFIG = 'gerenciadorPausas_posConfig';
             const STORAGE_KEY_NOTIF_CONFIG = 'gerenciadorPausas_notifConfig';
+            const STORAGE_KEY_CONFIRMAR = 'gerenciadorPausas_pedirConfirmacao';
+            let pedirConfirmacao = true;
+            try { pedirConfirmacao = ctx.ajaStorage.getItem(STORAGE_KEY_CONFIRMAR) !== 'false'; } catch (_) {}
+            function atualizarModoConfirmacao() {
+                const botao = document.getElementById('btn-modo-confirmacao');
+                if (!botao) return;
+                botao.textContent = pedirConfirmacao ? '🛡️ Pedir confirmação' : '⚡ 100% automático';
+                botao.setAttribute('aria-pressed', String(!pedirConfirmacao));
+                botao.title = pedirConfirmacao ? 'Clique para executar pausas agendadas sem confirmação' : 'Clique para pedir confirmação antes das pausas';
+            }
+            function alternarModoConfirmacao() {
+                const novo = !pedirConfirmacao;
+                try { ctx.ajaStorage.setItem(STORAGE_KEY_CONFIRMAR, String(novo)); }
+                catch (_) { window.AjaModularNotice?.('Não foi possível salvar o modo das pausas.', 'error'); return; }
+                pedirConfirmacao = novo;
+                atualizarModoConfirmacao();
+            }
 
             const NOTIF_CONFIG_DEFAULT = { ativadas: true, somAtivado: false, antecedenciaSegundos: 15 };
             let configNotificacao = { ...NOTIF_CONFIG_DEFAULT };
@@ -283,6 +300,11 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             // ======================================================
 
             function exibirModalConfirmacao(statusNome, callbackFuncao) {
+                // Mode applies to scheduled pauses; an explicit logout keeps its confirmation.
+                if (!pedirConfirmacao && String(statusNome).toLowerCase() !== 'logoff') {
+                    if (callbackFuncao) callbackFuncao();
+                    return;
+                }
                 removerModalConfirmacao();
                 console.log(`[AÇÃO V49.2] Exibindo confirmação customizada para '${statusNome}'...`);
 
@@ -899,6 +921,8 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                     <button id="btn-pause-resume-agendamento" class="script-btn" style="display:none;flex-basis:35%;">Pausar ⏸️</button>
                 </div>
                 
+                <button id="btn-modo-confirmacao" class="script-btn" type="button" aria-pressed="false" style="width:100%;margin-bottom:6px;">🛡️ Pedir confirmação</button>
+                <p style="font-size:11px;line-height:1.4;margin:0 0 12px;">Modo dos horários agendados. Requer automação ligada. Logoff mantém confirmação.</p>
                 <div id="buttons-container" style="display:grid;grid-template-columns:repeat(2, 1fr);gap:10px;margin-bottom:10px;">
                     <button id="btn-disponivel" class="script-btn purecloud-script-button">🟢 Disponível</button>
                     <button id="btn-na-fila" class="script-btn purecloud-script-button">🎧 Na Fila</button>
@@ -919,6 +943,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             </div>
         `;
 
+                atualizarModoConfirmacao();
                 const header = c.querySelector('#pausa-script-header');
                 const icone = c.querySelector('#pausa-script-icone');
                 if (header) header.onmousedown = dragMouseDown;
@@ -945,6 +970,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                         case 'btn-feedback': iniciarFeedback(false); break;
                         case 'btn-particular': iniciarParticular(false); break;
                         case 'btn-saude': iniciarQuestoesSaude(false); break;
+                        case 'btn-modo-confirmacao': alternarModoConfirmacao(); break;
                         case 'btn-toggle-agendamento': toggleAgendamento(); break;
                         case 'btn-pause-resume-agendamento': togglePausaAutomacao(); break;
                         case 'btn-minimizar': toggleVisibilidade(); break;
