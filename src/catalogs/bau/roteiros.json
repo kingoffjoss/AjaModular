@@ -1,0 +1,156 @@
+[
+  {
+    "id": "sem-internet",
+    "title": "Sem internet",
+    "steps": [
+      {
+        "title": "1. Conferir endereço e interface",
+        "why": "Identifique a interface usada pelo atendimento.",
+        "inspect": "Sem IP válido ou interface desligada: investigue conexão física, Wi-Fi e DHCP.",
+        "commands": {
+          "win": "bau-win-001",
+          "linux": "bau-linux-001",
+          "mac": "bau-mac-003"
+        }
+      },
+      {
+        "title": "2. Conferir rota de saída",
+        "why": "Verifique se existe um caminho para fora da rede local.",
+        "inspect": "Confira gateway e interface; VPNs podem mudar a rota.",
+        "commands": {
+          "win": "bau-win-008",
+          "linux": "bau-linux-004",
+          "mac": "bau-mac-017"
+        }
+      },
+      {
+        "title": "3. Verificar DNS",
+        "why": "Consulte um domínio que deveria funcionar.",
+        "inspect": "Erro de DNS com IP e rota válidos indica investigar o resolvedor; ausência de A não prova indisponibilidade IPv6.",
+        "commands": {
+          "win": "bau-win-013",
+          "linux": "bau-linux-013",
+          "mac": "bau-mac-028"
+        }
+      },
+      {
+        "title": "4. Testar serviço de destino",
+        "why": "Verifique o destino usado no atendimento.",
+        "inspect": "Conexão TCP ou resposta HTTPS ajudam a separar conectividade de falha no aplicativo.",
+        "commands": {
+          "win": "bau-win-018",
+          "linux": "bau-linux-034",
+          "mac": "bau-mac-036"
+        }
+      }
+    ]
+  },
+  {
+    "id": "lentidao",
+    "title": "Lentidão",
+    "steps": [
+      {
+        "title": "1. Verificar consumo local",
+        "why": "Descarte saturação do computador antes de atribuir à rede.",
+        "inspect": "Compare processos e consumo; algumas consultas mostram médias acumuladas.",
+        "commands": {
+          "win": "bau-win-061",
+          "linux": "bau-linux-057",
+          "mac": "bau-mac-063"
+        }
+      },
+      {
+        "title": "2. Verificar erros da interface",
+        "why": "Procure indícios de falha física ou descarte.",
+        "inspect": "Contadores são acumulados: compare duas leituras para ver se crescem.",
+        "commands": {
+          "win": "bau-win-005",
+          "linux": "bau-linux-003",
+          "mac": "bau-mac-022"
+        }
+      },
+      {
+        "title": "3. Medir latência",
+        "why": "Compare tempos e perda para o destino escolhido.",
+        "inspect": "Perda ICMP pode ser filtragem; compare com a aplicação e outros destinos.",
+        "commands": {
+          "win": "bau-win-020",
+          "linux": "bau-linux-030",
+          "mac": "bau-mac-032"
+        }
+      }
+    ]
+  },
+  {
+    "id": "dns",
+    "title": "Problema de DNS",
+    "steps": [
+      {
+        "title": "1. Identificar resolvedores",
+        "why": "Descubra de onde vem a configuração DNS.",
+        "inspect": "Considere VPN, DHCP e DNS por interface.",
+        "commands": {
+          "win": "bau-win-011",
+          "linux": "bau-linux-011",
+          "mac": "bau-mac-024"
+        }
+      },
+      {
+        "title": "2. Consultar IPv4",
+        "why": "Confira registros A para o domínio afetado.",
+        "inspect": "Compare resposta, ausência de registros e timeout.",
+        "commands": {
+          "win": "bau-win-013",
+          "linux": "bau-linux-013",
+          "mac": "bau-mac-028"
+        }
+      },
+      {
+        "title": "3. Consultar IPv6",
+        "why": "Confira se o domínio publica registros AAAA.",
+        "inspect": "Um domínio pode oferecer somente IPv4; ausência de AAAA sozinha não indica defeito.",
+        "commands": {
+          "win": "bau-win-017",
+          "linux": "bau-linux-014",
+          "mac": "bau-mac-029"
+        }
+      }
+    ]
+  },
+  {
+    "id": "remoto",
+    "title": "Acesso remoto",
+    "steps": [
+      {
+        "title": "1. Conferir configuração ou serviços",
+        "why": "Identifique o serviço remoto esperado.",
+        "inspect": "Windows: estados de RDP, WinRM e SSH. Unix: configuração efetiva do cliente SSH para o destino.",
+        "commands": {
+          "win": "bau-win-099",
+          "linux": "bau-linux-079",
+          "mac": "bau-mac-045"
+        }
+      },
+      {
+        "title": "2. Verificar portas e conexões",
+        "why": "Confira se o serviço está disponível na máquina relevante.",
+        "inspect": "Confronte porta/endereço com o serviço: uma porta aberta não garante autenticação ou saúde.",
+        "commands": {
+          "win": "bau-win-027",
+          "linux": "bau-linux-008",
+          "mac": "bau-mac-066"
+        }
+      },
+      {
+        "title": "3. Conferir firewall",
+        "why": "Leia as regras antes de qualquer mudança.",
+        "inspect": "Verifique perfil, interface e aplicativo afetados; estes comandos apenas consultam.",
+        "commands": {
+          "win": "bau-win-030",
+          "linux": "bau-linux-082",
+          "mac": "bau-mac-042"
+        }
+      }
+    ]
+  }
+]
