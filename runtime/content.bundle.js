@@ -172,7 +172,7 @@ window.AjaModularCatalogStore=Object.freeze({clone,normalize,load,save,escapeHTM
             }
             return fetch(url, options);
         },
-        async askGemini(prompt, providedKey) {
+        async askGemini(prompt, providedKey, options = {}) {
             const secret = providedKey || storage.getItem(key('aja_voice_gemini_api_key')) || '';
             if (!secret) throw new Error('Configure sua chave Gemini.');
             const headers = {'x-goog-api-key':secret};
@@ -184,17 +184,31 @@ window.AjaModularCatalogStore=Object.freeze({clone,normalize,load,save,escapeHTM
             const remembered = storage.getItem(key('aja_voice_gemini_model'));
             models.sort((a,b) => Number(b.name === remembered) - Number(a.name === remembered));
             for (const model of models) {
-                const result = await api.request('https://generativelanguage.googleapis.com/v1beta/' + model.name + ':generateContent', {
-                    method:'POST',headers:{...headers,'Content-Type':'application/json'},
-                    body:JSON.stringify({contents:[{parts:[{text:String(prompt)}]}],generationConfig:{temperature:0.2,maxOutputTokens:2048}})
-                });
-                if (!result.ok) {
-                    if ([400,404].includes(result.status)) continue;
-                    throw new Error('Gemini: ' + result.status);
+                const requested = options.maxOutputTokens || 2048;
+                const cap = Math.min(model.outputTokenLimit || 16384, 16384);
+                let budget = Math.min(requested, cap);
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    const result = await api.request('https://generativelanguage.googleapis.com/v1beta/' + model.name + ':generateContent', {
+                        method:'POST',headers:{...headers,'Content-Type':'application/json'},
+                        body:JSON.stringify({contents:[{parts:[{text:String(prompt)}]}],generationConfig:{temperature:0.2,maxOutputTokens:budget}})
+                    });
+                    if (!result.ok) {
+                        if ([400,404].includes(result.status)) break;
+                        throw new Error('Gemini: ' + result.status);
+                    }
+                    const data = await result.json();
+                    const candidate = data.candidates?.[0];
+                    if (candidate?.finishReason === 'MAX_TOKENS') {
+                        if (attempt === 0 && budget < cap) { budget = Math.min(budget * 2, cap); continue; }
+                        throw new Error('O Gemini interrompeu a resposta por limite de tamanho. Reduza o relato e tente novamente. Nenhum relatório parcial foi salvo.');
+                    }
+                    if (candidate?.finishReason !== 'STOP') {
+                        throw new Error('O Gemini não concluiu a resposta. Revise o texto e tente novamente.');
+                    }
+                    const text = (candidate.content?.parts || []).filter(p => !p.thought).map(p=>p.text || '').join('\n').trim();
+                    if (text) { storage.setItem(key('aja_voice_gemini_model'), model.name); return text; }
+                    throw new Error('O Gemini retornou uma resposta vazia. Tente novamente.');
                 }
-                const data = await result.json();
-                const text = (data.candidates?.[0]?.content?.parts || []).map(p=>p.text || '').join('\n').trim();
-                if (text) { storage.setItem(key('aja_voice_gemini_model'), model.name); return text; }
             }
             throw new Error('Nenhum modelo compatível respondeu com texto.');
         }
@@ -6229,8 +6243,23 @@ Docway	Telemedicina Docway erro app.
 Telecine	Telecine filmes erros APP app.
 `;
 
-                async function generateText(prompt) {
-                    return window.AjaModularSpell.askGemini(prompt,userApiKey);
+                async function generateText(prompt, options) {
+                    return window.AjaModularSpell.askGemini(prompt,userApiKey,options);
+                }
+                function parseReport(raw) {
+                    const tabMatch = raw.match(/<TAB>\s*(.*?)\s*<\/TAB>/is);
+                    const finalReport = raw.replace(/<TAB>[\s\S]*?<\/TAB>/gi, '').trim();
+                    const tab = (tabMatch?.[1] || '').replace(/\*/g, '').trim();
+                    const allowed = TABS_DB.trim().split('\n').map(line => line.split('\t')[0].trim());
+                    const suggestedTab = allowed.includes(tab) ? tab : 'Não identificada automaticamente. Analise o relato.';
+                    // Reject missing, empty or out-of-order sections, even after a normal API stop.
+                    const sections = [...finalReport.matchAll(/^\s*(?:#{1,6}\s*)?(?:\*\*)?([1-4])[.)]\s*(Introdução|Relato|Procedimentos|Conclusão)(?:\*\*)?\s*:?(?:\*\*)?[^\S\n]*$/gmi)];
+                    const names = ['introdução', 'relato', 'procedimentos', 'conclusão'];
+                    const complete = sections.length === 4 && sections.every((part, index) =>
+                        Number(part[1]) === index + 1 && part[2].toLocaleLowerCase('pt-BR') === names[index] &&
+                        finalReport.slice(part.index + part[0].length, sections[index + 1]?.index ?? finalReport.length).trim().length > 0);
+                    if (!complete) throw new Error('A IA devolveu um relatório incompleto. Tente gerar novamente; o texto parcial não foi salvo.');
+                    return {finalReport, suggestedTab};
                 }
                 function formatMarkdown(text) {
                     if (!text) return '';
@@ -6414,6 +6443,8 @@ Telecine	Telecine filmes erros APP app.
 
                     btn.innerHTML = "⏳ A gerar..."; btn.disabled = true;
                     resDiv.style.display = 'none'; actions.style.display = 'none';
+                    getEl('result-actions-top').style.display = 'none';
+                    getEl('ia-tabulacao-box').style.display = 'none';
 
                     const timeGreeting = getBrazilGreeting();
                     const prompt = `
@@ -6423,7 +6454,8 @@ Telecine	Telecine filmes erros APP app.
             1. NÃO DÊ BOM DIA, BOA TARDE OU BOA NOITE NO INÍCIO.
             2. NÃO ESCREVA "AQUI ESTÁ O RELATÓRIO" OU "SEGUE O RELATÓRIO".
             3. A SAÍDA DEVE COMEÇAR IMEDIATAMENTE PELO TÍTULO OU PELA INTRODUÇÃO.
-            4. NÃO invente horários. Mantenha privacidade: Apenas Nome e Telefone do cliente.
+            4. Use somente fatos do texto base. NÃO invente horários, diagnósticos, testes, ações ou resultados. Não repita endereço, documentos ou outros dados pessoais desnecessários.
+            4.1. Inclua sempre as quatro seções completas, com cada título numerado em uma linha separada: 1. Introdução, 2. Relato, 3. Procedimentos, 4. Conclusão. Se faltarem procedimentos ou desfecho, registre "Não informado no relato" na seção correspondente. Não afirme resolução sem confirmação.
             5. VOCÊ DEVE OBRIGATORIAMENTE ESCOLHER A TABULAÇÃO GENESYS MAIS ADEQUADA COM BASE NO RELATO, E INSERIR NO INÍCIO DA SUA RESPOSTA ENTRE <TAB> e </TAB>. Ex: <TAB>LOS - FTTH</TAB>
             ESTRUTURA: <TAB>SUA ESCOLHA DE TABULAÇÃO</TAB> Relatório Técnico de Atendimento -> 1. Introdução, 2. Relato, 3. Procedimentos, 4. Conclusão
             
@@ -6432,26 +6464,8 @@ Telecine	Telecine filmes erros APP app.
             Texto base: ${txt}`;
 
                     try {
-                        const raw = await generateText(prompt);
-
-                        let finalReport = raw;
-                        let suggestedTab = "Nenhuma tabulação identificada";
-
-                        const tabMatch = raw.match(/<TAB>\s*(.*?)\s*<\/TAB>/is);
-                        if (tabMatch) {
-                            suggestedTab = tabMatch[1].replace(/\*/g, '').trim();
-                            finalReport = raw.replace(tabMatch[0], '').trim();
-                        } else {
-                            // Backup: Tenta buscar a ultima linha.
-                            let lines = raw.split('\n').filter(l => l.trim().length > 0);
-                            let lastLine = lines[lines.length - 1] || "";
-                            if (!lastLine.toLowerCase().includes('conclusão') && lastLine.length < 100) {
-                                suggestedTab = lastLine.replace(/<.*?>/g, '').replace(/\*/g, '').trim();
-                                finalReport = raw.replace(lastLine, '').trim();
-                            } else {
-                                suggestedTab = "Não identificada automaticamente. Analise o relato.";
-                            }
-                        }
+                        const raw = await generateText(prompt, {maxOutputTokens:8192});
+                        const {finalReport, suggestedTab} = parseReport(raw);
 
                         const tabBox = document.getElementById('ia-tabulacao-box');
                         const tabText = document.getElementById('ia-tabulacao-text');
@@ -8644,7 +8658,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.5',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.6',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8655,7 +8669,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.5',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.6',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8702,7 +8716,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.5)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.6)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8724,7 +8738,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.5';
+    const SCRIPT_VERSION = 'AjaModular_1.6.6';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
