@@ -565,8 +565,23 @@ Docway	Telemedicina Docway erro app.
 Telecine	Telecine filmes erros APP app.
 `;
 
-                async function generateText(prompt) {
-                    return window.AjaModularSpell.askGemini(prompt,userApiKey);
+                async function generateText(prompt, options) {
+                    return window.AjaModularSpell.askGemini(prompt,userApiKey,options);
+                }
+                function parseReport(raw) {
+                    const tabMatch = raw.match(/<TAB>\s*(.*?)\s*<\/TAB>/is);
+                    const finalReport = raw.replace(/<TAB>[\s\S]*?<\/TAB>/gi, '').trim();
+                    const tab = (tabMatch?.[1] || '').replace(/\*/g, '').trim();
+                    const allowed = TABS_DB.trim().split('\n').map(line => line.split('\t')[0].trim());
+                    const suggestedTab = allowed.includes(tab) ? tab : 'Não identificada automaticamente. Analise o relato.';
+                    // Reject missing, empty or out-of-order sections, even after a normal API stop.
+                    const sections = [...finalReport.matchAll(/^\s*(?:#{1,6}\s*)?(?:\*\*)?([1-4])[.)]\s*(Introdução|Relato|Procedimentos|Conclusão)(?:\*\*)?\s*:?(?:\*\*)?[^\S\n]*$/gmi)];
+                    const names = ['introdução', 'relato', 'procedimentos', 'conclusão'];
+                    const complete = sections.length === 4 && sections.every((part, index) =>
+                        Number(part[1]) === index + 1 && part[2].toLocaleLowerCase('pt-BR') === names[index] &&
+                        finalReport.slice(part.index + part[0].length, sections[index + 1]?.index ?? finalReport.length).trim().length > 0);
+                    if (!complete) throw new Error('A IA devolveu um relatório incompleto. Tente gerar novamente; o texto parcial não foi salvo.');
+                    return {finalReport, suggestedTab};
                 }
                 function formatMarkdown(text) {
                     if (!text) return '';
@@ -750,6 +765,8 @@ Telecine	Telecine filmes erros APP app.
 
                     btn.innerHTML = "⏳ A gerar..."; btn.disabled = true;
                     resDiv.style.display = 'none'; actions.style.display = 'none';
+                    getEl('result-actions-top').style.display = 'none';
+                    getEl('ia-tabulacao-box').style.display = 'none';
 
                     const timeGreeting = getBrazilGreeting();
                     const prompt = `
@@ -759,7 +776,8 @@ Telecine	Telecine filmes erros APP app.
             1. NÃO DÊ BOM DIA, BOA TARDE OU BOA NOITE NO INÍCIO.
             2. NÃO ESCREVA "AQUI ESTÁ O RELATÓRIO" OU "SEGUE O RELATÓRIO".
             3. A SAÍDA DEVE COMEÇAR IMEDIATAMENTE PELO TÍTULO OU PELA INTRODUÇÃO.
-            4. NÃO invente horários. Mantenha privacidade: Apenas Nome e Telefone do cliente.
+            4. Use somente fatos do texto base. NÃO invente horários, diagnósticos, testes, ações ou resultados. Não repita endereço, documentos ou outros dados pessoais desnecessários.
+            4.1. Inclua sempre as quatro seções completas, com cada título numerado em uma linha separada: 1. Introdução, 2. Relato, 3. Procedimentos, 4. Conclusão. Se faltarem procedimentos ou desfecho, registre "Não informado no relato" na seção correspondente. Não afirme resolução sem confirmação.
             5. VOCÊ DEVE OBRIGATORIAMENTE ESCOLHER A TABULAÇÃO GENESYS MAIS ADEQUADA COM BASE NO RELATO, E INSERIR NO INÍCIO DA SUA RESPOSTA ENTRE <TAB> e </TAB>. Ex: <TAB>LOS - FTTH</TAB>
             ESTRUTURA: <TAB>SUA ESCOLHA DE TABULAÇÃO</TAB> Relatório Técnico de Atendimento -> 1. Introdução, 2. Relato, 3. Procedimentos, 4. Conclusão
             
@@ -768,26 +786,8 @@ Telecine	Telecine filmes erros APP app.
             Texto base: ${txt}`;
 
                     try {
-                        const raw = await generateText(prompt);
-
-                        let finalReport = raw;
-                        let suggestedTab = "Nenhuma tabulação identificada";
-
-                        const tabMatch = raw.match(/<TAB>\s*(.*?)\s*<\/TAB>/is);
-                        if (tabMatch) {
-                            suggestedTab = tabMatch[1].replace(/\*/g, '').trim();
-                            finalReport = raw.replace(tabMatch[0], '').trim();
-                        } else {
-                            // Backup: Tenta buscar a ultima linha.
-                            let lines = raw.split('\n').filter(l => l.trim().length > 0);
-                            let lastLine = lines[lines.length - 1] || "";
-                            if (!lastLine.toLowerCase().includes('conclusão') && lastLine.length < 100) {
-                                suggestedTab = lastLine.replace(/<.*?>/g, '').replace(/\*/g, '').trim();
-                                finalReport = raw.replace(lastLine, '').trim();
-                            } else {
-                                suggestedTab = "Não identificada automaticamente. Analise o relato.";
-                            }
-                        }
+                        const raw = await generateText(prompt, {maxOutputTokens:8192});
+                        const {finalReport, suggestedTab} = parseReport(raw);
 
                         const tabBox = document.getElementById('ia-tabulacao-box');
                         const tabText = document.getElementById('ia-tabulacao-text');
