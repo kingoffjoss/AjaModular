@@ -567,8 +567,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
 
     window.AjaModularSetupSpell = repararCorretorModerno;
-    setInterval(() => {
+    window.AjaModularDOM.watch('#uni-menu-container,#spell-main-panel', () => {
         garantirBotaoMenu();
         repararCorretorModerno();
-    }, 800);
+    });
 })();

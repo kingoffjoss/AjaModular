@@ -329,6 +329,5 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     }
 
     window.ajaRenderDictionaryManager = renderDictionaryManager;
-    setInterval(enhancePanel, 200);
-    enhancePanel();
+    window.AjaModularDOM.watch('#spell-main-panel,#tab-dict', enhancePanel);
 })();

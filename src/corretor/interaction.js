@@ -522,5 +522,5 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
     ensureStyle();
     protectDocumentEvents();
-    setInterval(enhanceVoiceTab, 200);
+    window.AjaModularDOM.watch('#spell-main-panel', enhanceVoiceTab);
 })();
