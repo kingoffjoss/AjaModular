@@ -6,6 +6,8 @@ const arrays=new Set(['bau_favorites_v1','bau_recent_v1','menu_favorites_v1','me
 const objects=new Set(['window_layout_v1','hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
 const extensionKeys=['car_data_v8_master','car_theme_v8','agentName','IA_THEME','geminiHistory','ajamodular_enabled','SHOW_AGENT_TOOLS','MOD_CRONOMETROS','MOD_PAUSAS','MOD_PROTOCOLOS','MOD_RESPOSTAS','MOD_BAR','MOD_IA','MOD_CAR','MOD_ID','MOD_MENU','MOD_CALC'];
 const secret=k=>/api.?key|geminikey|token|password|senha|credential/i.test(k);
+const reported=new Map();
+window.AjaModularReportError=(area,error)=>{const message=error?.message||String(error||'Erro desconhecido'),key=area+':'+message,now=Date.now();console.error('[AjaModular] '+area,error);if(now-(reported.get(key)||0)>10000){reported.set(key,now);window.AjaModularNotice?.(area+': '+message);}};
 function valid(key,value){
  const name=key.startsWith(prefix)?key.slice(prefix.length):key;
  if(typeof value!=='string') throw Error('Valor inválido: '+name);
@@ -24,19 +26,20 @@ function adapter(storage){return {getItem(key){const value=storage.getItem(prefi
  const backup=reserved+'invalid:'+key;
  try {if(storage.getItem(backup)===null)storage.setItem(backup,value);storage.removeItem(prefix+key);}catch(e){console.error('[AjaModular] Não foi possível preservar dados',e);}
  console.warn('[AjaModular] Dado preservado para recuperação: '+key,error);return null;
-}},setItem:(key,value)=>storage.setItem(prefix+key,String(value)),removeItem:key=>storage.removeItem(prefix+key)};}
+}},setItem(key,value){const text=String(value);valid(key,text);storage.setItem(prefix+key,text);},removeItem:key=>storage.removeItem(prefix+key)};}
 function collect(storage){const data={};for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith(prefix)&&!key.startsWith(reserved)&&!secret(key))data[key]=storage.getItem(key);}return data;}
 function chromeRead(){return new Promise((resolve,reject)=>{if(!window.chrome?.storage?.local)return resolve({});chrome.storage.local.get(extensionKeys,data=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve(JSON.parse(JSON.stringify(data))));});}
 function chromeWrite(data){return new Promise((resolve,reject)=>{if(!Object.keys(data).length)return resolve();if(!window.chrome?.storage?.local)return reject(Error('Este backup contém dados da extensão. Importe pela extensão.'));chrome.storage.local.set(data,()=>chrome.runtime.lastError?reject(Error(chrome.runtime.lastError.message)):resolve());});}
-async function snapshot(){return {format:'AjaModular-backup',schema:1,createdAt:new Date().toISOString(),local:collect(localStorage),session:collect(sessionStorage),extension:await chromeRead()};}
+async function snapshot(){return {format:'AjaModular-backup',schema:2,createdAt:new Date().toISOString(),local:collect(localStorage),session:collect(sessionStorage),extension:await chromeRead()};}
+function migrate(data){if(!data||data.format!=='AjaModular-backup')throw Error('Backup AjaModular incompatível');if(data.schema===1)return {...data,schema:2,migratedFrom:1};if(data.schema!==2)throw Error('Versão de backup não suportada: '+data.schema);return data;}
 function validate(data){
- if(!data||data.format!=='AjaModular-backup'||data.schema!==1)throw Error('Backup AjaModular incompatível');
+ data=migrate(data);
  for(const section of ['local','session','extension'])if(!data[section]||Array.isArray(data[section])||typeof data[section]!=='object')throw Error('Seção inválida: '+section);
  for(const section of ['local','session'])for(const [key,value]of Object.entries(data[section])){if(!key.startsWith(prefix)||key.startsWith(reserved)||secret(key))throw Error('Chave não permitida: '+key);valid(key,value);}
  for(const [key,value]of Object.entries(data.extension)){if(!extensionKeys.includes(key))throw Error('Configuração da extensão inválida');if(key==='car_data_v8_master')valid(key,JSON.stringify(value));else if(key==='geminiHistory'&&!Array.isArray(value))throw Error('Histórico IA inválido');else if((key.startsWith('MOD_')||['ajamodular_enabled','SHOW_AGENT_TOOLS'].includes(key))&&typeof value!=='boolean')throw Error('Preferência inválida');else if(key==='agentName'&&typeof value!=='string')throw Error('Nome inválido');else if(['car_theme_v8','IA_THEME'].includes(key)&&!['dark','light'].includes(value))throw Error('Tema CAR inválido');}
  return data;
 }
-async function apply(data,replace=false){validate(data);const old=await snapshot();const undo=[];
+async function apply(data,replace=false){data=validate(data);const old=await snapshot();const undo=[];
  // Preserve the complete prior state before changing any live settings.
  localStorage.setItem(recovery,JSON.stringify(old));
  try{if(replace)for(const [name,storage]of [['local',localStorage],['session',sessionStorage]])for(const key of Object.keys(collect(storage)))if(!Object.hasOwn(data[name],key)){undo.push([storage,key,storage.getItem(key)]);storage.removeItem(key);}
@@ -44,7 +47,7 @@ async function apply(data,replace=false){validate(data);const old=await snapshot
  catch(error){for(const [storage,key,value]of undo.reverse())value===null?storage.removeItem(key):storage.setItem(key,value);throw error;}
 }
 async function restore(){const value=localStorage.getItem(recovery);if(!value)throw Error('Nenhum backup anterior disponível');await apply(JSON.parse(value),true);}
-window.AjaModularData=Object.freeze({adapter,valid,snapshot,validate,apply,restore});
+window.AjaModularData=Object.freeze({adapter,valid,migrate,snapshot,validate,apply,restore});
 })();
 
 (function () {
@@ -115,6 +118,28 @@ function status() {
     return Array.from(definitions.keys(), id => ({id, ready: instances.has(id), error: failures.get(id)?.message || null}));
 }
 window.AjaModular = Object.freeze({register, start, get, open, status, retry, scopeStyle});
+})();
+
+(function(){
+'use strict';
+const subscriptions=new Map();let scheduled=false;
+const options={childList:true,subtree:true,attributes:true,attributeFilter:['class','open','style']};
+function run(){scheduled=false;observer.disconnect();for(const [callback,selector] of subscriptions){try{if(!selector||document.querySelector(selector))callback();}catch(error){window.AjaModularReportError?.('Atualização da interface',error);}}queueMicrotask(()=>observer.observe(document.documentElement,options));}
+function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(run);}
+const observer=new MutationObserver(schedule);
+observer.observe(document.documentElement,options);
+function watch(selector,callback){if(typeof callback!=='function')throw new TypeError('Observador sem função');subscriptions.set(callback,selector||'');schedule();return()=>subscriptions.delete(callback);}
+window.AjaModularDOM=Object.freeze({watch,refresh:schedule,count:()=>subscriptions.size});
+})();
+
+(function(){
+'use strict';
+const clone=value=>JSON.parse(JSON.stringify(value));
+function normalize(items){if(!Array.isArray(items))throw Error('O catálogo não é uma lista');return items.map((item,index)=>{if(!item||typeof item.title!=='string'||typeof item.text!=='string')throw Error('Item inválido na posição '+(index+1));return {...item,isFavorite:Boolean(item.isFavorite),requiredData:Array.isArray(item.requiredData)?item.requiredData:[],hotkey:typeof item.hotkey==='string'&&item.hotkey.trim()?item.hotkey.trim():null};});}
+function load(storage,key,defaults,area){const raw=storage.getItem(key);if(!raw)return normalize(clone(defaults));try{const items=normalize(JSON.parse(raw));if(!items.length){storage.removeItem(key);window.AjaModularNotice?.(area+' restaurado com os dados padrão.');return normalize(clone(defaults));}return items;}catch(error){window.AjaModularReportError?.(area+' — dados salvos inválidos',error);storage.removeItem(key);return normalize(clone(defaults));}}
+function save(storage,key,items,area){try{const normalized=normalize(items);storage.setItem(key,JSON.stringify(normalized));return normalized;}catch(error){window.AjaModularReportError?.(area+' — não foi possível salvar',error);throw error;}}
+function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+window.AjaModularCatalogStore=Object.freeze({clone,normalize,load,save,escapeHTML});
 })();
 
 (function () {
@@ -2867,18 +2892,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
 
                 // --- DADOS ---
                 const loadData = async () => {
-                    let protocolsLoaded = false;
-                    try {
-                        const localProtocols = ctx.ajaStorage.getItem('pr_protocolos');
-                        if (localProtocols) {
-                            const parsed = JSON.parse(localProtocols);
-                            if (Array.isArray(parsed) && parsed.length > 0) { CONFIG.PROTOCOLOS = parsed; protocolsLoaded = true; }
-                        }
-                    } catch (e) { ctx.ajaStorage.removeItem('pr_protocolos'); }
-
-                    if (!protocolsLoaded) {
-                        CONFIG.PROTOCOLOS = JSON.parse(JSON.stringify(initialProtocolos));
-                    }
+                    CONFIG.PROTOCOLOS = window.AjaModularCatalogStore.load(ctx.ajaStorage,'pr_protocolos',initialProtocolos,'Protocolos');
 
                     try {
                         CONFIG.LAST_COPIED_PROTOCOLO = ctx.ajaStorage.getItem('pr_lastCopiedProtocol') || '';
@@ -2891,11 +2905,11 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                         CONFIG.PR_DARK_MODE = false;
                     }
 
-                    CONFIG.PROTOCOLOS = CONFIG.PROTOCOLOS.map(r => ({ ...r, isFavorite: r.isFavorite || false, requiredData: r.requiredData || [] }));
+                    CONFIG.PROTOCOLOS = window.AjaModularCatalogStore.normalize(CONFIG.PROTOCOLOS);
                     CONFIG.PROTOCOLOS.forEach(reply => { requiredTagsMap[reply.title] = (Array.isArray(reply.requiredData) ? reply.requiredData : []).map(tag => typeof tag === 'string' ? tag.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase() : ''); });
                 };
 
-                const saveData = () => { try { ctx.ajaStorage.setItem('pr_protocolos', JSON.stringify(CONFIG.PROTOCOLOS)); ctx.ajaStorage.setItem('pr_lastCopiedProtocol', CONFIG.LAST_COPIED_PROTOCOLO); ctx.ajaStorage.setItem('pr_recentProtocols_v1', JSON.stringify(CONFIG.RECENT_PROTOCOLOS)); ctx.ajaStorage.setItem('pr_darkMode', CONFIG.PR_DARK_MODE); } catch (e) { } };
+                const saveData = () => { try { CONFIG.PROTOCOLOS=window.AjaModularCatalogStore.save(ctx.ajaStorage,'pr_protocolos',CONFIG.PROTOCOLOS,'Protocolos'); ctx.ajaStorage.setItem('pr_lastCopiedProtocol', CONFIG.LAST_COPIED_PROTOCOLO); ctx.ajaStorage.setItem('pr_recentProtocols_v1', JSON.stringify(CONFIG.RECENT_PROTOCOLOS)); ctx.ajaStorage.setItem('pr_darkMode', CONFIG.PR_DARK_MODE); } catch (e) { window.AjaModularReportError?.('Protocolos — configurações',e); } };
 
                 const logUsedProtocolo = (title, text) => {
                     const MAX = 5;
@@ -3058,7 +3072,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                         let currentCategory = 'all'; let currentSearchTerm = ''; let activeTagFilter = null; let activeQuickFilters = [];
 
                         const getReplyDataTags = (title) => { const r = CONFIG.PROTOCOLOS.find(p => p.title === title); return r?.requiredData || []; };
-                        const highlightText = (text, keywords) => { if (!keywords || keywords.length === 0 || !text) { return text; } const regexKeywords = keywords.map(kw => escapeRegExp(kw)).join('|'); const regex = new RegExp(`(${regexKeywords})`, 'gi'); return text.replace(regex, '<span class="pr-highlight">$1</span>'); };
+                        const highlightText = (text, keywords) => { const safe=window.AjaModularCatalogStore.escapeHTML(text); if (!keywords || keywords.length === 0 || !text) { return safe; } const regexKeywords = keywords.map(kw => escapeRegExp(window.AjaModularCatalogStore.escapeHTML(kw))).join('|'); const regex = new RegExp(`(${regexKeywords})`, 'gi'); return safe.replace(regex, '<span class="pr-highlight">$1</span>'); };
 
                         const populateReplies = (category, searchTerm, tagFilter) => {
                             const name = documentExtractor.getParticipantName(); const id = documentExtractor.getInteractionId(); resultsContainer.innerHTML = ''; let filteredReplies = []; let headerText = ''; const lowerSearch = searchTerm ? searchTerm.toLowerCase() : ''; const searchKeywords = lowerSearch ? lowerSearch.split(/\s+/).filter(k => k) : []; if (searchTerm) { const scored = []; CONFIG.PROTOCOLOS.forEach(reply => { const lt = reply.title.toLowerCase(); const ltxt = reply.text.toLowerCase(); let score = 0; if (lt.startsWith(lowerSearch)) { score += 1000; } else if (lt.includes(lowerSearch)) { score += 100; } let keywordsFoundCount = 0; searchKeywords.forEach(kw => { if (lt.includes(kw)) { score += 20; keywordsFoundCount++; } else if (ltxt.includes(kw)) { score += 5; keywordsFoundCount++; } }); if (searchKeywords.length > 1 && keywordsFoundCount === searchKeywords.length) { score += 50; } if (score > 0) scored.push({ ...reply, score }); }); scored.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)); filteredReplies = scored; headerText = `Busca por "${searchTerm}"`; } else if (tagFilter) { let base = CONFIG.PROTOCOLOS; if (category && !['all', 'favorites', 'recent', 'search'].includes(category)) { base = base.filter(r => r.title.startsWith(category + ' - ')); } filteredReplies = base.filter(r => getReplyDataTags(r.title).includes(tagFilter)); const catLabel = categoryDisplayMap[category] || category; headerText = `Filtro Tag: "${tagFilter.replace(/_/g, ' ')}"` + (category && !['all', 'search'].includes(category) ? ` em ${catLabel}` : ''); filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'favorites') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.isFavorite); headerText = categoryDisplayMap['favorites']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'recent') { const titles = CONFIG.RECENT_PROTOCOLOS.map(r => r.title); filteredReplies = CONFIG.PROTOCOLOS.filter(r => titles.includes(r.title)).sort((a, b) => titles.indexOf(a.title) - titles.indexOf(b.title)); headerText = categoryDisplayMap['recent']; } else if (category && category !== 'all') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.title.startsWith(category + ' - ')); headerText = categoryDisplayMap[category] || `Categoria: ${category}`; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else { filteredReplies = [...CONFIG.PROTOCOLOS]; headerText = categoryDisplayMap['all']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } if (activeQuickFilters.length > 0) { headerText += ` (Filtros: ${activeQuickFilters.join(', ')})`; filteredReplies = filteredReplies.filter(reply => { const lowerTextAndTitle = (reply.title + ' ' + reply.text).toLowerCase(); return activeQuickFilters.every(filterKeyword => lowerTextAndTitle.includes(filterKeyword)); }); } if (filteredReplies.length === 0) { resultsContainer.innerHTML = `<p class="pr-no-results">Nenhum protocolo encontrado.</p>`; return; } resultsContainer.innerHTML = `<h4 class="pr-results-header">${headerText} (${filteredReplies.length})</h4>`;
@@ -3624,29 +3638,8 @@ let publicApi;
             // --- Lógica de Dados (loadData, saveData, logUsedReply) ---
             // *** MODIFICADO v2.4.9 (Auto-Fetch Adicionado) ***
             const loadData = async () => {
-                let repliesLoaded = false;
-
-                // 1. Tentar carregar Respostas do LocalStorage
-                try {
-                    const localReplies = ctx.ajaStorage.getItem('qr_quickReplies'); // Prefixo 'qr_'
-                    if (localReplies) {
-                        const parsed = JSON.parse(localReplies);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            CONFIG.QUICK_REPLIES = parsed;
-                            repliesLoaded = true;
-                            log("Respostas Rápidas carregadas do LocalStorage.");
-                        } else {
-                            ctx.ajaStorage.removeItem('qr_quickReplies');
-                            log("LocalStorage de Respostas Rápidas estava inválido. Removido.");
-                        }
-                    }
-                } catch (e) {
-                    log("Erro ao ler Respostas Rápidas do LocalStorage (será substituído):", e);
-                    ctx.ajaStorage.removeItem('qr_quickReplies');
-                }
-
-                // Defaults are included in this module at build time; no network is required.
-                if (!repliesLoaded) CONFIG.QUICK_REPLIES = JSON.parse(JSON.stringify(initialQuickReplies));
+                // O catálogo padrão está no pacote; dados inválidos são preservados pela camada de segurança.
+                CONFIG.QUICK_REPLIES = window.AjaModularCatalogStore.load(ctx.ajaStorage,'qr_quickReplies',initialQuickReplies,'Respostas rápidas');
 
                 // 3. Carregar o resto das configurações (não-respostas)
                 try {
@@ -3664,13 +3657,13 @@ let publicApi;
                 }
 
                 // 4. Processar os dados carregados
-                CONFIG.QUICK_REPLIES = CONFIG.QUICK_REPLIES.map(e => ({ ...e, isFavorite: e.isFavorite || !1, requiredData: e.requiredData || [], hotkey: e.hotkey || null }))
+                CONFIG.QUICK_REPLIES = window.AjaModularCatalogStore.normalize(CONFIG.QUICK_REPLIES)
             };
             // --- FIM DA MODIFICAÇÃO (V2.4.9) ---
 
             const saveData = () => {
                 try {
-                    ctx.ajaStorage.setItem('qr_quickReplies', JSON.stringify(CONFIG.QUICK_REPLIES)); // PREFIXADO
+                    CONFIG.QUICK_REPLIES = window.AjaModularCatalogStore.save(ctx.ajaStorage,'qr_quickReplies',CONFIG.QUICK_REPLIES,'Respostas rápidas');
                     ctx.ajaStorage.setItem('qr_lastCopiedReply', CONFIG.LAST_COPIED_REPLY); // PREFIXADO
                     ctx.ajaStorage.setItem('qr_recentReplies_v3', JSON.stringify(CONFIG.RECENT_REPLIES)); // PREFIXADO
                     ctx.ajaStorage.setItem('qr_darkMode', CONFIG.DARK_MODE); // (Já estava prefixado)
@@ -3776,7 +3769,7 @@ let publicApi;
                         if (filteredReplies.length === 0 && CONFIG.QUICK_REPLIES.length === 0 && !searchTerm) {
                             resultsContainer.innerHTML += `<p class="qr-no-results">Nenhuma resposta. (Se for o primeiro uso, recarregue a página. Se o erro persistir, verifique o URL do JSON no script).</p>`; return;
                             // --- FIM DA MODIFICAÇÃO ---
-                        } else if (filteredReplies.length === 0) { resultsContainer.innerHTML += `<p class="qr-no-results">Nenhuma resposta encontrada.</p>`; return; } if (category !== 'recent') { filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } filteredReplies.forEach(reply => { const match = reply.title.match(/^([A-Z0-9_]+)\s*-\s*/); const subTitle = match ? reply.title.substring(match[0].length).trim() : reply.title; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}" title="${t.replace(/_/g, ' ')}">${t.substring(0, Math.min(t.length, 4))}${t.length > 4 ? '.' : ''}</span>`).join(''); const reqClass = tags.length > 0 ? 'requires-tags-highlight' : ''; const item = document.createElement('div'); item.className = `item quick-reply-item ${reqClass}`; item.innerHTML = `<div class="reply-header"><strong>${subTitle} ${reply.isFavorite ? '<span title="Favorito" class="favorite-star">⭐</span>' : ''} ${reply.hotkey ? `<span class"reply-hotkey-display" title="Atalho">${reply.hotkey}</span>` : ''}</strong><div class="data-tags">${tagsHtml}</div></div><small>${reply.text.substring(0, 150)}${reply.text.length > 150 ? '...' : ''}</small>`; item.title = reply.text; item.onclick = async () => { const final = formatReplyText(reply.text, name, id); CONFIG.LAST_COPIED_REPLY = final; logUsedReply(reply.title, reply.text); if (await copyTextToClipboard(final)) { UI.createNotification("Copiado!", 'success', 1500); } else { UI.createNotification("Erro ao copiar.", 'error'); } }; resultsContainer.appendChild(item); }); resultsContainer.scrollTop = 0;
+                        } else if (filteredReplies.length === 0) { resultsContainer.innerHTML += `<p class="qr-no-results">Nenhuma resposta encontrada.</p>`; return; } if (category !== 'recent') { filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } filteredReplies.forEach(reply => { const match = reply.title.match(/^([A-Z0-9_]+)\s*-\s*/); const subTitle = match ? reply.title.substring(match[0].length).trim() : reply.title; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}" title="${t.replace(/_/g, ' ')}">${t.substring(0, Math.min(t.length, 4))}${t.length > 4 ? '.' : ''}</span>`).join(''); const reqClass = tags.length > 0 ? 'requires-tags-highlight' : ''; const item = document.createElement('div'); item.className = `item quick-reply-item ${reqClass}`; item.innerHTML = `<div class="reply-header"><strong>${window.AjaModularCatalogStore.escapeHTML(subTitle)} ${reply.isFavorite ? '<span title="Favorito" class="favorite-star">⭐</span>' : ''} ${reply.hotkey ? `<span class="reply-hotkey-display" title="Atalho">${window.AjaModularCatalogStore.escapeHTML(reply.hotkey)}</span>` : ''}</strong><div class="data-tags">${tagsHtml}</div></div><small>${window.AjaModularCatalogStore.escapeHTML(reply.text.substring(0, 150))}${reply.text.length > 150 ? '...' : ''}</small>`; item.title = reply.text; item.onclick = async () => { const final = formatReplyText(reply.text, name, id); CONFIG.LAST_COPIED_REPLY = final; logUsedReply(reply.title, reply.text); if (await copyTextToClipboard(final)) { UI.createNotification("Copiado!", 'success', 1500); } else { UI.createNotification("Erro ao copiar.", 'error'); } }; resultsContainer.appendChild(item); }); resultsContainer.scrollTop = 0;
                     }; const buildSuggestionFilters = () => { suggestionsContainer.innerHTML = ''; const suggestions = ['LOS', 'PON', 'Instabilidade', 'Velocidade', 'Sem Gerência', 'TV', 'Wi-Fi', 'Senha', 'Agendamento', 'FWA', '5G']; suggestions.forEach(s => { const btn = document.createElement('button'); btn.className = 'suggestion-btn'; btn.textContent = s; btn.title = `Buscar por "${s}"`; btn.onclick = () => { searchInput.value = s; searchInput.dispatchEvent(new Event('input', { bubbles: true })); }; suggestionsContainer.appendChild(btn); }); }; const buildCategoriesSidebar = () => { categoryListContainer.innerHTML = ''; const cats = new Set(sidebarCategoryOrder); cats.forEach(code => { const hasReplies = CONFIG.QUICK_REPLIES.some(r => r.title.startsWith(code + ' - ')); const isSpecial = ['recent', 'favorites', 'all'].includes(code); if ((hasReplies || isSpecial) && categoryDisplayMap[code]) { const li = document.createElement('li'); li.className = 'qr-category-item'; li.dataset.category = code; li.textContent = categoryDisplayMap[code]; li.title = categoryDisplayMap[code]; if (code === currentCategory && !currentSearchTerm) { li.classList.add('active'); } li.onclick = () => { currentCategory = code; currentSearchTerm = ''; searchInput.value = ''; categoryListContainer.querySelectorAll('.qr-category-item').forEach(i => i.classList.remove('active')); li.classList.add('active'); buildSuggestionFilters(); populateReplies(currentCategory, ''); }; categoryListContainer.appendChild(li); } }); }; searchInput.oninput = throttle(() => { currentSearchTerm = searchInput.value.trim(); categoryListContainer.querySelectorAll('.qr-category-item').forEach(i => i.classList.remove('active')); if (!currentSearchTerm) { const prev = categoryListContainer.querySelector(`[data-category="${currentCategory}"]`); if (prev && currentCategory !== 'search') { prev.classList.add('active'); populateReplies(currentCategory, ''); } else { currentCategory = 'favorites'; categoryListContainer.querySelector(`[data-category="favorites"]`)?.classList.add('active'); populateReplies(currentCategory, ''); } } else { populateReplies(null, currentSearchTerm); } }, 300); buildCategoriesSidebar(); buildSuggestionFilters(); populateReplies(currentCategory, ''); searchInput.focus();
                 },
                 createSettingsPanel() {
@@ -3795,7 +3788,7 @@ let publicApi;
                     else panel.classList.add('cc-escurinho'); // fallback escuro
                     panel.querySelector('.qr-script-popup-close-btn').onclick = () => panel.remove(); // PREFIXADO
                     // ... (restante da lógica da função é interna e não precisa de prefixo)
-                    const tabs = panel.querySelectorAll('.tab-button'); const contents = panel.querySelectorAll('.settings-tab-content'); tabs.forEach(tab => { tab.addEventListener('click', () => { log(`Tab clicked: ${tab.dataset.tab}`); const targetId = `tab-content-${tab.dataset.tab}`; const targetContent = panel.querySelector(`#${targetId}`); tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); if (targetContent) { targetContent.classList.add('active'); log(`Activated tab content: #${targetId}`); } else { log(`Error: Target content not found for id #${targetId}`); } }); }); const getReplyDataTags = (title) => CONFIG.QUICK_REPLIES.find(r => r.title === title)?.requiredData || []; const renderRepliesSettings = () => { const list = panel.querySelector('#settings-quick-replies-list'); list.innerHTML = ''; const sorted = [...CONFIG.QUICK_REPLIES].sort((a, b) => a.title.localeCompare(b.title)); sorted.forEach((reply) => { const idx = CONFIG.QUICK_REPLIES.findIndex(r => r.title === reply.title && r.text === reply.text); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = idx; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}">${t.replace(/_/g, ' ')}</span>`).join(' '); item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito" ${reply.isFavorite ? 'checked' : ''}><input type="text" value="${reply.title}" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="${reply.hotkey || ''}" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags">${tagsHtml}</div><textarea class="reply-text" rows="3" placeholder="Texto...">${reply.text}</textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.appendChild(item); }); list.querySelectorAll('.remove-reply-btn').forEach(btn => { btn.onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; }); }; panel.querySelector('#add-reply-btn').onclick = () => { const list = panel.querySelector('#settings-quick-replies-list'); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = '-1'; item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito"><input type="text" value="NOVA - Título" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags"></div><textarea class="reply-text" rows="3" placeholder="Texto..."></textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.prepend(item); item.querySelector('.remove-reply-btn').onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; item.querySelector('.reply-title').focus(); item.querySelector('.reply-title').select(); }; panel.querySelector('#restore-replies-btn').onclick = () => { if (confirm("Limpar TODAS as respostas?")) { CONFIG.QUICK_REPLIES = []; renderRepliesSettings(); UI.createNotification("Respostas limpas. Salve para confirmar.", "info", 4000); } }; const fileInput = panel.querySelector('#import-replies-input'); panel.querySelector('#export-replies-btn').onclick = () => { try { if (CONFIG.QUICK_REPLIES.length === 0) { UI.createNotification("Nada para exportar.", 'warn'); return; } const json = JSON.stringify(CONFIG.QUICK_REPLIES, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'respostas_rapidas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification(`Exportado (${CONFIG.QUICK_REPLIES.length})!`, 'success'); } catch (e) { log("Erro exportar:", e); UI.createNotification("Erro ao exportar.", 'error'); } }; panel.querySelector('#import-replies-btn').onclick = () => { fileInput.click(); }; fileInput.onchange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); if (!Array.isArray(imported) || (imported.length > 0 && (!imported[0].title || !imported[0].text))) { throw new Error('JSON inválido.'); } const msg = imported.length > 0 ? `Importar ${imported.length} respostas?` : "Arquivo vazio. Limpar atuais?"; if (confirm(`${msg}\n\nATENÇÃO: Substituirá as respostas atuais. Salve para confirmar.`)) { CONFIG.QUICK_REPLIES = imported.map(r => ({ title: r.title || "INVÁLIDO", text: r.text || "INVÁLIDO", isFavorite: r.isFavorite || false, requiredData: (Array.isArray(r.requiredData) ? r.requiredData : []).map(t => t.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase().replace(/[ÁÀÂÃÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÍÌÎÏ]/g, 'I').replace(/[ÓÒÔÕÖ]/g, 'O').replace(/[ÚÙÛÜ]/g, 'U').replace(/Ç/g, 'C').replace(/[^A-Z0-9_]/g, '')), hotkey: r.hotkey || null })); renderRepliesSettings(); UI.createNotification("Importado! Revise e Salve.", 'success', 4000); } } catch (err) { log("Erro importar:", err); UI.createNotification(err.message || "Erro ao ler JSON.", 'error'); } finally { event.target.value = null; } }; reader.readAsText(file, 'UTF-8'); }; panel.querySelector('#custom-action-example-btn').onclick = () => { exampleCustomFunction(); }; panel.querySelector('#reset-colors-btn').onclick = () => { if (confirm("Resetar as cores para o padrão Cyberpunk?")) { CONFIG.customThemeColors = { ...DEFAULT_CYBERPUNK_COLORS }; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors[key]) { input.value = CONFIG.customThemeColors[key]; } }); applyThemeColors(CONFIG.customThemeColors); UI.createNotification("Cores resetadas.", "info"); } }; panel.querySelector('#qr-save-settings-btn').onclick = () => { const newReplies = []; let hasError = false; const titles = new Set(); panel.querySelectorAll('#settings-quick-replies-list .reply-item').forEach(item => { const titleInput = item.querySelector('.reply-title'); const textInput = item.querySelector('.reply-text'); const hotkeyInput = item.querySelector('.reply-hotkey'); const title = titleInput.value.trim(); const text = textInput.value.trim(); const hotkey = hotkeyInput.value.trim() || null; const isFav = item.querySelector('.favorite-toggle').checked; const idx = parseInt(item.dataset.originalIndex, 10); titleInput.classList.remove('invalid-input'); titleInput.title = ''; textInput.classList.remove('invalid-input'); textInput.title = ''; let reqData = []; if (!isNaN(idx) && idx >= 0 && CONFIG.QUICK_REPLIES[idx]) { reqData = CONFIG.QUICK_REPLIES[idx].requiredData || []; } let titleError = ''; if (!title || !title.includes(' - ')) { titleError = 'Formato: CATEGORIA - Título'; } else if (titles.has(title.toLowerCase())) { titleError = 'Título duplicado.'; } if (titleError) { titleInput.classList.add('invalid-input'); titleInput.title = titleError; hasError = true; } else { titles.add(title.toLowerCase()); } if (!text) { textInput.classList.add('invalid-input'); textInput.title = 'Texto vazio.'; hasError = true; } if (!hasError) { newReplies.push({ title, text, isFavorite: isFav, requiredData: reqData, hotkey: hotkey }); } }); if (hasError) { UI.createNotification("Corrija os campos inválidos nas respostas.", 'error'); return; } CONFIG.QUICK_REPLIES = newReplies; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors.hasOwnProperty(key)) { CONFIG.customThemeColors[key] = input.value; } }); CONFIG.DARK_MODE = panel.querySelector('#dark-mode-toggle').checked; saveData(); UI.createNotification("Salvo!", "success"); panel.remove(); }; renderRepliesSettings();
+                    const tabs = panel.querySelectorAll('.tab-button'); const contents = panel.querySelectorAll('.settings-tab-content'); tabs.forEach(tab => { tab.addEventListener('click', () => { log(`Tab clicked: ${tab.dataset.tab}`); const targetId = `tab-content-${tab.dataset.tab}`; const targetContent = panel.querySelector(`#${targetId}`); tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); if (targetContent) { targetContent.classList.add('active'); log(`Activated tab content: #${targetId}`); } else { log(`Error: Target content not found for id #${targetId}`); } }); }); const getReplyDataTags = (title) => CONFIG.QUICK_REPLIES.find(r => r.title === title)?.requiredData || []; const renderRepliesSettings = () => { const list = panel.querySelector('#settings-quick-replies-list'); list.innerHTML = ''; const sorted = [...CONFIG.QUICK_REPLIES].sort((a, b) => a.title.localeCompare(b.title)); sorted.forEach((reply) => { const idx = CONFIG.QUICK_REPLIES.findIndex(r => r.title === reply.title && r.text === reply.text); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = idx; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}">${t.replace(/_/g, ' ')}</span>`).join(' '); item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito" ${reply.isFavorite ? 'checked' : ''}><input type="text" value="${window.AjaModularCatalogStore.escapeHTML(reply.title)}" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="${window.AjaModularCatalogStore.escapeHTML(reply.hotkey || '')}" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags">${tagsHtml}</div><textarea class="reply-text" rows="3" placeholder="Texto...">${window.AjaModularCatalogStore.escapeHTML(reply.text)}</textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.appendChild(item); }); list.querySelectorAll('.remove-reply-btn').forEach(btn => { btn.onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; }); }; panel.querySelector('#add-reply-btn').onclick = () => { const list = panel.querySelector('#settings-quick-replies-list'); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = '-1'; item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito"><input type="text" value="NOVA - Título" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags"></div><textarea class="reply-text" rows="3" placeholder="Texto..."></textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.prepend(item); item.querySelector('.remove-reply-btn').onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; item.querySelector('.reply-title').focus(); item.querySelector('.reply-title').select(); }; panel.querySelector('#restore-replies-btn').onclick = () => { if (confirm("Limpar TODAS as respostas?")) { CONFIG.QUICK_REPLIES = []; renderRepliesSettings(); UI.createNotification("Respostas limpas. Salve para confirmar.", "info", 4000); } }; const fileInput = panel.querySelector('#import-replies-input'); panel.querySelector('#export-replies-btn').onclick = () => { try { if (CONFIG.QUICK_REPLIES.length === 0) { UI.createNotification("Nada para exportar.", 'warn'); return; } const json = JSON.stringify(CONFIG.QUICK_REPLIES, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'respostas_rapidas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification(`Exportado (${CONFIG.QUICK_REPLIES.length})!`, 'success'); } catch (e) { log("Erro exportar:", e); UI.createNotification("Erro ao exportar.", 'error'); } }; panel.querySelector('#import-replies-btn').onclick = () => { fileInput.click(); }; fileInput.onchange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); if (!Array.isArray(imported) || (imported.length > 0 && (!imported[0].title || !imported[0].text))) { throw new Error('JSON inválido.'); } const msg = imported.length > 0 ? `Importar ${imported.length} respostas?` : "Arquivo vazio. Limpar atuais?"; if (confirm(`${msg}\n\nATENÇÃO: Substituirá as respostas atuais. Salve para confirmar.`)) { CONFIG.QUICK_REPLIES = imported.map(r => ({ title: r.title || "INVÁLIDO", text: r.text || "INVÁLIDO", isFavorite: r.isFavorite || false, requiredData: (Array.isArray(r.requiredData) ? r.requiredData : []).map(t => t.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase().replace(/[ÁÀÂÃÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÍÌÎÏ]/g, 'I').replace(/[ÓÒÔÕÖ]/g, 'O').replace(/[ÚÙÛÜ]/g, 'U').replace(/Ç/g, 'C').replace(/[^A-Z0-9_]/g, '')), hotkey: r.hotkey || null })); renderRepliesSettings(); UI.createNotification("Importado! Revise e Salve.", 'success', 4000); } } catch (err) { log("Erro importar:", err); UI.createNotification(err.message || "Erro ao ler JSON.", 'error'); } finally { event.target.value = null; } }; reader.readAsText(file, 'UTF-8'); }; panel.querySelector('#custom-action-example-btn').onclick = () => { exampleCustomFunction(); }; panel.querySelector('#reset-colors-btn').onclick = () => { if (confirm("Resetar as cores para o padrão Cyberpunk?")) { CONFIG.customThemeColors = { ...DEFAULT_CYBERPUNK_COLORS }; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors[key]) { input.value = CONFIG.customThemeColors[key]; } }); applyThemeColors(CONFIG.customThemeColors); UI.createNotification("Cores resetadas.", "info"); } }; panel.querySelector('#qr-save-settings-btn').onclick = () => { const newReplies = []; let hasError = false; const titles = new Set(); panel.querySelectorAll('#settings-quick-replies-list .reply-item').forEach(item => { const titleInput = item.querySelector('.reply-title'); const textInput = item.querySelector('.reply-text'); const hotkeyInput = item.querySelector('.reply-hotkey'); const title = titleInput.value.trim(); const text = textInput.value.trim(); const hotkey = hotkeyInput.value.trim() || null; const isFav = item.querySelector('.favorite-toggle').checked; const idx = parseInt(item.dataset.originalIndex, 10); titleInput.classList.remove('invalid-input'); titleInput.title = ''; textInput.classList.remove('invalid-input'); textInput.title = ''; let reqData = []; if (!isNaN(idx) && idx >= 0 && CONFIG.QUICK_REPLIES[idx]) { reqData = CONFIG.QUICK_REPLIES[idx].requiredData || []; } let titleError = ''; if (!title || !title.includes(' - ')) { titleError = 'Formato: CATEGORIA - Título'; } else if (titles.has(title.toLowerCase())) { titleError = 'Título duplicado.'; } if (titleError) { titleInput.classList.add('invalid-input'); titleInput.title = titleError; hasError = true; } else { titles.add(title.toLowerCase()); } if (!text) { textInput.classList.add('invalid-input'); textInput.title = 'Texto vazio.'; hasError = true; } if (!hasError) { newReplies.push({ title, text, isFavorite: isFav, requiredData: reqData, hotkey: hotkey }); } }); if (hasError) { UI.createNotification("Corrija os campos inválidos nas respostas.", 'error'); return; } CONFIG.QUICK_REPLIES = newReplies; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors.hasOwnProperty(key)) { CONFIG.customThemeColors[key] = input.value; } }); CONFIG.DARK_MODE = panel.querySelector('#dark-mode-toggle').checked; saveData(); UI.createNotification("Salvo!", "success"); panel.remove(); }; renderRepliesSettings();
                 },
                 createTriggerButton() { /* ... (igual v2.4.3 - usa ID #qr-trigger-button, já prefixado) ... */ let btn = document.getElementById('qr-trigger-button'); if (btn) return; btn = document.createElement('button'); btn.id = 'qr-trigger-button'; btn.innerHTML = ICONS.CHAT; btn.title = 'Abrir Respostas (Ctrl+Shift+Ç)'; document.body.appendChild(btn); let dragging = false, startX, startY, initialL, initialT; const saved = ctx.ajaStorage.getItem('qrTriggerButtonPos'); if (saved) { try { const pos = JSON.parse(saved); const w = 48, h = 48; const savedL = parseFloat(pos.left), savedT = parseFloat(pos.top); if (savedL >= 0 && savedL <= innerWidth - w && savedT >= 0 && savedT <= innerHeight - h) { btn.style.left = pos.left; btn.style.top = pos.top; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } else { throw new Error("Fora dos limites."); } } catch (e) { log("Posição salva inválida (botão).", e); btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; ctx.ajaStorage.removeItem('qrTriggerButtonPos'); } } else { btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; } btn.onmousedown = (e) => { if (e.button !== 0) return; dragging = false; startX = e.clientX; startY = e.clientY; const rect = btn.getBoundingClientRect(); initialL = rect.left; initialT = rect.top; btn.style.cursor = 'grabbing'; e.preventDefault(); const threshold = 5; let moved = false; document.onmousemove = (me) => { const dX = me.clientX - startX; const dY = me.clientY - startY; if (!moved && (Math.abs(dX) > threshold || Math.abs(dY) > threshold)) { moved = true; dragging = true; } if (moved) { let nX = initialL + dX; let nY = initialT + dY; const bW = btn.offsetWidth, bH = btn.offsetHeight; nX = Math.max(5, Math.min(nX, innerWidth - bW - 5)); nY = Math.max(5, Math.min(nY, innerHeight - bH - 5)); btn.style.left = `${nX}px`; btn.style.top = `${nY}px`; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; document.onmouseup = () => { btn.style.cursor = 'pointer'; if (moved) { ctx.ajaStorage.setItem('qrTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); } document.onmousemove = null; document.onmouseup = null; setTimeout(() => { dragging = false; }, 0); }; }; btn.onclick = () => { if (!dragging) { UI.createQuickReplyPopup(); } }; }
             };
@@ -3996,6 +3989,8 @@ let publicApi;
 
 return publicApi;
 });
+
+
 
 // Shared dependencies: ajaStorage
 window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) {
@@ -7050,12 +7045,7 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                     window.spellCheckerModule = this; // Expoe para limpeza global
                     // Arraste pertence somente a ui/corretor-interaction.
 
-                    // Loop de Segurança (Mão de Ferro) - Verifica a cada 300ms se o campo sumiu
-                    setInterval(() => {
-                        if (this.ultimoCampo && !this.isVisible(this.ultimoCampo)) {
-                            this.ocultarTudo();
-                        }
-                    }, 300);
+                    // O observador de campos abaixo também detecta quando o editor desaparece.
                 },
                 rastrearCampos() {
                     document.addEventListener('focusin', (e) => {
@@ -8646,16 +8636,17 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.5.1',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.0',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
  return {open};
 });
 
+
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.5.1',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.0',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8699,8 +8690,9 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 });
 
 
+
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.5.1)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.0)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8722,7 +8714,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.5.1';
+    const SCRIPT_VERSION = 'AjaModular_1.6.0';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -8766,6 +8758,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     function startScript() {
         window[`PURECLOUD_SCRIPT_LOADED_FLAG_${SCRIPT_VERSION}`] = true;
+
 
 
     const DEBUG_MODE = true;
@@ -10434,11 +10427,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
 
     window.AjaModularSetupSpell = repararCorretorModerno;
-    setInterval(() => {
+    window.AjaModularDOM.watch('#uni-menu-container,#spell-main-panel', () => {
         garantirBotaoMenu();
         repararCorretorModerno();
-    }, 800);
+    });
 })();
+
 (function protegerAbaTraducaoCorretor() {
     'use strict';
 const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
@@ -10963,7 +10957,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
     ensureStyle();
     protectDocumentEvents();
-    setInterval(enhanceVoiceTab, 200);
+    window.AjaModularDOM.watch('#spell-main-panel', enhanceVoiceTab);
 })();
 
 (function instalarGerenciadorDicionarioCorretor() {
@@ -11297,9 +11291,9 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     }
 
     window.ajaRenderDictionaryManager = renderDictionaryManager;
-    setInterval(enhancePanel, 200);
-    enhancePanel();
+    window.AjaModularDOM.watch('#spell-main-panel,#tab-dict', enhancePanel);
 })();
+
 (function(){
 'use strict';
 window.AjaModularCompactSpell=function(checker){
