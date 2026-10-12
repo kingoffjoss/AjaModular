@@ -28,7 +28,7 @@
             }
             return fetch(url, options);
         },
-        async askGemini(prompt, providedKey) {
+        async askGemini(prompt, providedKey, options = {}) {
             const secret = providedKey || storage.getItem(key('aja_voice_gemini_api_key')) || '';
             if (!secret) throw new Error('Configure sua chave Gemini.');
             const headers = {'x-goog-api-key':secret};
@@ -40,17 +40,31 @@
             const remembered = storage.getItem(key('aja_voice_gemini_model'));
             models.sort((a,b) => Number(b.name === remembered) - Number(a.name === remembered));
             for (const model of models) {
-                const result = await api.request('https://generativelanguage.googleapis.com/v1beta/' + model.name + ':generateContent', {
-                    method:'POST',headers:{...headers,'Content-Type':'application/json'},
-                    body:JSON.stringify({contents:[{parts:[{text:String(prompt)}]}],generationConfig:{temperature:0.2,maxOutputTokens:2048}})
-                });
-                if (!result.ok) {
-                    if ([400,404].includes(result.status)) continue;
-                    throw new Error('Gemini: ' + result.status);
+                const requested = options.maxOutputTokens || 2048;
+                const cap = Math.min(model.outputTokenLimit || 16384, 16384);
+                let budget = Math.min(requested, cap);
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    const result = await api.request('https://generativelanguage.googleapis.com/v1beta/' + model.name + ':generateContent', {
+                        method:'POST',headers:{...headers,'Content-Type':'application/json'},
+                        body:JSON.stringify({contents:[{parts:[{text:String(prompt)}]}],generationConfig:{temperature:0.2,maxOutputTokens:budget}})
+                    });
+                    if (!result.ok) {
+                        if ([400,404].includes(result.status)) break;
+                        throw new Error('Gemini: ' + result.status);
+                    }
+                    const data = await result.json();
+                    const candidate = data.candidates?.[0];
+                    if (candidate?.finishReason === 'MAX_TOKENS') {
+                        if (attempt === 0 && budget < cap) { budget = Math.min(budget * 2, cap); continue; }
+                        throw new Error('O Gemini interrompeu a resposta por limite de tamanho. Reduza o relato e tente novamente. Nenhum relatório parcial foi salvo.');
+                    }
+                    if (candidate?.finishReason !== 'STOP') {
+                        throw new Error('O Gemini não concluiu a resposta. Revise o texto e tente novamente.');
+                    }
+                    const text = (candidate.content?.parts || []).filter(p => !p.thought).map(p=>p.text || '').join('\n').trim();
+                    if (text) { storage.setItem(key('aja_voice_gemini_model'), model.name); return text; }
+                    throw new Error('O Gemini retornou uma resposta vazia. Tente novamente.');
                 }
-                const data = await result.json();
-                const text = (data.candidates?.[0]?.content?.parts || []).map(p=>p.text || '').join('\n').trim();
-                if (text) { storage.setItem(key('aja_voice_gemini_model'), model.name); return text; }
             }
             throw new Error('Nenhum modelo compatível respondeu com texto.');
         }
