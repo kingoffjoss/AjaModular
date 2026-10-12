@@ -122,3 +122,16 @@ A importação continua aceitando o formato antigo `{title,commands:[{id,label,d
 Na revisão, consultas WMIC foram substituídas por CIM, a limpeza de DNS Linux usa resolvectl, ferramentas privadas/legadas do macOS deram lugar às alternativas descritas em cada item, e a definição de velocidade no Windows usa Set-NetAdapterAdvancedProperty. Os valores de velocidade dependem do driver e precisam ser obtidos pelas propriedades da própria placa. A variante macOS de liberar IP foi removida porque repetia a renovação DHCP.
 
 Referências de revisão: [comandos Windows](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands), [NetAdapter](https://learn.microsoft.com/en-us/powershell/module/netadapter/set-netadapteradvancedproperty), [NetworkManager](https://networkmanager.dev/docs/api/latest/nmcli.html), [systemd](https://www.freedesktop.org/software/systemd/man/255/journalctl.html), [curl](https://curl.se/docs/manpage.html), [OpenSSH](https://man.openbsd.org/ssh), [Terminal Apple](https://support.apple.com/guide/terminal/welcome/mac), [network_cmds Apple](https://github.com/apple-oss-distributions/network_cmds) e [system_cmds Apple](https://github.com/apple-oss-distributions/system_cmds). Ferramentas opcionais, edições Windows, distribuições Linux, drivers e permissões variam; os requisitos de cada item explicitam esses casos. Nenhum comando de manutenção foi executado em computadores reais durante a validação do catálogo.
+
+
+### Versão 1.4.0 — organização e atendimento
+
+- Menu em duas colunas, com nomes nos títulos dos botões, favoritos e ordem configurável em **Organizar menu**. A grade escolhe o espaço disponível acima ou abaixo do botão principal.
+- Baú: campos preenchíveis com prévia, favoritos por sistema e últimos 30 comandos copiados. Os campos do atendimento ficam somente em memória; favoritos e recentes ficam salvos no navegador e entram no backup.
+- Quatro roteiros incorporados: sem internet, lentidão, DNS e acesso remoto, com orientação para interpretar cada etapa e acesso ao comando do sistema selecionado.
+- Janelas: tamanho e posição salvos, minimização para uma faixa inferior e recuperação em **Organizar menu → Trazer janelas para a tela**. A calculadora com Shadow DOM participa da recuperação; os indicadores compactos dos cronômetros continuam com seus controles próprios.
+- Versão instalada e consulta de atualização em **Organizar menu**. A consulta exibe falhas de conexão explicitamente. Atualize o favorito pelo site ou os arquivos da extensão; depois recarregue a plataforma.
+
+O atalho padrão das configurações dos cronômetros é **Ctrl+Shift+S**, fora de campos de texto. Também há o botão **Configurações dos cronômetros** no menu. O atalho atual aparece em Organizar menu e pode ser alterado em Configurações → Atalhos. **Ctrl+Shift+J** alterna o minidashboard e **Ctrl+Shift+D** alterna o tema dos cronômetros, salvo personalização.
+
+Arquivos de manutenção desta versão: `src/tools/menu-preferencias.js`, `src/tools/bau-assistente.js`, `src/catalogs/bau/roteiros.json`, `src/tools/bar.js` e `src/ui/window-service.js`. Validação: `tools/test-productivity.cjs` e `productivity-ui-validation.json`.

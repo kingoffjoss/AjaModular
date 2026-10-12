@@ -1,0 +1,19 @@
+{
+  "version": "1.4.0",
+  "passed": true,
+  "environment": "Fixture isolada; sem execução de comandos em clientes",
+  "checks": [
+    "35 módulos inicializados sem erro",
+    "Menu compacto com duas colunas",
+    "Favoritos e ordem do menu preservados após recarga e inserção assíncrona do corretor",
+    "Campo HOST gera Test-WSMan com nome preenchido e copia exatamente a prévia",
+    "Favoritos e recentes do Baú filtram o sistema; recentes preservados após recarga",
+    "Roteiro Windows sem internet abre o comando correspondente",
+    "Roteiro Linux acesso remoto resolve as três etapas",
+    "Baú redimensionado para 629 x 490 mantém tamanho após recarga",
+    "Baú e calculadora minimizam e restauram",
+    "Recuperação de janelas restaura minimizadas e limpa a faixa inferior",
+    "Configurações dos cronômetros abertas pelo botão e por Ctrl+Shift+S fora dos campos",
+    "Atualização: versão atual, nova versão e erro HTTP 503 produzem estados distintos"
+  ]
+}

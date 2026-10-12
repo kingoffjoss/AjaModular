@@ -139,11 +139,18 @@
     "shared": []
   },
   {
+    "id": "bau-assistente",
+    "file": "src/tools/bau-assistente.js",
+    "after": [],
+    "shared": []
+  },
+  {
     "id": "bar",
     "file": "src/tools/bar.js",
     "after": [
       "compatibility",
-      "bau-catalogo"
+      "bau-catalogo",
+      "bau-assistente"
     ],
     "shared": [
       "ajaStorage",
@@ -318,5 +325,18 @@
     "file": "src/tools/manutencao.js",
     "after": [],
     "shared": []
+  },
+  {
+    "id": "menu-preferencias",
+    "file": "src/tools/menu-preferencias.js",
+    "after": [
+      "menu"
+    ],
+    "shared": [
+      "ajaStorage",
+      "UI",
+      "CONFIG",
+      "safeFetch"
+    ]
   }
 ]
