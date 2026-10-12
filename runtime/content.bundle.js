@@ -4083,6 +4083,23 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             const STORAGE_KEY_POS_MAIN = 'gerenciadorPausas_posMain';
             const STORAGE_KEY_POS_CONFIG = 'gerenciadorPausas_posConfig';
             const STORAGE_KEY_NOTIF_CONFIG = 'gerenciadorPausas_notifConfig';
+            const STORAGE_KEY_CONFIRMAR = 'gerenciadorPausas_pedirConfirmacao';
+            let pedirConfirmacao = true;
+            try { pedirConfirmacao = ctx.ajaStorage.getItem(STORAGE_KEY_CONFIRMAR) !== 'false'; } catch (_) {}
+            function atualizarModoConfirmacao() {
+                const botao = document.getElementById('btn-modo-confirmacao');
+                if (!botao) return;
+                botao.textContent = pedirConfirmacao ? '🛡️ Pedir confirmação' : '⚡ 100% automático';
+                botao.setAttribute('aria-pressed', String(!pedirConfirmacao));
+                botao.title = pedirConfirmacao ? 'Clique para executar pausas agendadas sem confirmação' : 'Clique para pedir confirmação antes das pausas';
+            }
+            function alternarModoConfirmacao() {
+                const novo = !pedirConfirmacao;
+                try { ctx.ajaStorage.setItem(STORAGE_KEY_CONFIRMAR, String(novo)); }
+                catch (_) { window.AjaModularNotice?.('Não foi possível salvar o modo das pausas.', 'error'); return; }
+                pedirConfirmacao = novo;
+                atualizarModoConfirmacao();
+            }
 
             const NOTIF_CONFIG_DEFAULT = { ativadas: true, somAtivado: false, antecedenciaSegundos: 15 };
             let configNotificacao = { ...NOTIF_CONFIG_DEFAULT };
@@ -4291,6 +4308,11 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             // ======================================================
 
             function exibirModalConfirmacao(statusNome, callbackFuncao) {
+                // Mode applies to scheduled pauses; an explicit logout keeps its confirmation.
+                if (!pedirConfirmacao && String(statusNome).toLowerCase() !== 'logoff') {
+                    if (callbackFuncao) callbackFuncao();
+                    return;
+                }
                 removerModalConfirmacao();
                 console.log(`[AÇÃO V49.2] Exibindo confirmação customizada para '${statusNome}'...`);
 
@@ -4907,6 +4929,8 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                     <button id="btn-pause-resume-agendamento" class="script-btn" style="display:none;flex-basis:35%;">Pausar ⏸️</button>
                 </div>
                 
+                <button id="btn-modo-confirmacao" class="script-btn" type="button" aria-pressed="false" style="width:100%;margin-bottom:6px;">🛡️ Pedir confirmação</button>
+                <p style="font-size:11px;line-height:1.4;margin:0 0 12px;">Modo dos horários agendados. Requer automação ligada. Logoff mantém confirmação.</p>
                 <div id="buttons-container" style="display:grid;grid-template-columns:repeat(2, 1fr);gap:10px;margin-bottom:10px;">
                     <button id="btn-disponivel" class="script-btn purecloud-script-button">🟢 Disponível</button>
                     <button id="btn-na-fila" class="script-btn purecloud-script-button">🎧 Na Fila</button>
@@ -4927,6 +4951,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             </div>
         `;
 
+                atualizarModoConfirmacao();
                 const header = c.querySelector('#pausa-script-header');
                 const icone = c.querySelector('#pausa-script-icone');
                 if (header) header.onmousedown = dragMouseDown;
@@ -4953,6 +4978,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                         case 'btn-feedback': iniciarFeedback(false); break;
                         case 'btn-particular': iniciarParticular(false); break;
                         case 'btn-saude': iniciarQuestoesSaude(false); break;
+                        case 'btn-modo-confirmacao': alternarModoConfirmacao(); break;
                         case 'btn-toggle-agendamento': toggleAgendamento(); break;
                         case 'btn-pause-resume-agendamento': togglePausaAutomacao(); break;
                         case 'btn-minimizar': toggleVisibilidade(); break;
@@ -8673,7 +8699,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.10',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.11',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8684,7 +8710,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.10',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.11',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8731,7 +8757,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.10)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.11)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8753,7 +8779,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.10';
+    const SCRIPT_VERSION = 'AjaModular_1.6.11';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
