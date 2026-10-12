@@ -16,7 +16,7 @@ catalogs.bau = ['legacy','windows','linux','macos'].flatMap(name => JSON.parse(r
 catalogs.bauRoteiros = JSON.parse(read('src/catalogs/bau/roteiros.json'));
 const readModule = item => read(item.file).replace(/\/\* bundled-defaults:(\w+) \*\/ \[\]/g, (_, name) => JSON.stringify(catalogs[name]));
 // Tool factories are independently scoped; only shared core fragments retain lexical scope.
-const code = '(function(){ if(window.__AJA_MODULAR_RUNTIME__) return; window.__AJA_MODULAR_RUNTIME__=true;\n' + read('src/core/data-safety.js') + '\n' + read('src/core/module-registry.js') + '\n' + read('src/core/dom-watch.js') + '\n' + read('src/core/catalog-store.js') + '\n' + read('src/corretor/services.js') + '\n' + order.modules.map(readModule).join('\n') + '\n' + order.core.map(read).join('\n') + '\n' + order.enhancements.map(read).join('\n') + '\n' + read('src/ui/layout.js') + '\n' + read('src/ui/window-service.js') + '\n})();';
+const code = '(function(){ if(window.__AJA_MODULAR_RUNTIME__) return; window.__AJA_MODULAR_RUNTIME__=true;\n' + read('src/core/data-safety.js') + '\n' + read('src/core/module-registry.js') + '\n' + read('src/core/dom-watch.js') + '\n' + read('src/core/catalog-store.js') + '\n' + read('src/corretor/local.js') + '\n' + read('src/corretor/services.js') + '\n' + order.modules.map(readModule).join('\n') + '\n' + order.core.map(read).join('\n') + '\n' + order.enhancements.map(read).join('\n') + '\n' + read('src/ui/layout.js') + '\n' + read('src/ui/window-service.js') + '\n})();';
 fs.mkdirSync(path.join(root,'runtime'),{recursive:true});
 fs.writeFileSync(path.join(root,'runtime/content.bundle.js'),code);
 console.log('Bundle built:', Buffer.byteLength(code), 'bytes');
