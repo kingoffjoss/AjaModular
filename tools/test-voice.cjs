@@ -1,0 +1,24 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+module.exports=async function(){
+ const source=fs.readFileSync(path.join(__dirname,'../src/corretor/panel.js'),'utf8');
+ const functions=source.slice(source.indexOf('    function normalizarTranscricao('),source.indexOf('    function obterConstrutorReconhecimento('));
+ let prompt,options;
+ const context={URLSearchParams,console:{warn(){}},window:{askGemini:async(p,o)=>{prompt=p;options=o;return 'Olá, tudo bem? Reiniciei o equipamento, mas continua sem acesso.';},AjaModularSpell:{request:async()=>({ok:true,json:async()=>({matches:[]})}),filterMatches:m=>m}}};
+ vm.createContext(context);vm.runInContext(functions,context);
+ assert.equal(context.normalizarTranscricao('olá reiniciei o modem mas continua sem acesso'),'Olá, reiniciei o modem, mas continua sem acesso.');
+ assert.equal(context.normalizarTranscricao('por favor reinicie o modem'),'Por favor, reinicie o modem.');
+ assert.equal(context.normalizarTranscricao('reinicie por gentileza'),'Reinicie, por gentileza.');
+ assert.equal(context.normalizarTranscricao('teste vírgula teste ponto e vírgula fim ponto final'),'Teste, teste; fim.');
+ assert.equal(context.normalizarTranscricao('o ponto de acesso usa 192.168.1.1 e custa 10,50'),'O ponto de acesso usa 192.168.1.1 e custa 10,50.');
+ assert.equal(context.normalizarTranscricao('consulte https://exemplo.com.br/teste'),'Consulte https://exemplo.com.br/teste.');
+ assert.equal(context.normalizarTranscricao('a cliente relatou falta de acesso'),'A cliente relatou falta de acesso.');
+ const once=context.normalizarTranscricao('olá reiniciei mas continua sem acesso');assert.equal(context.normalizarTranscricao(once),once);
+ let result=await context.corrigirTranscricao('olá tudo bem reiniciei o equipamento mas continua sem acesso');
+ assert.equal(result.mode,'ia');assert.match(result.text,/,/);assert.equal(options.maxOutputTokens,8192);assert.match(prompt,/Não coloque vírgula entre sujeito e verbo/);
+ context.window.askGemini=async()=>{throw Error('unavailable')};
+ result=await context.corrigirTranscricao('olá teste mas sem acesso');assert.equal(result.mode,'basica');assert.equal(result.text,'Olá, teste, mas sem acesso.');
+ context.window.AjaModularSpell.request=async()=>{throw Error('offline')};
+ result=await context.corrigirTranscricao('por favor tente novamente');assert.equal(result.mode,'basica');assert.equal(result.text,'Por favor, tente novamente.');
+ assert.match(source,/A IA não está disponível/);
+ return ['Voice punctuation preserves technical data, handles accented spoken punctuation and conservative commas, and distinguishes AI from offline/basic fallback'];
+};
