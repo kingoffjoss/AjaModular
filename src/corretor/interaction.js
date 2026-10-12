@@ -35,7 +35,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     }
 
     function isCloseButton(target) {
-        return Boolean(target instanceof Element && target.closest('#btn-spell-close'));
+        return Boolean(target instanceof Element && target.closest('#btn-spell-close, .aja-minimize-window'));
     }
 
     function isInteractiveDragTarget(target) {
@@ -121,7 +121,9 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 resize: both !important;
             }
             #spell-main-panel .panel-header-top {
-                min-height: 70px !important;
+                min-height: 64px !important;
+                gap: 12px !important;
+                flex-wrap: wrap !important;
                 padding: 14px 18px !important;
                 box-sizing: border-box !important;
             }
@@ -129,6 +131,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 max-width: 330px !important;
                 line-height: 1.18 !important;
                 font-size: 16px !important;
+            }
+            #spell-main-panel .spell-header-actions { flex: 0 0 auto; margin-left: auto; }
+            #spell-main-panel #btn-ia-fix, #spell-main-panel #btn-fix-all {
+                height: 30px !important; padding: 0 9px !important;
+                font-size: 12px !important; line-height: 1 !important;
+                display: inline-flex !important; align-items: center !important;
             }
             #spell-main-panel .panel-tabs {
                 display: grid !important;
@@ -156,9 +164,9 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
             }
             #spell-main-panel #btn-voice-settings,
             #spell-main-panel #btn-voice-theme {
-                min-width: 38px !important;
-                width: 38px !important;
-                height: 34px !important;
+                min-width: 30px !important;
+                width: 30px !important;
+                height: 30px !important;
                 padding: 0 !important;
                 display: inline-flex !important;
                 align-items: center !important;
@@ -440,7 +448,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 keepPanelOpen(checker, panel);
             };
             const closeButton = panel.querySelector('#btn-spell-close');
-            actions.insertBefore(button, closeButton || actions.firstChild);
+            const closeGroup = closeButton?.closest('.aja-window-actions');
+            actions.insertBefore(button, closeGroup?.parentElement === actions ? closeGroup : closeButton?.parentElement === actions ? closeButton : null);
         }
 
         applyTheme(panel);

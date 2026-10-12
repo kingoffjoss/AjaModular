@@ -163,7 +163,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     <div style="background:rgba(255,255,255,0.2); color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">${erros.length}</div>
                     Corretor Ortográfico Aja Pro
                 </div>
-                <div style="display:flex; gap:6px; align-items:center;">
+                <div class="spell-header-actions" style="display:flex; gap:6px; align-items:center;">
                     <button class="btn-fix-all" id="btn-ia-fix" title="Melhorar texto com IA">IA</button>
                     <button class="btn-fix-all" id="btn-fix-all" ${erros.length === 0 ? 'disabled' : ''}>Tudo</button>
                     <button class="btn-fix-all" id="btn-spell-close" title="Fechar">×</button>
