@@ -4385,6 +4385,16 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const label = [...document.querySelectorAll(SELECTORES.STATUS_LABEL_TEXT)].find(el => normalizarPresenca(el.textContent) === alvo && visivelPresenca(el));
                 return label?.closest('button') || null;
             }
+            function clicarPresenca(controle) {
+                if (controle.disabled || controle.getAttribute('aria-disabled') === 'true') throw new Error('Status indisponível na plataforma.');
+                // Genesys attaches navigation/selection to the slotted label, not input.click().
+                const label = controle.closest('gux-form-field-radio')?.querySelector('label[slot="label"]');
+                (label || controle).click();
+            }
+            function statusConfirmado(nome) {
+                const label = document.querySelector(SELECTORES.MENU_STATUS_TOGGLE)?.getAttribute('aria-label') || '';
+                return normalizarPresenca(label.split(',').pop()) === normalizarPresenca(nome);
+            }
             async function aguardarPresenca(encontrar) {
                 for (let tentativa = 0; tentativa < 30; tentativa++) {
                     const elemento = encontrar();
@@ -4410,11 +4420,11 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                     let destino = procurarPresenca(item || categoria, seletor);
                     if (!destino && item) {
                         const principal = await aguardarPresenca(() => procurarPresenca(categoria));
-                        principal.click();
+                        clicarPresenca(principal);
                     }
                     destino = await aguardarPresenca(() => procurarPresenca(item || categoria, seletor));
-                    if (destino.disabled || destino.getAttribute('aria-disabled') === 'true') throw new Error('Status indisponível na plataforma.');
-                    destino.click();
+                    clicarPresenca(destino);
+                    await aguardarPresenca(() => statusConfirmado(item || categoria));
                     registrarPausa(nomePausa);
                 } catch (error) {
                     console.warn('[Gerenciador] ' + nomePausa, error);
@@ -8658,7 +8668,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.7',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.8',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8669,7 +8679,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.7',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.8',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8716,7 +8726,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.7)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.8)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8738,7 +8748,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.7';
+    const SCRIPT_VERSION = 'AjaModular_1.6.8';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
