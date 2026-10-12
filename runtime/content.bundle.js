@@ -8646,7 +8646,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.5.0',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.5.1',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8655,7 +8655,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.5.0',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.5.1',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8700,7 +8700,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.5.0)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.5.1)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8722,7 +8722,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.5.0';
+    const SCRIPT_VERSION = 'AjaModular_1.5.1';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -10030,7 +10030,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                     <div style="background:rgba(255,255,255,0.2); color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">${erros.length}</div>
                     Corretor Ortográfico Aja Pro
                 </div>
-                <div style="display:flex; gap:6px; align-items:center;">
+                <div class="spell-header-actions" style="display:flex; gap:6px; align-items:center;">
                     <button class="btn-fix-all" id="btn-ia-fix" title="Melhorar texto com IA">IA</button>
                     <button class="btn-fix-all" id="btn-fix-all" ${erros.length === 0 ? 'disabled' : ''}>Tudo</button>
                     <button class="btn-fix-all" id="btn-spell-close" title="Fechar">×</button>
@@ -10476,7 +10476,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     }
 
     function isCloseButton(target) {
-        return Boolean(target instanceof Element && target.closest('#btn-spell-close'));
+        return Boolean(target instanceof Element && target.closest('#btn-spell-close, .aja-minimize-window'));
     }
 
     function isInteractiveDragTarget(target) {
@@ -10562,7 +10562,9 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 resize: both !important;
             }
             #spell-main-panel .panel-header-top {
-                min-height: 70px !important;
+                min-height: 64px !important;
+                gap: 12px !important;
+                flex-wrap: wrap !important;
                 padding: 14px 18px !important;
                 box-sizing: border-box !important;
             }
@@ -10570,6 +10572,12 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 max-width: 330px !important;
                 line-height: 1.18 !important;
                 font-size: 16px !important;
+            }
+            #spell-main-panel .spell-header-actions { flex: 0 0 auto; margin-left: auto; }
+            #spell-main-panel #btn-ia-fix, #spell-main-panel #btn-fix-all {
+                height: 30px !important; padding: 0 9px !important;
+                font-size: 12px !important; line-height: 1 !important;
+                display: inline-flex !important; align-items: center !important;
             }
             #spell-main-panel .panel-tabs {
                 display: grid !important;
@@ -10597,9 +10605,9 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
             }
             #spell-main-panel #btn-voice-settings,
             #spell-main-panel #btn-voice-theme {
-                min-width: 38px !important;
-                width: 38px !important;
-                height: 34px !important;
+                min-width: 30px !important;
+                width: 30px !important;
+                height: 30px !important;
                 padding: 0 !important;
                 display: inline-flex !important;
                 align-items: center !important;
@@ -10881,7 +10889,8 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
                 keepPanelOpen(checker, panel);
             };
             const closeButton = panel.querySelector('#btn-spell-close');
-            actions.insertBefore(button, closeButton || actions.firstChild);
+            const closeGroup = closeButton?.closest('.aja-window-actions');
+            actions.insertBefore(button, closeGroup?.parentElement === actions ? closeGroup : closeButton?.parentElement === actions ? closeButton : null);
         }
 
         applyTheme(panel);
@@ -10956,6 +10965,7 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
     protectDocumentEvents();
     setInterval(enhanceVoiceTab, 200);
 })();
+
 (function instalarGerenciadorDicionarioCorretor() {
     'use strict';
 const ajaStorage = { getItem: k => window.localStorage.getItem('ajamodular:' + k), setItem: (k,v) => window.localStorage.setItem('ajamodular:' + k,v), removeItem: k => window.localStorage.removeItem('ajamodular:' + k) };
@@ -12099,18 +12109,18 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 'use strict';
 const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal','#aja-menu-options'];
 const selector=roots.join(',');let sequence=2147483000;const ranks=new WeakMap();let shown=new Set();
-const closeSelector='#closeSettingsPanelBtn,.purecloud-script-popup-close-btn,[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
+const closeSelector='#am-close,#closeSettingsPanelBtn,.purecloud-script-popup-close-btn,[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
 function windows(){const all=[...document.querySelectorAll(selector)],calc=document.getElementById('calc-ultimate-host')?.shadowRoot?.getElementById('modal');if(calc)all.push(calc);return all;}
 function isCalculator(node){return node.getRootNode()?.host?.id==='calc-ultimate-host';}
 function visible(node){return node.getClientRects().length&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&(!node.matches('dialog')||node.open)&&(!node.matches('#calc-modal')||node.classList.contains('calc-visible'));}
 function close(node){if(node.matches('#aja-maintenance,#ajamodular-settings')){node.close();return true;}if(isCalculator(node)){node.classList.remove('calc-visible');return true;}const button=node.querySelector(closeSelector);if(button){button.click();return true;}return false;}
 function constrain(node){if(!visible(node)||node.matches('dialog,.central-modal'))return;const rect=node.getBoundingClientRect();if(rect.left<0||rect.top<0||rect.right>innerWidth||rect.bottom>innerHeight){node.style.left=Math.max(0,Math.min(rect.left,innerWidth-rect.width-8))+'px';node.style.top=Math.max(0,Math.min(rect.top,innerHeight-rect.height-8))+'px';node.style.right='auto';node.style.bottom='auto';}}
-function refresh(){const current=new Set();windows().forEach(node=>{if(visible(node)){current.add(node);if(!shown.has(node)){ranks.set(node,++sequence);restoreLayout(node);attachControls(node);const old=minimized.get(node);if(old){old.button.remove();minimized.delete(node);}}constrain(node);}});shown=current;}
+function refresh(){const current=new Set();windows().forEach(node=>{if(visible(node)){current.add(node);if(!shown.has(node)){ranks.set(node,++sequence);restoreLayout(node);attachControls(node);const old=minimized.get(node);if(old){old.button.remove();minimized.delete(node);}}attachControls(node);constrain(node);}});shown=current;}
 document.addEventListener('pointerdown',event=>{const node=event.target.closest?.(selector);if(node){ranks.set(node,++sequence);if(!node.matches('dialog'))node.style.setProperty('z-index',String(sequence),'important');}},true);
 document.addEventListener('keydown',event=>{if(event.key!=='Escape'||document.getElementById('aja-spell-compact')?.hidden===false)return;refresh();const nodes=windows().filter(visible);const modal=nodes.findLast(x=>x.matches('dialog[open]'));const top=modal||nodes.sort((a,b)=>(ranks.get(a)||0)-(ranks.get(b)||0)).at(-1);if(top&&close(top)){event.preventDefault();event.stopImmediatePropagation();}},true);
 window.addEventListener('resize',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 // Observe insertion/opening only. Text updates from clocks do not trigger window creation or toggling.
-let pending=false;new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'?r.target.matches(selector):[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches(selector)||n.querySelector(selector))))&&!pending){pending=true;requestAnimationFrame(()=>{pending=false;refresh();});}}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','style']});
+let pending=false;new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'?r.target.matches(selector):(r.target.closest?.(selector)||[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches(selector)||n.querySelector(selector)))))&&!pending){pending=true;requestAnimationFrame(()=>{pending=false;refresh();});}}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','style']});
 
 const layoutKey='ajamodular:window_layout_v1';let layouts={};try{const saved=JSON.parse(localStorage.getItem(layoutKey)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))layouts=saved;}catch{}
 const minimized=new Map(),controls=new WeakSet();
@@ -12119,7 +12129,7 @@ function keyFor(node){return isCalculator(node)?'calc-ultimate-host':node.id||[.
 function remember(node){if(!visible(node)||minimized.has(node))return;const r=node.getBoundingClientRect();if(r.width<60||r.height<40)return;layouts[keyFor(node)]={left:r.left,top:r.top,width:r.width,height:r.height};try{localStorage.setItem(layoutKey,JSON.stringify(layouts));}catch(error){console.warn('[AjaModular] Posição não salva',error);}}
 function restoreLayout(node){const saved=layouts[keyFor(node)];if(!saved||!['left','top','width','height'].every(k=>Number.isFinite(saved[k])))return;const width=Math.max(60,Math.min(saved.width,innerWidth-16)),height=Math.max(40,Math.min(saved.height,innerHeight-16));Object.assign(node.style,{position:'fixed',margin:'0',left:Math.max(8,Math.min(saved.left,innerWidth-width-8))+'px',top:Math.max(8,Math.min(saved.top,innerHeight-height-8))+'px',right:'auto',bottom:'auto',width:width+'px',height:height+'px'});}
 function restoreMinimized(node){const item=minimized.get(node);if(!item)return;item.button.remove();minimized.delete(node);if(!node.isConnected)return;if(node.matches('dialog'))node.showModal();else if(isCalculator(node))node.classList.add('calc-visible');else {node.style.setProperty('display',item.display,item.priority);node.style.visibility=item.visibility;}restoreLayout(node);constrain(node);ranks.set(node,++sequence);}
-function attachControls(node){if(controls.has(node)||node.matches('#purecloud-script-mini-dashboard'))return;controls.add(node);const title=(isCalculator(node)?'Calculadora':node.id==='gemini-modal'?'Aja Assistant':node.querySelector('header strong,h1,h2,h3,.panel-title,.header-title')?.textContent||node.getAttribute('aria-label')||'Ferramenta').trim().slice(0,60);const button=node.querySelector('.minimize-btn')||document.createElement('button');button.classList.add('aja-minimize-window');button.type='button';button.textContent='−';button.title='Minimizar janela';button.setAttribute('aria-label','Minimizar '+title);button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('mousedown',e=>e.stopPropagation());button.onclick=e=>{e.stopPropagation();remember(node);const restoreButton=document.createElement('button');restoreButton.textContent=title;restoreButton.title='Restaurar '+title;restoreButton.onclick=()=>restoreMinimized(node);minimized.set(node,{button:restoreButton,display:node.style.display,priority:node.style.getPropertyPriority('display'),visibility:node.style.visibility});dock.appendChild(restoreButton);if(node.matches('dialog'))node.close();else if(isCalculator(node))node.classList.remove('calc-visible');else node.style.setProperty('display','none','important');};placeControls(node,button);if(!node.matches('dialog')){node.style.resize='both';if(getComputedStyle(node).overflow==='visible')node.style.overflow='auto';}}
+function attachControls(node){if(node.querySelector('.aja-minimize-window')||node.matches('#purecloud-script-mini-dashboard'))return;controls.add(node);const title=(isCalculator(node)?'Calculadora':node.id==='gemini-modal'?'Aja Assistant':node.querySelector('header strong,h1,h2,h3,.panel-title,.header-title')?.textContent||node.getAttribute('aria-label')||'Ferramenta').trim().slice(0,60);const button=node.querySelector('.minimize-btn')||document.createElement('button');button.classList.add('aja-minimize-window');button.type='button';button.textContent='−';button.title='Minimizar janela';button.setAttribute('aria-label','Minimizar '+title);button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('mousedown',e=>e.stopPropagation());button.onclick=e=>{e.stopPropagation();remember(node);const restoreButton=document.createElement('button');restoreButton.textContent=title;restoreButton.title='Restaurar '+title;restoreButton.onclick=()=>restoreMinimized(node);minimized.set(node,{button:restoreButton,display:node.style.display,priority:node.style.getPropertyPriority('display'),visibility:node.style.visibility});dock.appendChild(restoreButton);if(node.matches('dialog'))node.close();else if(isCalculator(node))node.classList.remove('calc-visible');else node.style.setProperty('display','none','important');};placeControls(node,button);if(!node.matches('dialog')){node.style.resize='both';if(getComputedStyle(node).overflow==='visible')node.style.overflow='auto';}}
 
 // Keep minimize and close in the same flow, including headers without a named class.
 function placeControls(node,button){
@@ -12135,7 +12145,7 @@ function placeControls(node,button){
   if(parent!==node&&getComputedStyle(parent).display.includes('flex'))parent.style.alignItems='center';
   group.append(button,closeButton);
   // Explicit dimensions override broad tool/theme button rules without touching handlers.
-  const icons=parent===node?[]:[...parent.children].filter(el=>el!==group&&el.matches('button')&&el.textContent.trim().length<=2);
+  const icons=parent===node?[]:[...parent.children].filter(el=>el!==group&&el.matches('button')&&el.textContent.trim().length<=2&&!/[\p{L}\p{N}]/u.test(el.textContent.trim()));
   for(const control of [button,closeButton,...icons]){
    control.classList.add('aja-window-control');
    const props={position:'static',inset:'auto',width:'30px','min-width':'30px','max-width':'30px',height:'30px','min-height':'30px','max-height':'30px',padding:'0',margin:'0',display:'inline-flex','align-items':'center','justify-content':'center',flex:'0 0 30px','box-sizing':'border-box','line-height':'1','font-size':'20px','border-radius':'6px',transform:'none'};
