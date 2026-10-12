@@ -5603,34 +5603,44 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 };
             }
 
-            // --- MOTOR DE SUBSTITUIÇÃO ---
-            function replaceText(element, trigger, fullText) {
-                try {
-                    element.focus();
-                    for (let i = 0; i <= trigger.length; i++) document.execCommand('delete', false, null);
-                    document.execCommand('insertText', false, fullText);
-                } catch (e) { console.error("[CAR] Erro ao substituir:", e); }
-            }
-
-            document.addEventListener('keyup', (e) => {
-                if (e.key === ' ' || e.code === 'Space' || e.keyCode === 32) {
-                    const active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
-                        Storage.get((data) => {
-                            scripts = data.scripts;
-                            let text = active.value || active.innerText || active.textContent;
-                            if (!text) return;
-                            text = text.replace(/[\u00a0\u200b]/g, ' ');
-                            const words = text.trimEnd().split(' ');
-                            const lastWord = words[words.length - 1];
-                            if (scripts[lastWord]) {
-                                e.preventDefault(); e.stopPropagation();
-                                replaceText(active, lastWord, scripts[lastWord]);
-                            }
-                        });
-                    }
+            // Expand only the command immediately before the caret.
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== ' ' || e.isComposing || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+                const active = (e.composedPath?.() || [e.target]).find(el => el?.matches?.('textarea, input, [contenteditable="true"], [contenteditable=""]'));
+                if (!active || active.disabled || active.readOnly || active.closest('#car-panel')) return;
+                if (active.tagName === 'INPUT' && !['text','search','url','tel'].includes(active.type)) return;
+                const doc = active.ownerDocument;
+                let before, selection, range;
+                if (active.isContentEditable) {
+                    selection = active.getRootNode().getSelection?.() || doc.getSelection();
+                    if (!selection?.rangeCount || !selection.isCollapsed) return;
+                    range = selection.getRangeAt(0);
+                    if (!active.contains(range.endContainer)) return;
+                    const prefix = range.cloneRange(); prefix.selectNodeContents(active); prefix.setEnd(range.endContainer, range.endOffset);
+                    before = prefix.toString();
+                } else {
+                    if (active.selectionStart == null || active.selectionStart !== active.selectionEnd) return;
+                    before = active.value.slice(0, active.selectionStart);
                 }
+                const trigger = before.match(/(?:^|\s)(\S+)$/)?.[1];
+                // Bookmarklet storage is synchronous and shared by same-origin editor frames.
+                if (!isExtension) Storage.get(data => { scripts = data.scripts; });
+                if (!trigger || !Object.prototype.hasOwnProperty.call(scripts, trigger)) return;
+                if (active.isContentEditable) {
+                    const start = before.length - trigger.length;
+                    const walker = doc.createTreeWalker(active, 4);
+                    let node, offset = 0, found = false;
+                    while ((node = walker.nextNode())) {
+                        if (offset + node.length >= start) { range.setStart(node, start-offset); found = true; break; }
+                        offset += node.length;
+                    }
+                    if (!found) return;
+                    selection.removeAllRanges(); selection.addRange(range);
+                } else active.setSelectionRange(active.selectionStart-trigger.length, active.selectionEnd);
+                e.preventDefault();
+                doc.execCommand('insertText', false, scripts[trigger]);
             }, true);
+            if (isExtension) chrome.storage.onChanged?.addListener(loadData);
 
             window.toggleCAR = function () {
                 createUI();
@@ -7042,13 +7052,17 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                     // O observador de campos abaixo também detecta quando o editor desaparece.
                 },
                 rastrearCampos() {
-                    document.addEventListener('focusin', (e) => {
-                        const el = e.target;
+                    const detectarCampo = (e) => {
+                        const el = (e.composedPath?.() || [e.target]).find(node => node?.matches?.('textarea, input, [contenteditable="true"], [contenteditable=""]')) || e.target;
                         if (el.closest('#spell-main-panel, #ajamodular-settings, #aja-spell-compact')) return;
                         if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text') || el.isContentEditable) {
+                            if (this.ultimoCampo === el) return;
                             this.ultimoCampo = el; this.sincronizarIlusao(); this.posicionarBadge(); this.configurarEventosDoCampo(); this.verificarTextoNaAPI();
                         }
-                    });
+                    };
+                    document.addEventListener('focusin', detectarCampo, true);
+                    document.addEventListener('input', detectarCampo, true);
+                    detectarCampo({target: document.activeElement});
                     window.addEventListener('resize', () => { if(this.ultimoCampo) { this.sincronizarIlusao(); this.posicionarBadge(); } });
                     window.addEventListener('scroll', () => { if(this.ultimoCampo) { this.sincronizarIlusao(); this.posicionarBadge(); } }, true);
 
@@ -8630,7 +8644,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.4',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.5',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8641,7 +8655,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.4',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.5',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8688,7 +8702,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.4)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.5)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8710,7 +8724,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.4';
+    const SCRIPT_VERSION = 'AjaModular_1.6.5';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
