@@ -2,8 +2,8 @@
 (function(){
 'use strict';
 const prefix='ajamodular:', reserved=prefix+'maintenance:', recovery=reserved+'recovery';
-const arrays=new Set(['bau_commandDatabase_v1','quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
-const objects=new Set(['hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
+const arrays=new Set(['bau_favorites_v1','bau_recent_v1','menu_favorites_v1','menu_order_v1','bau_commandDatabase_v1','quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
+const objects=new Set(['window_layout_v1','hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
 const extensionKeys=['car_data_v8_master','car_theme_v8','agentName','IA_THEME','geminiHistory','ajamodular_enabled','SHOW_AGENT_TOOLS','MOD_CRONOMETROS','MOD_PAUSAS','MOD_PROTOCOLOS','MOD_RESPOSTAS','MOD_BAR','MOD_IA','MOD_CAR','MOD_ID','MOD_MENU','MOD_CALC'];
 const secret=k=>/api.?key|geminikey|token|password|senha|credential/i.test(k);
 function valid(key,value){
@@ -883,13 +883,56 @@ window.AjaModular.register('bau-catalogo', [], function(ctx) {
     return api;
 });
 
+window.AjaModular.register('bau-assistente', [], function() {
+ 'use strict';
+ const tokens = ['ADAPTADOR','CAMINHO','DISPOSITIVO','HOST','ID_PACOTE','IMPRESSORA','INTERFACE','IP_DESTINO','IP_DNS','NOME_DA_PASTA','NOME_DA_REDE','NOME_DO_FICHEIRO','NOME_OU_PADRAO','NOME_SERVICO','NOME','PACOTE','PID','PORTA','PROGRAMA','ROTULO','SERVICO','TAREFA'];
+ const pattern = new RegExp('\\b('+tokens.join('|')+')\\b','g');
+ const workflows = [{"id":"sem-internet","title":"Sem internet","steps":[{"title":"1. Conferir endereço e interface","why":"Identifique a interface usada pelo atendimento.","inspect":"Sem IP válido ou interface desligada: investigue conexão física, Wi-Fi e DHCP.","commands":{"win":"bau-win-001","linux":"bau-linux-001","mac":"bau-mac-003"}},{"title":"2. Conferir rota de saída","why":"Verifique se existe um caminho para fora da rede local.","inspect":"Confira gateway e interface; VPNs podem mudar a rota.","commands":{"win":"bau-win-008","linux":"bau-linux-004","mac":"bau-mac-017"}},{"title":"3. Verificar DNS","why":"Consulte um domínio que deveria funcionar.","inspect":"Erro de DNS com IP e rota válidos indica investigar o resolvedor; ausência de A não prova indisponibilidade IPv6.","commands":{"win":"bau-win-013","linux":"bau-linux-013","mac":"bau-mac-028"}},{"title":"4. Testar serviço de destino","why":"Verifique o destino usado no atendimento.","inspect":"Conexão TCP ou resposta HTTPS ajudam a separar conectividade de falha no aplicativo.","commands":{"win":"bau-win-018","linux":"bau-linux-034","mac":"bau-mac-036"}}]},{"id":"lentidao","title":"Lentidão","steps":[{"title":"1. Verificar consumo local","why":"Descarte saturação do computador antes de atribuir à rede.","inspect":"Compare processos e consumo; algumas consultas mostram médias acumuladas.","commands":{"win":"bau-win-061","linux":"bau-linux-057","mac":"bau-mac-063"}},{"title":"2. Verificar erros da interface","why":"Procure indícios de falha física ou descarte.","inspect":"Contadores são acumulados: compare duas leituras para ver se crescem.","commands":{"win":"bau-win-005","linux":"bau-linux-003","mac":"bau-mac-022"}},{"title":"3. Medir latência","why":"Compare tempos e perda para o destino escolhido.","inspect":"Perda ICMP pode ser filtragem; compare com a aplicação e outros destinos.","commands":{"win":"bau-win-020","linux":"bau-linux-030","mac":"bau-mac-032"}}]},{"id":"dns","title":"Problema de DNS","steps":[{"title":"1. Identificar resolvedores","why":"Descubra de onde vem a configuração DNS.","inspect":"Considere VPN, DHCP e DNS por interface.","commands":{"win":"bau-win-011","linux":"bau-linux-011","mac":"bau-mac-024"}},{"title":"2. Consultar IPv4","why":"Confira registros A para o domínio afetado.","inspect":"Compare resposta, ausência de registros e timeout.","commands":{"win":"bau-win-013","linux":"bau-linux-013","mac":"bau-mac-028"}},{"title":"3. Consultar IPv6","why":"Confira se o domínio publica registros AAAA.","inspect":"Um domínio pode oferecer somente IPv4; ausência de AAAA sozinha não indica defeito.","commands":{"win":"bau-win-017","linux":"bau-linux-014","mac":"bau-mac-029"}}]},{"id":"remoto","title":"Acesso remoto","steps":[{"title":"1. Conferir configuração ou serviços","why":"Identifique o serviço remoto esperado.","inspect":"Windows: estados de RDP, WinRM e SSH. Unix: configuração efetiva do cliente SSH para o destino.","commands":{"win":"bau-win-099","linux":"bau-linux-079","mac":"bau-mac-045"}},{"title":"2. Verificar portas e conexões","why":"Confira se o serviço está disponível na máquina relevante.","inspect":"Confronte porta/endereço com o serviço: uma porta aberta não garante autenticação ou saúde.","commands":{"win":"bau-win-027","linux":"bau-linux-008","mac":"bau-mac-066"}},{"title":"3. Conferir firewall","why":"Leia as regras antes de qualquer mudança.","inspect":"Verifique perfil, interface e aplicativo afetados; estes comandos apenas consultam.","commands":{"win":"bau-win-030","linux":"bau-linux-082","mac":"bau-mac-042"}}]}];
+ function fields(command) { return [...new Set(command.match(pattern) || [])]; }
+ function render(command, values, os) {
+  let quote = '', index = 0, result = '';
+  const escape = (value, mode) => {
+   if (mode === "'") return os === 'win' ? value.replace(/'/g,"''") : value.replace(/'/g,"'\\''");
+   if (mode === '"') return os === 'win' ? value.replace(/`/g,'``').replace(/\$/g,'`$').replace(/"/g,'`"') : value.replace(/[\\$`"!]/g,'\\$&');
+   return "'" + escape(value,"'") + "'";
+  };
+  const matcher = new RegExp(pattern.source,'y');
+  while(index < command.length) {
+   matcher.lastIndex=index; const match=matcher.exec(command);
+   if(match && (index===0 || !/[\w]/.test(command[index-1]))) {
+    const key=match[0],value=values[key];
+    if (value !== undefined && value !== '') {
+     if (typeof value !== 'string' || /[\r\n\0]/.test(value)) throw Error('Use uma única linha em '+key+'.');
+     if (key==='PORTA' && (!/^\d+$/.test(value) || +value<1 || +value>65535)) throw Error('PORTA deve estar entre 1 e 65535.');
+     if (key==='PID' && !/^[1-9]\d*$/.test(value)) throw Error('PID deve ser um número positivo.');
+     result += !quote && ['PID','PORTA'].includes(key) ? value : escape(value,quote);
+    } else result += key;
+    index += key.length;continue;
+   }
+   const char=command[index];
+   if ((os==='win' && char==='`' && quote!=="'") || (os!=='win' && char==='\\' && quote!=="'")) {result+=command.slice(index,index+2);index+=2;continue;}
+   if (char==="'" || char==='"') {if(!quote)quote=char;else if(quote===char)quote='';}
+   result+=char;index++;
+  }
+  return result;
+ }
+ return {fields,render,workflows};
+});
+
 // Shared dependencies: ajaStorage, safeFetch
-window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ctx) {
+window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assistente"], function(ctx) {
     /* --- MÓDULO ANEXADO: BAR.JS --- */
     try {
         (function () {
             // Catálogos independentes incorporados durante o build.
             const catalog = window.AjaModular.get('bau-catalogo');
+            const assistant = window.AjaModular.get('bau-assistente');
+            const loadList = key => { try { const value=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(value)?value.filter(x=>typeof x==='string'):[]; } catch{return [];} };
+            let commandFavorites=loadList('bau_favorites_v1'), commandRecent=loadList('bau_recent_v1');
+            const fieldValues=new Map();
+            const commandKey=(os,id)=>os+':'+id;
+            function recordRecent(os,id){ const key=commandKey(os,id); commandRecent=[key,...commandRecent.filter(x=>x!==key)].slice(0,30);ctx.ajaStorage.setItem('bau_recent_v1',JSON.stringify(commandRecent)); }
+
             window.commandDatabase = catalog.defaults();
             const savedCatalog = ctx.ajaStorage.getItem('bau_commandDatabase_v1');
             if (savedCatalog) {
@@ -955,6 +998,7 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
 
                 try {
                     navigator.clipboard.writeText(inputElement.value).then(() => {
+                        if(copyButton.dataset.commandId)recordRecent(copyButton.dataset.commandOs,copyButton.dataset.commandId);
                         const originalText = copyButton.textContent;
                         copyButton.textContent = 'Copiado!';
                         copyButton.style.backgroundColor = 'var(--cor-sucesso)';
@@ -966,9 +1010,9 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                             else if (copyButton.classList.contains('run-test')) copyButton.style.backgroundColor = 'var(--cor-info)';
                             else copyButton.style.backgroundColor = 'var(--cor-acento-primario)';
                         }, 2000);
-                    });
+                    }).catch(()=>window.AjaModularNotice?.('Não foi possível copiar. Selecione o comando e copie manualmente.'));
                 } catch (e) {
-                    alert("Não foi possível copiar. Por favor, copie manualmente (Ctrl+C).");
+                    window.AjaModularNotice?.('Não foi possível copiar. Selecione o comando e copie manualmente.');
                 }
             }
 
@@ -1086,9 +1130,10 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
 
             // --- 2. O ESTILO (CSS) V20.1 (ORIGINAL) ---
             const styles = `
-                #bau-command-search, #bau-command-category { box-sizing:border-box; width:100%; margin:8px 0; padding:10px; border:1px solid #6485a5; border-radius:6px; background:var(--cor-fundo-secundario, #173859); color:inherit; }
+                #bau-command-search, #bau-command-category, #bau-command-scope, #bau-workflow { box-sizing:border-box; width:100%; margin:8px 0; padding:10px; border:1px solid #6485a5; border-radius:6px; background:var(--cor-fundo-secundario, #173859); color:inherit; }
                 #bau-command-count { font-weight:600; }
                 #bau-command-results .command-block { border:1px solid #6485a5; border-radius:8px; padding:12px; margin:12px 0; overflow-wrap:anywhere; }
+                .bau-parameters {margin:10px 0;padding:8px;border:1px solid #428cc1;border-radius:6px} .bau-parameters input {width:100%;box-sizing:border-box} #bau-workflow-results:empty {display:none} #bau-workflow-results {padding:10px;border:1px solid #428cc1;border-radius:8px;margin:8px 0}
                 .bau-command-text { box-sizing:border-box; width:100%; max-width:100%; resize:vertical; font-family:Consolas,monospace; padding:8px; }
                 .bau-command-impact { border-left:3px solid #ff9900; padding-left:8px; }
 
@@ -1430,6 +1475,20 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                 div.appendChild(commandField);
                 const btn = createButton('copy-' + id, 'Copiar Comando', 'bau-copy-btn');
                 btn.setAttribute('data-input-id', inputId);
+                btn.dataset.commandId=id;btn.dataset.commandOs=os;
+                const favorite=createButton('favorite-'+os+'-'+id, commandFavorites.includes(commandKey(os,id))?'★ Favorito':'☆ Favoritar');
+                favorite.setAttribute('aria-label','Favoritar '+label);favorite.setAttribute('aria-pressed',String(commandFavorites.includes(commandKey(os,id))));
+                favorite.onclick=()=>{const key=commandKey(os,id);commandFavorites=commandFavorites.includes(key)?commandFavorites.filter(x=>x!==key):[...commandFavorites,key];ctx.ajaStorage.setItem('bau_favorites_v1',JSON.stringify(commandFavorites));populateCommandsTab();};
+                div.appendChild(favorite);
+                const fields=assistant.fields(cmd),key=commandKey(os,id),values=fieldValues.get(key)||{};fieldValues.set(key,values);
+                if(fields.length){
+                    const form=document.createElement('details');form.className='bau-parameters';const summary=document.createElement('summary');summary.textContent='Preencher campos ('+fields.join(', ')+')';form.appendChild(summary);
+                    const note=createP('Preencha para montar o comando, ou deixe vazio para copiar o modelo. Confira a prévia antes de usar.');form.appendChild(note);
+                    const status=createP('');status.setAttribute('role','status');
+                    const update=()=>{try{commandField.value=assistant.render(cmd,values,os);btn.disabled=false;status.textContent='';btn.textContent=fields.every(f=>values[f])?'Copiar comando preenchido':'Copiar modelo';}catch(error){status.textContent=error.message;btn.disabled=true;}};
+                    for(const field of fields){const input=createInput('field-'+os+'-'+id+'-'+field,values[field]||'');input.setAttribute('aria-label',field+' — '+label);input.placeholder=({HOST:'servidor.exemplo.com',IP_DNS:'192.0.2.53',IP_DESTINO:'192.0.2.10',PORTA:'443',PID:'1234',DISPOSITIVO:'sda1 (sem /dev/)',INTERFACE:'eth0, en0 ou nome indicado pelo sistema',ADAPTADOR:'Ethernet',CAMINHO:'Trecho do caminho no lugar de CAMINHO'})[field]||field;const fieldLabel=createLabel(field);fieldLabel.htmlFor=input.id;form.append(fieldLabel,input);input.addEventListener('input',()=>{values[field]=input.value;update();});}
+                    form.appendChild(status);div.insertBefore(form,commandField);update();
+                }
                 div.appendChild(btn);
                 return div;
             }
@@ -1691,6 +1750,15 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
             commandSearch.setAttribute('aria-label', 'Pesquisar comandos');
             const commandCategory = document.createElement('select'); commandCategory.id = 'bau-command-category';
             commandCategory.setAttribute('aria-label', 'Categoria dos comandos');
+            const commandScope=document.createElement('select');commandScope.id='bau-command-scope';commandScope.setAttribute('aria-label','Lista de comandos');
+            for(const [value,label] of [['all','Todos os comandos'],['favorites','★ Favoritos'],['recent','Recentes copiados']]){const option=document.createElement('option');option.value=value;option.textContent=label;commandScope.appendChild(option);}
+            const workflowSelect=document.createElement('select');workflowSelect.id='bau-workflow';workflowSelect.setAttribute('aria-label','Roteiro de diagnóstico');
+            for(const item of [{id:'',title:'Escolher roteiro de diagnóstico'},...assistant.workflows]){const option=document.createElement('option');option.value=item.id;option.textContent=item.title;workflowSelect.appendChild(option);}
+            const workflowResults=document.createElement('section');workflowResults.id='bau-workflow-results';
+            function renderWorkflow(){workflowResults.replaceChildren();const workflow=assistant.workflows.find(x=>x.id===workflowSelect.value);if(!workflow)return;const os=getActiveOS();workflowResults.appendChild(createP('Siga as etapas na máquina indicada. Os testes não são executados pelo Baú.'));
+                for(const step of workflow.steps){const entry=window.commandDatabase.flatMap(g=>g.commands).find(c=>c.id===step.commands[os]);workflowResults.append(createH4(step.title),createP(step.why),createP('Como interpretar: '+step.inspect));if(entry) {const copy=createButton('workflow-'+entry.id,'Abrir comando: '+entry.label);copy.onclick=()=>{commandScope.value='all';commandCategory.value='';commandSearch.value=entry.os[os];populateCommandsTab();commandResults.scrollIntoView({block:'nearest'});};workflowResults.appendChild(copy);}else workflowResults.appendChild(createP('Comando ausente no catálogo atual. Restaure o padrão para usar esta etapa.'));}}
+            workflowSelect.addEventListener('change',renderWorkflow);
+            commandScope.addEventListener('change',populateCommandsTab);
             const commandCount = createP(''); commandCount.id = 'bau-command-count'; commandCount.setAttribute('aria-live', 'polite');
             const commandResults = document.createElement('div'); commandResults.id = 'bau-command-results';
             const restoreCommands = createButton('bau-command-restore', 'Restaurar catálogo padrão');
@@ -1700,7 +1768,7 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                 ctx.ajaStorage.removeItem('bau_commandDatabase_v1'); window.commandDatabase = catalog.defaults();
                 commandSearch.value = ''; commandCategory.value = ''; populateCommandsTab();
             };
-            tabComandos.append(commandSearch, commandCategory, commandCount, restoreCommands, commandResults);
+            tabComandos.append(workflowSelect,workflowResults,commandSearch,commandCategory,commandScope,commandCount,restoreCommands,commandResults);
             commandSearch.addEventListener('input', populateCommandsTab);
             commandCategory.addEventListener('change', populateCommandsTab);
             contentArea.appendChild(tabComandos);
@@ -2009,7 +2077,9 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                 commandCategory.replaceChildren();
                 for (const title of ['', ...new Set(titles)]) { const option = document.createElement('option'); option.value = title; option.textContent = title || 'Todas as categorias'; commandCategory.appendChild(option); }
                 commandCategory.value = selected;
-                const found = catalog.search(window.commandDatabase, os, commandSearch.value, selected);
+                let found = catalog.search(window.commandDatabase, os, commandSearch.value, selected);
+                if(commandScope.value!=='all'){const list=commandScope.value==='favorites'?commandFavorites:commandRecent;found=found.map(group=>({...group,commands:group.commands.filter(c=>list.includes(commandKey(os,c.id)))})).filter(g=>g.commands.length);if(commandScope.value==='recent')found=[{title:'Recentes copiados',commands:found.flatMap(g=>g.commands).sort((a,b)=>list.indexOf(commandKey(os,a.id))-list.indexOf(commandKey(os,b.id)))}].filter(g=>g.commands.length);}
+                renderWorkflow();
                 const total = window.commandDatabase.reduce((count,group) => count + group.commands.filter(cmd => cmd.os[os]).length,0);
                 const visible = found.reduce((count,group) => count + group.commands.length,0);
                 commandCount.textContent = `${visible} de ${total} comandos — ${ {win:'Windows',mac:'macOS',linux:'Linux'}[os] || 'selecione um sistema' }`;
@@ -8577,16 +8647,61 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.3.1',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.4.0',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
  return {open};
 });
 
+window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
+ 'use strict';
+ const version='1.4.0',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ if(!actions)return {};
+ const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
+ let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
+ function button(id,label,text,onClick){const b=document.createElement('button');b.id=id;b.className='uni-fab-btn';b.dataset.label=label;b.setAttribute('aria-label',label);b.title=label;b.textContent=text;b.onclick=onClick;actions.appendChild(b);return b;}
+ button('uni-btn-preferences','Organizar menu','☷',open);
+ button('uni-btn-timer-settings','Configurações dos cronômetros','⏱',()=>ctx.UI.createSettingsPanel());
+ function buttons(){return [...actions.querySelectorAll('.uni-fab-btn')];}
+ function arrange(){
+  const list=buttons();for(const b of list){if(!order.includes(b.id))order.push(b.id);b.title=b.dataset.label||b.getAttribute('aria-label');b.classList.toggle('aja-menu-favorite',favorites.includes(b.id));}
+  const sorted=[...list].sort((a,b)=>Number(favorites.includes(b.id))-Number(favorites.includes(a.id))||order.indexOf(a.id)-order.indexOf(b.id));
+  if(sorted.some((b,i)=>b!==list[i]))for(const b of sorted)actions.appendChild(b);
+  place();
+ }
+ function place(){const rect=root.getBoundingClientRect(),above=rect.top-12,below=innerHeight-rect.bottom-12,up=above>=below,width=Math.min(138,innerWidth-16);actions.style.setProperty('width',width+'px','important');actions.style.left=(Math.max(8,Math.min(rect.right-width+8,innerWidth-width-8))-rect.left)+'px';actions.style.right='auto';actions.style.setProperty('max-height',Math.max(80,up?above:below)+'px','important');actions.style.bottom=up?'72px':'auto';actions.style.top=up?'auto':'72px';}
+ function save(){ctx.ajaStorage.setItem('menu_favorites_v1',JSON.stringify(favorites));ctx.ajaStorage.setItem('menu_order_v1',JSON.stringify(order));arrange();render();}
+ function render(){if(!panel)return;const list=panel.querySelector('#aja-menu-order');list.replaceChildren();const current=buttons();for(const item of current){const row=document.createElement('div');row.className='aja-menu-row';const star=document.createElement('button');star.textContent=favorites.includes(item.id)?'★':'☆';star.setAttribute('aria-label','Favoritar '+item.title);star.setAttribute('aria-pressed',String(favorites.includes(item.id)));star.onclick=()=>{favorites=favorites.includes(item.id)?favorites.filter(x=>x!==item.id):[...favorites,item.id];save();};const label=document.createElement('span');label.textContent=item.title;row.append(star,label);for(const [delta,text] of [[-1,'↑'],[1,'↓']]){const move=document.createElement('button');move.textContent=text;move.setAttribute('aria-label',(delta<0?'Subir ':'Descer ')+item.title);const group=current.filter(b=>favorites.includes(b.id)===favorites.includes(item.id)),i=group.indexOf(item),other=group[i+delta];move.disabled=!other;move.onclick=()=>{const a=order.indexOf(item.id),b=order.indexOf(other.id);[order[a],order[b]]=[order[b],order[a]];save();};row.appendChild(move);}list.appendChild(row);}panel.querySelector('#aja-timer-shortcut').textContent='Configurações dos cronômetros: '+(ctx.CONFIG.HOTKEYS.openSettings||'Control+Shift+S').replace('Control','Ctrl')+'. Use fora de campos de texto.';}
+ function compare(a,b){const x=a.split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i]?1:-1;return 0;}
+ async function check(){if(checking)return;checking=true;const label=panel.querySelector('#aja-version-status'),btn=panel.querySelector('#aja-version-check');label.textContent='Consultando atualização…';btn.disabled=true;let timer;try{
+  const result=await Promise.race([ctx.safeFetch('https://kingoffjoss.github.io/AjaModular/manifest.json?check='+Date.now()).then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Tempo de consulta excedido')),10000);})]);
+  if(!/^\d+\.\d+\.\d+$/.test(result.version||''))throw Error('Versão recebida inválida');
+  label.textContent=compare(result.version,version)>0?'Atualização disponível: '+result.version+'. Atualize o favorito pelo site, ou recarregue a pasta atualizada da extensão. Depois recarregue a plataforma.':compare(result.version,version)===0?'Você está na versão publicada mais recente ('+version+').':'Versão instalada '+version+'; a publicação ainda informa '+result.version+'.';lastCheck=Date.now();
+ }catch(error){label.textContent='Não foi possível conferir a atualização: '+error.message+'. Versão instalada: '+version+'.';}finally{clearTimeout(timer);checking=false;btn.disabled=false;}}
+ function open(){
+  if(!panel){panel=document.createElement('dialog');panel.id='aja-menu-options';panel.innerHTML='<header><strong>Organizar ferramentas</strong><button data-close aria-label="Fechar organização">×</button></header><main><p>Marque ★ para manter no topo. As setas ordenam os itens dentro do grupo de favoritos ou das demais ferramentas.</p><div id="aja-menu-order"></div><h3>Janelas</h3><button id="aja-reset-windows">Trazer janelas para a tela</button><p>Restaura janelas minimizadas e reposiciona as abertas. Tamanho e posição são lembrados neste navegador.</p><h3>Cronômetros</h3><p id="aja-timer-shortcut"></p><button id="aja-open-timer-settings">Abrir configurações dos cronômetros</button><h3>Atualização</h3><p>Versão instalada: <strong>'+version+'</strong></p><p id="aja-version-status" role="status" aria-live="polite">Clique para conferir a versão publicada.</p><button id="aja-version-check">Verificar atualização</button> <a href="https://kingoffjoss.github.io/AjaModular/" target="_blank" rel="noopener noreferrer">Abrir site de atualização</a></main>';document.body.appendChild(panel);panel.querySelector('[data-close]').onclick=()=>panel.close();panel.querySelector('#aja-reset-windows').onclick=()=>{window.AjaModularWindows.reset();window.AjaModularNotice?.('Janelas reposicionadas.');};panel.querySelector('#aja-open-timer-settings').onclick=()=>{panel.close();ctx.UI.createSettingsPanel();};panel.querySelector('#aja-version-check').onclick=check;}
+  render();panel.showModal();if(Date.now()-lastCheck>1800000)check();
+ }
+ const style=document.createElement('style');style.textContent=`
+ #uni-menu-container .uni-fab-actions {display:grid!important;grid-template-columns:repeat(2,48px);gap:10px!important;justify-content:center!important;align-content:start;padding:10px!important;background:rgba(16,42,67,.94);border:1px solid #3373a5;border-radius:18px;box-shadow:0 6px 20px #0003}
+ #uni-menu-container .uni-fab-btn {margin:0!important;min-width:48px;min-height:48px}
+ #uni-menu-container .uni-fab-btn:focus-visible {outline:3px solid #ffb347;outline-offset:2px}
+ #uni-menu-container .aja-menu-favorite {box-shadow:0 0 0 2px #ffd36e!important}
+ #uni-menu-container .uni-fab-btn::after {display:none}
+ #aja-menu-options {position:fixed;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);width:540px;padding:0;border:1px solid #428cc1;border-radius:12px;background:#102a43;color:white;font:14px system-ui;z-index:2147483647}
+ #aja-menu-options:not([open]){display:none} #aja-menu-options::backdrop{background:#0007}
+ #aja-menu-options header{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#0057b8} #aja-menu-options main{padding:16px;overflow:auto;max-height:calc(100vh - 100px)}
+ #aja-menu-options button{padding:7px 10px;border:1px solid #428cc1;border-radius:6px;background:#173b63;color:white;cursor:pointer;font:inherit} #aja-menu-options button:disabled{opacity:.4;cursor:default} #aja-menu-options a{color:#8edaff}
+ #aja-menu-options .aja-menu-row{display:grid;grid-template-columns:34px 1fr 34px 34px;align-items:center;gap:6px;margin:6px 0}
+ `;document.head.appendChild(style);
+ arrange();new MutationObserver(arrange).observe(actions,{childList:true});new MutationObserver(place).observe(root,{attributes:true,attributeFilter:['class']});window.addEventListener('resize',place);document.addEventListener('pointerup',place);
+ return {open,compareVersions:compare};
+});
+
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.3.1)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.4.0)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8608,7 +8723,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.3.1';
+    const SCRIPT_VERSION = 'AjaModular_1.4.0';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -11922,19 +12037,39 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
 (function(){
 'use strict';
-const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','#purecloud-script-mini-dashboard','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal'];
+const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal','#aja-menu-options'];
 const selector=roots.join(',');let sequence=2147483000;const ranks=new WeakMap();let shown=new Set();
-const closeSelector='[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
+const closeSelector='#closeSettingsPanelBtn,.purecloud-script-popup-close-btn,[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
+function windows(){const all=[...document.querySelectorAll(selector)],calc=document.getElementById('calc-ultimate-host')?.shadowRoot?.getElementById('modal');if(calc)all.push(calc);return all;}
+function isCalculator(node){return node.getRootNode()?.host?.id==='calc-ultimate-host';}
 function visible(node){return node.getClientRects().length&&getComputedStyle(node).display!=='none'&&getComputedStyle(node).visibility!=='hidden'&&(!node.matches('dialog')||node.open)&&(!node.matches('#calc-modal')||node.classList.contains('calc-visible'));}
-function close(node){if(node.matches('#aja-maintenance,#ajamodular-settings')){node.close();return true;}if(node.id==='calc-modal'){node.shadowRoot?.getElementById('close-btn')?.click();return true;}const button=node.querySelector(closeSelector);if(button){button.click();return true;}return false;}
+function close(node){if(node.matches('#aja-maintenance,#ajamodular-settings')){node.close();return true;}if(isCalculator(node)){node.classList.remove('calc-visible');return true;}const button=node.querySelector(closeSelector);if(button){button.click();return true;}return false;}
 function constrain(node){if(!visible(node)||node.matches('dialog,.central-modal'))return;const rect=node.getBoundingClientRect();if(rect.left<0||rect.top<0||rect.right>innerWidth||rect.bottom>innerHeight){node.style.left=Math.max(0,Math.min(rect.left,innerWidth-rect.width-8))+'px';node.style.top=Math.max(0,Math.min(rect.top,innerHeight-rect.height-8))+'px';node.style.right='auto';node.style.bottom='auto';}}
-function refresh(){const current=new Set();document.querySelectorAll(selector).forEach(node=>{if(visible(node)){current.add(node);if(!shown.has(node))ranks.set(node,++sequence);constrain(node);}});shown=current;}
+function refresh(){const current=new Set();windows().forEach(node=>{if(visible(node)){current.add(node);if(!shown.has(node)){ranks.set(node,++sequence);restoreLayout(node);attachControls(node);const old=minimized.get(node);if(old){old.button.remove();minimized.delete(node);}}constrain(node);}});shown=current;}
 document.addEventListener('pointerdown',event=>{const node=event.target.closest?.(selector);if(node){ranks.set(node,++sequence);if(!node.matches('dialog'))node.style.setProperty('z-index',String(sequence),'important');}},true);
-document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;refresh();const nodes=[...document.querySelectorAll(selector)].filter(visible);const modal=nodes.findLast(x=>x.matches('dialog[open]'));const top=modal||nodes.sort((a,b)=>(ranks.get(a)||0)-(ranks.get(b)||0)).at(-1);if(top&&close(top)){event.preventDefault();event.stopImmediatePropagation();}},true);
+document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;refresh();const nodes=windows().filter(visible);const modal=nodes.findLast(x=>x.matches('dialog[open]'));const top=modal||nodes.sort((a,b)=>(ranks.get(a)||0)-(ranks.get(b)||0)).at(-1);if(top&&close(top)){event.preventDefault();event.stopImmediatePropagation();}},true);
 window.addEventListener('resize',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 // Observe insertion/opening only. Text updates from clocks do not trigger window creation or toggling.
 let pending=false;new MutationObserver(records=>{if(records.some(r=>r.type==='attributes'?r.target.matches(selector):[...r.addedNodes].some(n=>n.nodeType===1&&(n.matches(selector)||n.querySelector(selector))))&&!pending){pending=true;requestAnimationFrame(()=>{pending=false;refresh();});}}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','open','style']});
+
+const layoutKey='ajamodular:window_layout_v1';let layouts={};try{const saved=JSON.parse(localStorage.getItem(layoutKey)||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))layouts=saved;}catch{}
+const minimized=new Map(),controls=new WeakSet();
+const dock=document.createElement('div');dock.id='aja-window-dock';dock.setAttribute('aria-label','Janelas minimizadas');document.body.appendChild(dock);
+function keyFor(node){return isCalculator(node)?'calc-ultimate-host':node.id||[...node.classList].filter(c=>!/(active|visible|dark|escuro|light|claro)/i.test(c)).sort().join('.');}
+function remember(node){if(!visible(node)||minimized.has(node))return;const r=node.getBoundingClientRect();if(r.width<60||r.height<40)return;layouts[keyFor(node)]={left:r.left,top:r.top,width:r.width,height:r.height};try{localStorage.setItem(layoutKey,JSON.stringify(layouts));}catch(error){console.warn('[AjaModular] Posição não salva',error);}}
+function restoreLayout(node){const saved=layouts[keyFor(node)];if(!saved||!['left','top','width','height'].every(k=>Number.isFinite(saved[k])))return;const width=Math.max(60,Math.min(saved.width,innerWidth-16)),height=Math.max(40,Math.min(saved.height,innerHeight-16));Object.assign(node.style,{position:'fixed',margin:'0',left:Math.max(8,Math.min(saved.left,innerWidth-width-8))+'px',top:Math.max(8,Math.min(saved.top,innerHeight-height-8))+'px',right:'auto',bottom:'auto',width:width+'px',height:height+'px'});}
+function restoreMinimized(node){const item=minimized.get(node);if(!item)return;item.button.remove();minimized.delete(node);if(!node.isConnected)return;if(node.matches('dialog'))node.showModal();else if(isCalculator(node))node.classList.add('calc-visible');else {node.style.setProperty('display',item.display,item.priority);node.style.visibility=item.visibility;}restoreLayout(node);constrain(node);ranks.set(node,++sequence);}
+function attachControls(node){if(controls.has(node)||node.matches('#purecloud-script-mini-dashboard'))return;controls.add(node);const title=(isCalculator(node)?'Calculadora':node.querySelector('header strong,h1,h2,h3,.panel-title,.header-title')?.textContent||node.getAttribute('aria-label')||'Ferramenta').trim().slice(0,60);const button=node.querySelector('.minimize-btn')||document.createElement('button');button.classList.add('aja-minimize-window');if(isCalculator(node))button.style.cssText='position:absolute;right:45px;top:7px;width:28px;height:28px;border:1px solid #428cc1;border-radius:6px;background:#173b63;color:white;cursor:pointer;z-index:10';button.type='button';button.textContent='−';button.title='Minimizar janela';button.setAttribute('aria-label','Minimizar '+title);button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('mousedown',e=>e.stopPropagation());button.onclick=e=>{e.stopPropagation();remember(node);const restoreButton=document.createElement('button');restoreButton.textContent=title;restoreButton.title='Restaurar '+title;restoreButton.onclick=()=>restoreMinimized(node);minimized.set(node,{button:restoreButton,display:node.style.display,priority:node.style.getPropertyPriority('display'),visibility:node.style.visibility});dock.appendChild(restoreButton);if(node.matches('dialog'))node.close();else if(isCalculator(node))node.classList.remove('calc-visible');else node.style.setProperty('display','none','important');};if(!button.isConnected){const header=node.querySelector('#bau-rede-header,.panel-header,.gemini-header,header,.header'),closeButton=header?.querySelector(closeSelector);if(closeButton){button.style.setProperty('position','static','important');button.style.setProperty('flex-shrink','0');if(closeButton.parentElement!==header){closeButton.parentElement.style.display='flex';closeButton.parentElement.style.alignItems='center';closeButton.parentElement.style.gap='6px';}closeButton.before(button);}else node.appendChild(button);}if(!node.matches('dialog')){node.style.resize='both';if(getComputedStyle(node).overflow==='visible')node.style.overflow='auto';}}
+function reset(){for(const node of [...minimized.keys()])restoreMinimized(node);layouts={};localStorage.removeItem(layoutKey);let offset=0;windows().forEach(node=>{if(!visible(node))return;const r=node.getBoundingClientRect();Object.assign(node.style,{position:'fixed',margin:'0',right:'auto',bottom:'auto',left:Math.max(8,Math.min((innerWidth-r.width)/2+offset,innerWidth-r.width-8))+'px',top:Math.max(8,Math.min((innerHeight-r.height)/2+offset,innerHeight-r.height-8))+'px'});offset=(offset+24)%120;remember(node);});}
+let dragWindow;
+document.addEventListener('pointerdown',event=>{dragWindow=event.composedPath().find(n=>n?.nodeType===1&&windows().includes(n));},true);
+document.addEventListener('pointerup',()=>{if(dragWindow)remember(dragWindow);dragWindow=null;},true);
+const calculator=document.getElementById('calc-ultimate-host')?.shadowRoot?.getElementById('modal');if(calculator)new MutationObserver(refresh).observe(calculator,{attributes:true,attributeFilter:['class']});
+window.addEventListener('pagehide',()=>windows().forEach(remember));
+
 const style=document.createElement('style');style.textContent=`
+.aja-minimize-window {position:absolute!important;top:8px!important;right:48px!important;width:28px!important;min-width:28px!important;height:28px!important;padding:0!important;margin:0!important;display:flex!important;align-items:center;justify-content:center;border:1px solid #69a5d0!important;border-radius:6px!important;background:#173b63!important;color:#fff!important;font:20px system-ui!important;cursor:pointer;z-index:10}
+#aja-window-dock {position:fixed;bottom:8px;left:8px;max-width:calc(100vw - 96px);display:flex;gap:6px;overflow-x:auto;z-index:2147483646} #aja-window-dock:empty{display:none} #aja-window-dock button{flex-shrink:0;background:#173b63;color:white;border:1px solid #428cc1;border-radius:8px;padding:10px;cursor:pointer}
 :is(${selector}) {box-sizing:border-box!important;min-width:0!important;min-height:0!important;max-width:calc(100vw - 16px)!important;max-height:calc(100vh - 16px)!important;isolation:isolate}
 :is(${selector}) * {box-sizing:border-box}
 :is(${selector}) :is(input,textarea,select) {min-width:0;max-width:100%}
@@ -11952,7 +12087,9 @@ const style=document.createElement('style');style.textContent=`
 #aja-maintenance button:focus-visible {outline:3px solid #ffb347}
 `;document.head.appendChild(style);
 window.AjaModularNotice=text=>{const note=document.createElement('div');note.setAttribute('role','alert');note.textContent=text;Object.assign(note.style,{position:'fixed',bottom:'20px',left:'20px',zIndex:'2147483647',background:'#102a43',color:'#fff',padding:'16px',borderRadius:'8px',maxWidth:'360px'});document.body.appendChild(note);setTimeout(()=>note.remove(),7000);};
-window.AjaModularWindows=Object.freeze({close,constrain});
+window.AjaModularWindows=Object.freeze({close,constrain,reset});
 })();
+
+
 
 })();
