@@ -35,7 +35,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
             // ATUALIZADA V49.0
             const SELECTORES = {
-                MENU_STATUS_TOGGLE: '#toggleUserDropdownTarget',
+                MENU_STATUS_TOGGLE: '#user-settings-button, #toggleUserDropdownTarget',
                 DISPONIVEL: 'button.presence-available',
                 REFEICAO: 'button.presence-meal',
                 INTERVALO_MENU: 'button.presence-break',
@@ -363,47 +363,61 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             // FUNÇÕES DE LÓGICA DE CLIQUE (V46.3)
             // ======================================================
 
-            function executarLogicaMenuSimples(seletorBotao, nomePausa, isAutomatico = false) {
-                if (clicarElemento(SELECTORES.MENU_STATUS_TOGGLE)) {
-                    setTimeout(() => {
-                        if (clicarElemento(seletorBotao)) {
-                            // V46.3: registrarPausa movido
-                        } else {
-                            console.warn(`[AÇÃO] Botão '${nomePausa}' (${seletorBotao}) não encontrado.`);
-                            clicarElemento(SELECTORES.MENU_STATUS_TOGGLE);
-                        }
-                    }, DELAY_ABRIR_MENU);
-                } else { console.warn("[AÇÃO] Botão Menu Status não encontrado."); }
-            }
-
-            // ATUALIZADA V49.0 (Usa o seletor correto)
-            function executarLogicaSubMenu(seletorMenuTexto, seletorItemTexto, nomePausa, isAutomatico = false) {
-                console.log(`[AÇÃO V49.2] Iniciando '${nomePausa}'...`);
-                if (clicarElemento(SELECTORES.MENU_STATUS_TOGGLE)) {
-                    setTimeout(() => {
-                        // V49.0: Seletor correto
-                        const seletorMenuBotao = SELECTORES.STATUS_LABEL_TEXT;
-
-                        if (clicarElemento(seletorMenuBotao, seletorMenuTexto)) {
-                            console.log(`[AÇÃO V49.2] Clicado em '${seletorMenuTexto}' (Menu Principal).`);
-                            setTimeout(() => {
-                                // V49.0: Seletor correto
-                                if (clicarElemento(SELECTORES.STATUS_LABEL_TEXT, seletorItemTexto)) {
-                                    console.log(`[AÇÃO V49.2] Clicado em '${seletorItemTexto}' (Submenu).`);
-                                    console.log(`[AÇÃO V49.2] '${nomePausa}' ativado.`);
-                                    setTimeout(clicarVoltarSubmenu, DELAY_FECHAR_MENU);
-                                } else {
-                                    console.warn(`[AÇÃO V49.2] Item de SUBMENU '${seletorItemTexto}' não encontrado (Seletor: ${SELECTORES.STATUS_LABEL_TEXT}).`);
-                                    clicarElemento(SELECTORES.VOLTAR_SUBMENU);
-                                    setTimeout(clicarElemento, DELAY_FECHAR_MENU, SELECTORES.MENU_STATUS_TOGGLE);
-                                }
-                            }, DELAY_ABRIR_SUBMENU);
-                        } else {
-                            console.warn(`[AÇÃO V49.2] Item de MENU PRINCIPAL '${seletorMenuTexto}' não encontrado (Seletor: ${seletorMenuBotao}).`);
-                            clicarElemento(SELECTORES.MENU_STATUS_TOGGLE);
-                        }
-                    }, DELAY_ABRIR_MENU);
+            const normalizarPresenca = texto => String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+            const visivelPresenca = el => el && el.getClientRects().length > 0;
+            function procurarPresenca(nome, seletorLegado) {
+                const alvo = normalizarPresenca(nome);
+                const radios = [...document.querySelectorAll('input.presence-input, input[name="presence-selector"]')];
+                const radio = radios.find(el => normalizarPresenca(el.value) === alvo && visivelPresenca(el.closest('gux-form-field-radio') || el));
+                if (radio) return radio;
+                if (seletorLegado) {
+                    const antigo = [...document.querySelectorAll(seletorLegado)].find(visivelPresenca);
+                    if (antigo) return antigo;
                 }
+                const label = [...document.querySelectorAll(SELECTORES.STATUS_LABEL_TEXT)].find(el => normalizarPresenca(el.textContent) === alvo && visivelPresenca(el));
+                return label?.closest('button') || null;
+            }
+            async function aguardarPresenca(encontrar) {
+                for (let tentativa = 0; tentativa < 30; tentativa++) {
+                    const elemento = encontrar();
+                    if (elemento) return elemento;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                throw new Error('O controle de status não apareceu na plataforma.');
+            }
+            async function abrirMenuPresenca(nome, seletor) {
+                if (procurarPresenca(nome, seletor)) return;
+                const toggle = document.querySelector(SELECTORES.MENU_STATUS_TOGGLE);
+                if (!toggle) throw new Error('Menu de usuário não encontrado.');
+                if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+                const entrada = await aguardarPresenca(() => procurarPresenca(nome, seletor) || document.querySelector('#presence-button'));
+                if (entrada.id === 'presence-button') entrada.click();
+            }
+            let mudandoPresenca = false;
+            async function executarMudancaPresenca(categoria, item, nomePausa, seletor) {
+                if (mudandoPresenca) return;
+                mudandoPresenca = true;
+                try {
+                    if (!procurarPresenca(item || categoria, seletor)) await abrirMenuPresenca(categoria, seletor);
+                    let destino = procurarPresenca(item || categoria, seletor);
+                    if (!destino && item) {
+                        const principal = await aguardarPresenca(() => procurarPresenca(categoria));
+                        principal.click();
+                    }
+                    destino = await aguardarPresenca(() => procurarPresenca(item || categoria, seletor));
+                    if (destino.disabled || destino.getAttribute('aria-disabled') === 'true') throw new Error('Status indisponível na plataforma.');
+                    destino.click();
+                    registrarPausa(nomePausa);
+                } catch (error) {
+                    console.warn('[Gerenciador] ' + nomePausa, error);
+                    window.AjaModularNotice?.('Não foi possível selecionar ' + nomePausa + ': ' + error.message, 'error');
+                } finally { mudandoPresenca = false; }
+            }
+            function executarLogicaMenuSimples(seletorBotao, nomePausa, isAutomatico = false) {
+                return executarMudancaPresenca(nomePausa, null, nomePausa, seletorBotao);
+            }
+            function executarLogicaSubMenu(categoria, item, nomePausa, isAutomatico = false) {
+                return executarMudancaPresenca(categoria, item, nomePausa);
             }
 
             // --- Lógica "Na Fila" ---
@@ -454,10 +468,10 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                     return;
                 }
 
-                if (clicarElemento(SELECTORES.MENU_STATUS_TOGGLE)) {
+                if (document.querySelector(SELECTORES.MENU_STATUS_TOGGLE)?.getAttribute('aria-expanded') === 'true' || clicarElemento(SELECTORES.MENU_STATUS_TOGGLE)) {
                     setTimeout(() => {
                         // CORREÇÃO V48.3: Usa o seletor de texto correto
-                        if (clicarElemento(SELECTORES.LOGOFF, "Fazer logoff")) {
+                        if (clicarElemento('[data-testid="user-setting-logout-button"]') || clicarElemento(SELECTORES.LOGOFF, "Fazer logoff")) {
                             historicoPausas = [];
                             estadoAtual = { tipo: 'Logoff', inicio: new Date, ativa: !1 };
                             atualizarUI(); renderizarHistoricoLog(); renderizarEstatisticas();
@@ -490,11 +504,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Refeição";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaRefeicao(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaRefeicao(false);
                 }
             }
@@ -503,11 +515,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Disponível";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaDisponivel(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaDisponivel(false);
                 }
             }
@@ -516,11 +526,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Treinamento";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaTreinamento(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaTreinamento(false);
                 }
             }
@@ -529,11 +537,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Reunião";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaReuniao(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaReuniao(false);
                 }
             }
@@ -543,11 +549,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Pausa auricular"; // <-- MUDANÇA V48.8
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaDescanso(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaDescanso(false);
                 }
             }
@@ -556,11 +560,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Pausa out";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaPausaOut(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaPausaOut(false);
                 }
             }
@@ -571,11 +573,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Backoffice";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaBackoffice(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaBackoffice(false);
                 }
             }
@@ -584,11 +584,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Feedback";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaFeedback(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaFeedback(false);
                 }
             }
@@ -597,11 +595,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Particular";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaParticular(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaParticular(false);
                 }
             }
@@ -610,11 +606,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Saúde";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
                         executarLogicaQuestoesSaude(true);
                     });
                 } else {
-                    registrarPausa(status);
                     executarLogicaQuestoesSaude(false);
                 }
             }
