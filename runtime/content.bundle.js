@@ -8238,7 +8238,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             <button class="uni-fab-btn" id="uni-btn-maintenance" data-label="Manutenção" aria-label="Manutenção">⚙️</button>
             
             <button class="uni-fab-btn" id="uni-btn-calc" data-label="Calculadora"><span style="font-size:24px;">🧮</span></button>
-            <button class="uni-fab-btn" id="uni-btn-off" data-label="Simulação de desligar" aria-label="Simulação de desligar"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10"></path><path d="M5.6 5.6a9 9 0 1 0 12.8 0"></path></svg></button>
+            <button class="uni-fab-btn" id="uni-btn-off" data-label="Suporte" aria-label="Suporte"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10"></path><path d="M5.6 5.6a9 9 0 1 0 12.8 0"></path></svg></button>
             <button class="uni-fab-btn" id="uni-btn-ia" data-label="Assistente IA"><span style="font-size:24px;">🧑‍💻</span></button>
             <button class="uni-fab-btn" id="uni-btn-central" data-label="Central de Ajuda"><span style="font-size:26px;">💠</span></button>
             <button class="uni-fab-btn" id="uni-btn-mon" data-label="Monitor Filas"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
@@ -8768,10 +8768,10 @@ window.AjaModular.register('relogio', [], function() {
     return {clampPosition, keepOnScreen, snapshot, render, start};
 });
 
-// Base visual: botão de desligar. As operações de encerramento foram removidas.
+// Atalho para o portal de suporte. ID mantido para preservar as preferências do menu.
 window.AjaModular.register('simulacao-desligar', [], function () {
     function open() {
-        alert('Pegadinha: este botão é uma simulação. Nenhuma conversa foi encerrada.');
+        window.open('https://sites.google.com/grupobrisanet.com.br/suporte-tecnico/', '_blank', 'noopener,noreferrer');
     }
     return {open};
 });
@@ -8791,7 +8791,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.14',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.15',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8802,7 +8802,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.14',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.15',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8889,7 +8889,7 @@ window.AjaModular.register('chamado-yoda', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.14)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.15)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8911,7 +8911,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.14';
+    const SCRIPT_VERSION = 'AjaModular_1.6.15';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
