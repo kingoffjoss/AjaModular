@@ -8647,7 +8647,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.4.0',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.4.1',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8656,7 +8656,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.4.0',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.4.1',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8701,7 +8701,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.4.0)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.4.1)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8723,7 +8723,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.4.0';
+    const SCRIPT_VERSION = 'AjaModular_1.4.1';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -12059,7 +12059,36 @@ function keyFor(node){return isCalculator(node)?'calc-ultimate-host':node.id||[.
 function remember(node){if(!visible(node)||minimized.has(node))return;const r=node.getBoundingClientRect();if(r.width<60||r.height<40)return;layouts[keyFor(node)]={left:r.left,top:r.top,width:r.width,height:r.height};try{localStorage.setItem(layoutKey,JSON.stringify(layouts));}catch(error){console.warn('[AjaModular] Posição não salva',error);}}
 function restoreLayout(node){const saved=layouts[keyFor(node)];if(!saved||!['left','top','width','height'].every(k=>Number.isFinite(saved[k])))return;const width=Math.max(60,Math.min(saved.width,innerWidth-16)),height=Math.max(40,Math.min(saved.height,innerHeight-16));Object.assign(node.style,{position:'fixed',margin:'0',left:Math.max(8,Math.min(saved.left,innerWidth-width-8))+'px',top:Math.max(8,Math.min(saved.top,innerHeight-height-8))+'px',right:'auto',bottom:'auto',width:width+'px',height:height+'px'});}
 function restoreMinimized(node){const item=minimized.get(node);if(!item)return;item.button.remove();minimized.delete(node);if(!node.isConnected)return;if(node.matches('dialog'))node.showModal();else if(isCalculator(node))node.classList.add('calc-visible');else {node.style.setProperty('display',item.display,item.priority);node.style.visibility=item.visibility;}restoreLayout(node);constrain(node);ranks.set(node,++sequence);}
-function attachControls(node){if(controls.has(node)||node.matches('#purecloud-script-mini-dashboard'))return;controls.add(node);const title=(isCalculator(node)?'Calculadora':node.querySelector('header strong,h1,h2,h3,.panel-title,.header-title')?.textContent||node.getAttribute('aria-label')||'Ferramenta').trim().slice(0,60);const button=node.querySelector('.minimize-btn')||document.createElement('button');button.classList.add('aja-minimize-window');if(isCalculator(node))button.style.cssText='position:absolute;right:45px;top:7px;width:28px;height:28px;border:1px solid #428cc1;border-radius:6px;background:#173b63;color:white;cursor:pointer;z-index:10';button.type='button';button.textContent='−';button.title='Minimizar janela';button.setAttribute('aria-label','Minimizar '+title);button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('mousedown',e=>e.stopPropagation());button.onclick=e=>{e.stopPropagation();remember(node);const restoreButton=document.createElement('button');restoreButton.textContent=title;restoreButton.title='Restaurar '+title;restoreButton.onclick=()=>restoreMinimized(node);minimized.set(node,{button:restoreButton,display:node.style.display,priority:node.style.getPropertyPriority('display'),visibility:node.style.visibility});dock.appendChild(restoreButton);if(node.matches('dialog'))node.close();else if(isCalculator(node))node.classList.remove('calc-visible');else node.style.setProperty('display','none','important');};if(!button.isConnected){const header=node.querySelector('#bau-rede-header,.panel-header,.gemini-header,header,.header'),closeButton=header?.querySelector(closeSelector);if(closeButton){button.style.setProperty('position','static','important');button.style.setProperty('flex-shrink','0');if(closeButton.parentElement!==header){closeButton.parentElement.style.display='flex';closeButton.parentElement.style.alignItems='center';closeButton.parentElement.style.gap='6px';}closeButton.before(button);}else node.appendChild(button);}if(!node.matches('dialog')){node.style.resize='both';if(getComputedStyle(node).overflow==='visible')node.style.overflow='auto';}}
+function attachControls(node){if(controls.has(node)||node.matches('#purecloud-script-mini-dashboard'))return;controls.add(node);const title=(isCalculator(node)?'Calculadora':node.id==='gemini-modal'?'Aja Assistant':node.querySelector('header strong,h1,h2,h3,.panel-title,.header-title')?.textContent||node.getAttribute('aria-label')||'Ferramenta').trim().slice(0,60);const button=node.querySelector('.minimize-btn')||document.createElement('button');button.classList.add('aja-minimize-window');button.type='button';button.textContent='−';button.title='Minimizar janela';button.setAttribute('aria-label','Minimizar '+title);button.addEventListener('pointerdown',e=>e.stopPropagation());button.addEventListener('mousedown',e=>e.stopPropagation());button.onclick=e=>{e.stopPropagation();remember(node);const restoreButton=document.createElement('button');restoreButton.textContent=title;restoreButton.title='Restaurar '+title;restoreButton.onclick=()=>restoreMinimized(node);minimized.set(node,{button:restoreButton,display:node.style.display,priority:node.style.getPropertyPriority('display'),visibility:node.style.visibility});dock.appendChild(restoreButton);if(node.matches('dialog'))node.close();else if(isCalculator(node))node.classList.remove('calc-visible');else node.style.setProperty('display','none','important');};placeControls(node,button);if(!node.matches('dialog')){node.style.resize='both';if(getComputedStyle(node).overflow==='visible')node.style.overflow='auto';}}
+
+// Keep minimize and close in the same flow, including headers without a named class.
+function placeControls(node,button){
+ const closeButton=node.querySelector(closeSelector);
+ const group=document.createElement('span');group.className='aja-window-actions';
+ group.style.cssText='display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:4px!important;flex:0 0 auto!important;vertical-align:middle!important;';
+ if(closeButton){
+  const css=getComputedStyle(closeButton),parent=closeButton.parentElement;
+  if(css.position==='absolute'){
+   group.style.position='absolute';group.style.top=css.top;group.style.right=css.right==='auto'?'8px':css.right;group.style.zIndex='10';
+  }else if(parent===node){group.style.cssText+='position:absolute;top:8px;right:8px;z-index:10;';}
+  closeButton.before(group);
+  if(parent!==node&&getComputedStyle(parent).display.includes('flex'))parent.style.alignItems='center';
+  group.append(button,closeButton);
+  // Explicit dimensions override broad tool/theme button rules without touching handlers.
+  const icons=parent===node?[]:[...parent.children].filter(el=>el!==group&&el.matches('button')&&el.textContent.trim().length<=2);
+  for(const control of [button,closeButton,...icons]){
+   control.classList.add('aja-window-control');
+   const props={position:'static',inset:'auto',width:'30px','min-width':'30px','max-width':'30px',height:'30px','min-height':'30px','max-height':'30px',padding:'0',margin:'0',display:'inline-flex','align-items':'center','justify-content':'center',flex:'0 0 30px','box-sizing':'border-box','line-height':'1','font-size':'20px','border-radius':'6px',transform:'none'};
+   for(const [key,value] of Object.entries(props))control.style.setProperty(key,value,'important');
+  }
+  for(const prop of ['background','color','border','box-shadow'])button.style.setProperty(prop,css.getPropertyValue(prop),'important');
+  button.style.cursor='pointer';
+ }else{
+  group.style.cssText+='position:absolute;top:8px;right:8px;z-index:10;';group.append(button);node.append(group);
+ }
+ for(const name of ['pointerdown','mousedown'])group.addEventListener(name,event=>event.stopPropagation());
+}
+
 function reset(){for(const node of [...minimized.keys()])restoreMinimized(node);layouts={};localStorage.removeItem(layoutKey);let offset=0;windows().forEach(node=>{if(!visible(node))return;const r=node.getBoundingClientRect();Object.assign(node.style,{position:'fixed',margin:'0',right:'auto',bottom:'auto',left:Math.max(8,Math.min((innerWidth-r.width)/2+offset,innerWidth-r.width-8))+'px',top:Math.max(8,Math.min((innerHeight-r.height)/2+offset,innerHeight-r.height-8))+'px'});offset=(offset+24)%120;remember(node);});}
 let dragWindow;
 document.addEventListener('pointerdown',event=>{dragWindow=event.composedPath().find(n=>n?.nodeType===1&&windows().includes(n));},true);
@@ -12068,7 +12097,9 @@ const calculator=document.getElementById('calc-ultimate-host')?.shadowRoot?.getE
 window.addEventListener('pagehide',()=>windows().forEach(remember));
 
 const style=document.createElement('style');style.textContent=`
-.aja-minimize-window {position:absolute!important;top:8px!important;right:48px!important;width:28px!important;min-width:28px!important;height:28px!important;padding:0!important;margin:0!important;display:flex!important;align-items:center;justify-content:center;border:1px solid #69a5d0!important;border-radius:6px!important;background:#173b63!important;color:#fff!important;font:20px system-ui!important;cursor:pointer;z-index:10}
+.aja-minimize-window {width:30px;min-width:30px;height:30px;padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid #69a5d0;border-radius:6px;background:#173b63;color:#fff;font:20px system-ui;cursor:pointer;flex-shrink:0}
+.aja-window-control:focus-visible {outline:2px solid #ffb347!important;outline-offset:2px}
+.aja-window-control:hover {filter:brightness(1.12)}
 #aja-window-dock {position:fixed;bottom:8px;left:8px;max-width:calc(100vw - 96px);display:flex;gap:6px;overflow-x:auto;z-index:2147483646} #aja-window-dock:empty{display:none} #aja-window-dock button{flex-shrink:0;background:#173b63;color:white;border:1px solid #428cc1;border-radius:8px;padding:10px;cursor:pointer}
 :is(${selector}) {box-sizing:border-box!important;min-width:0!important;min-height:0!important;max-width:calc(100vw - 16px)!important;max-height:calc(100vh - 16px)!important;isolation:isolate}
 :is(${selector}) * {box-sizing:border-box}
