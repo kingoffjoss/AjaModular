@@ -325,8 +325,6 @@ return (function initCalc() {
 
                 return { open() {
     modal.classList.toggle('calc-visible');
-    document.getElementById('uni-menu-container')?.classList.remove('active');
-    document.getElementById('uni-fab-trigger')?.classList.remove('active');
 } };
             })();
 });

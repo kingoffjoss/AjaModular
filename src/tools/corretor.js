@@ -155,7 +155,7 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                 rastrearCampos() {
                     document.addEventListener('focusin', (e) => {
                         const el = e.target;
-                        if (el.closest('#spell-main-panel, #ajamodular-settings')) return;
+                        if (el.closest('#spell-main-panel, #ajamodular-settings, #aja-spell-compact')) return;
                         if (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text') || el.isContentEditable) {
                             this.ultimoCampo = el; this.sincronizarIlusao(); this.posicionarBadge(); this.configurarEventosDoCampo(); this.verificarTextoNaAPI();
                         }
@@ -436,6 +436,7 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                 window.log("[CORRETOR PRO] Iniciando tracker do corretor...");
                 spellCheckerModule.init();
                 window.AjaModularSetupSpell?.();
+                window.AjaModularCompactSpell?.(spellCheckerModule);
             }, 0);
 
         })();
