@@ -221,16 +221,21 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                     const text = field.isContentEditable ? (field.innerText || field.textContent) : field.value;
                     const revision = this.__revision = (this.__revision || 0) + 1;
                     if (!text.trim()) { this.errosEncontrados=[]; this.atualizarLinhasOnduladas(text); this.atualizarBadge(); return; }
+                    const local = window.AjaLocalSpell?.check(text, this.dicionarioPessoal) || [];
+                    this.errosEncontrados = local;
+                    this.atualizarLinhasOnduladas(text); this.atualizarBadge();
+                    if (this.panel.style.display === 'flex' && !this.panel.querySelector('#tab-voice.active, #tab-dict.active')) this.renderizarPainel();
                     try {
                         const response = await ctx.safeFetch('https://api.languagetool.org/v2/check', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({text,language:'pt-BR'}).toString()});
                         if (!response.ok) throw new Error('LanguageTool ' + response.status);
                         const data = await response.json();
                         const current = field.isContentEditable ? (field.innerText || field.textContent) : field.value;
                         if (this.__revision !== revision || this.ultimoCampo !== field || current !== text) return;
-                        this.errosEncontrados = window.AjaModularSpell.filterMatches(data.matches || [], text, this.dicionarioPessoal).sort((a,b)=>b.offset-a.offset);
+                        const remote = window.AjaModularSpell.filterMatches(data.matches || [], text, this.dicionarioPessoal);
+                        this.errosEncontrados = window.AjaLocalSpell ? window.AjaLocalSpell.merge(local, remote) : remote.sort((a,b)=>b.offset-a.offset);
                         this.atualizarLinhasOnduladas(text); this.atualizarBadge();
                         if (this.panel.style.display === 'flex' && !this.panel.querySelector('#tab-voice.active, #tab-dict.active')) this.renderizarPainel();
-                    } catch(error) { console.warn('[AjaModular] Corretor indisponível:', error.message); }
+                    } catch(error) { console.warn('[AjaModular] Revisão online indisponível; mantendo revisão local:', error.message); }
                 },
                 atualizarLinhasOnduladas(textoOriginal) {
                     this.camadaIlusao.innerHTML = ctx.buildSpellOverlayHTML(textoOriginal, this.errosEncontrados);
