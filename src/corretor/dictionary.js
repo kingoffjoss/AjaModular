@@ -226,6 +226,10 @@ const ajaSessionStorage = { getItem: k => window.sessionStorage.getItem('ajamodu
 
         area.innerHTML = `
             <div class="aja-dict-wrap">
+                    <div class="aja-dict-card">
+                        <div class="aja-dict-title">Revisão local + IA</div>
+                        <div class="aja-dict-muted">${window.AjaLocalSpell?.wordCount || 0} grafias comuns e ${window.AjaLocalSpell?.ruleCount || 0} regras locais, incluídas no corretor. Funcionam sem consultar a IA. A revisão online complementa os resultados. Palavras desconhecidas não são marcadas automaticamente como erradas.</div>
+                    </div>
                 <div class="aja-dict-card">
                     <div class="aja-dict-title">Adicionar ao dicionário</div>
                     <div class="aja-dict-muted">Use para nomes, siglas, produtos ou palavras que o corretor costuma trocar errado. Pode adicionar várias separando por vírgula ou linha.</div>
