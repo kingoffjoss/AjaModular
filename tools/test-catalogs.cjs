@@ -11,8 +11,8 @@ module.exports=async function(){
   assert.ok(embedded,'Missing embedded catalog');assert.deepEqual(JSON.parse(embedded[1]),spec.data);
   for(const custom of [null,[{title:'PERSONALIZADO - Exemplo',text:'Meu texto',isFavorite:true}]]){
    const values=new Map(custom?[[spec.key,JSON.stringify(custom)]]:[]);let requests=0;
-   const sandbox={CONFIG:{},[spec.constant]:spec.data,ctx:{ajaStorage:{getItem:k=>values.get(k)||null,removeItem:k=>values.delete(k)},safeFetch:()=>{requests++;throw Error('Network forbidden');}},log:()=>{}};
-   vm.createContext(sandbox);await vm.runInContext(loading,sandbox);
+   const sandbox={CONFIG:{},[spec.constant]:spec.data,ctx:{ajaStorage:{getItem:k=>values.get(k)||null,removeItem:k=>values.delete(k)},safeFetch:()=>{requests++;throw Error('Network forbidden');}},log:()=>{}};sandbox.window=sandbox;
+   vm.createContext(sandbox);vm.runInContext(read('src/core/catalog-store.js'),sandbox);await vm.runInContext(loading,sandbox);
    assert.equal(requests,0);assert.equal(sandbox.CONFIG[spec.property].length,custom?1:spec.data.length);
    if(custom)assert.equal(sandbox.CONFIG[spec.property][0].isFavorite,true);
   }

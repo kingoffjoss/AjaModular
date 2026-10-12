@@ -5,11 +5,16 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const checks=[];
 function check(name,fn){fn();checks.push(name);}
 (async()=>{
- for(const file of ['runtime/content.bundle.js','Loader.js','background.js','popup.js','admin.js','src/corretor/services.js']) check('Syntax: '+file,()=>assert.equal(cp.spawnSync(process.execPath,['--check',path.join(root,file)]).status,0));
+ for(const file of ['runtime/content.bundle.js','Loader.js','background.js','popup.js','admin.js','src/corretor/services.js','src/core/dom-watch.js','src/core/catalog-store.js','src/ui/window-service.js']) check('Syntax: '+file,()=>assert.equal(cp.spawnSync(process.execPath,['--check',path.join(root,file)]).status,0));
  for(const module of JSON.parse(read('build-order.json')).modules) check('Isolated syntax: '+module.id,()=>assert.equal(cp.spawnSync(process.execPath,['--check',path.join(root,module.file)]).status,0));
  const manifest=JSON.parse(read('manifest.json'));
  check('Manifest references',()=>[...manifest.content_scripts.flatMap(c=>c.js),manifest.background.service_worker,manifest.action.default_popup,manifest.options_page].forEach(f=>assert.ok(fs.existsSync(path.join(root,f)))));
  check('Single checker and settings owner',()=>{ const bundle=read('runtime/content.bundle.js');assert.equal((bundle.match(/const spellCheckerModule =/g)||[]).length,1);assert.equal((bundle.match(/window.AjaModularOpenSettings =/g)||[]).length,1);assert.ok(!bundle.includes('handleNativeEndCustomerClick'));assert.ok(!bundle.includes('TEST_END_BUTTON_SELECTOR'));assert.ok(!bundle.includes('gemini-1.5-flash-latest'));assert.ok(!bundle.includes('github.io/AjaExtension/')); });
+ check('Corrector uses DOM observation instead of polling',()=>{for(const file of ['src/tools/corretor.js','src/corretor/panel.js','src/corretor/interaction.js','src/corretor/dictionary.js'])assert.ok(!read(file).includes('setInterval('),file+' still polls');});
+ check('Window controls keep close and minimize grouped',()=>{const source=read('src/ui/window-service.js');assert.ok(source.includes('group.append(button,closeButton)'));assert.ok(source.includes("'#am-close,"));assert.ok(source.includes('aja-window-actions'));});
+ check('Quick reply shortcut markup is valid',()=>assert.ok(!read('src/tools/respostas.js').includes('class"reply-hotkey-display"')));
+ const catalogWindow={};const catalogEnv={window:catalogWindow,JSON,Error,Boolean,String,Array};vm.createContext(catalogEnv);vm.runInContext(read('src/core/catalog-store.js'),catalogEnv);const catalog=catalogWindow.AjaModularCatalogStore;
+ check('Shared catalog store normalizes and rejects malformed records',()=>{const normalized=catalog.normalize([{title:'Teste',text:'Conteúdo'}]);assert.equal(normalized[0].isFavorite,false);assert.equal(normalized[0].hotkey,null);assert.throws(()=>catalog.normalize([{title:'Sem texto'}]));assert.equal(catalog.escapeHTML('<b>'), '&lt;b&gt;');});
 
  check('Module dependency graph, contracts and complete tool coverage',()=>require('./check-modules.cjs')(JSON.parse(read('build-order.json'))));
  const registryErrors=[];const registryEnv={window:{},console:{error:(...x)=>registryErrors.push(x)},document:{documentElement:{dataset:{}}}};
