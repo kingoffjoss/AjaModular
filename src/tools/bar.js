@@ -1,10 +1,17 @@
 // Shared dependencies: ajaStorage, safeFetch
-window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ctx) {
+window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assistente"], function(ctx) {
     /* --- MÓDULO ANEXADO: BAR.JS --- */
     try {
         (function () {
             // Catálogos independentes incorporados durante o build.
             const catalog = window.AjaModular.get('bau-catalogo');
+            const assistant = window.AjaModular.get('bau-assistente');
+            const loadList = key => { try { const value=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(value)?value.filter(x=>typeof x==='string'):[]; } catch{return [];} };
+            let commandFavorites=loadList('bau_favorites_v1'), commandRecent=loadList('bau_recent_v1');
+            const fieldValues=new Map();
+            const commandKey=(os,id)=>os+':'+id;
+            function recordRecent(os,id){ const key=commandKey(os,id); commandRecent=[key,...commandRecent.filter(x=>x!==key)].slice(0,30);ctx.ajaStorage.setItem('bau_recent_v1',JSON.stringify(commandRecent)); }
+
             window.commandDatabase = catalog.defaults();
             const savedCatalog = ctx.ajaStorage.getItem('bau_commandDatabase_v1');
             if (savedCatalog) {
@@ -70,6 +77,7 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
 
                 try {
                     navigator.clipboard.writeText(inputElement.value).then(() => {
+                        if(copyButton.dataset.commandId)recordRecent(copyButton.dataset.commandOs,copyButton.dataset.commandId);
                         const originalText = copyButton.textContent;
                         copyButton.textContent = 'Copiado!';
                         copyButton.style.backgroundColor = 'var(--cor-sucesso)';
@@ -81,9 +89,9 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                             else if (copyButton.classList.contains('run-test')) copyButton.style.backgroundColor = 'var(--cor-info)';
                             else copyButton.style.backgroundColor = 'var(--cor-acento-primario)';
                         }, 2000);
-                    });
+                    }).catch(()=>window.AjaModularNotice?.('Não foi possível copiar. Selecione o comando e copie manualmente.'));
                 } catch (e) {
-                    alert("Não foi possível copiar. Por favor, copie manualmente (Ctrl+C).");
+                    window.AjaModularNotice?.('Não foi possível copiar. Selecione o comando e copie manualmente.');
                 }
             }
 
@@ -201,9 +209,10 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
 
             // --- 2. O ESTILO (CSS) V20.1 (ORIGINAL) ---
             const styles = `
-                #bau-command-search, #bau-command-category { box-sizing:border-box; width:100%; margin:8px 0; padding:10px; border:1px solid #6485a5; border-radius:6px; background:var(--cor-fundo-secundario, #173859); color:inherit; }
+                #bau-command-search, #bau-command-category, #bau-command-scope, #bau-workflow { box-sizing:border-box; width:100%; margin:8px 0; padding:10px; border:1px solid #6485a5; border-radius:6px; background:var(--cor-fundo-secundario, #173859); color:inherit; }
                 #bau-command-count { font-weight:600; }
                 #bau-command-results .command-block { border:1px solid #6485a5; border-radius:8px; padding:12px; margin:12px 0; overflow-wrap:anywhere; }
+                .bau-parameters {margin:10px 0;padding:8px;border:1px solid #428cc1;border-radius:6px} .bau-parameters input {width:100%;box-sizing:border-box} #bau-workflow-results:empty {display:none} #bau-workflow-results {padding:10px;border:1px solid #428cc1;border-radius:8px;margin:8px 0}
                 .bau-command-text { box-sizing:border-box; width:100%; max-width:100%; resize:vertical; font-family:Consolas,monospace; padding:8px; }
                 .bau-command-impact { border-left:3px solid #ff9900; padding-left:8px; }
 
@@ -545,6 +554,20 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                 div.appendChild(commandField);
                 const btn = createButton('copy-' + id, 'Copiar Comando', 'bau-copy-btn');
                 btn.setAttribute('data-input-id', inputId);
+                btn.dataset.commandId=id;btn.dataset.commandOs=os;
+                const favorite=createButton('favorite-'+os+'-'+id, commandFavorites.includes(commandKey(os,id))?'★ Favorito':'☆ Favoritar');
+                favorite.setAttribute('aria-label','Favoritar '+label);favorite.setAttribute('aria-pressed',String(commandFavorites.includes(commandKey(os,id))));
+                favorite.onclick=()=>{const key=commandKey(os,id);commandFavorites=commandFavorites.includes(key)?commandFavorites.filter(x=>x!==key):[...commandFavorites,key];ctx.ajaStorage.setItem('bau_favorites_v1',JSON.stringify(commandFavorites));populateCommandsTab();};
+                div.appendChild(favorite);
+                const fields=assistant.fields(cmd),key=commandKey(os,id),values=fieldValues.get(key)||{};fieldValues.set(key,values);
+                if(fields.length){
+                    const form=document.createElement('details');form.className='bau-parameters';const summary=document.createElement('summary');summary.textContent='Preencher campos ('+fields.join(', ')+')';form.appendChild(summary);
+                    const note=createP('Preencha para montar o comando, ou deixe vazio para copiar o modelo. Confira a prévia antes de usar.');form.appendChild(note);
+                    const status=createP('');status.setAttribute('role','status');
+                    const update=()=>{try{commandField.value=assistant.render(cmd,values,os);btn.disabled=false;status.textContent='';btn.textContent=fields.every(f=>values[f])?'Copiar comando preenchido':'Copiar modelo';}catch(error){status.textContent=error.message;btn.disabled=true;}};
+                    for(const field of fields){const input=createInput('field-'+os+'-'+id+'-'+field,values[field]||'');input.setAttribute('aria-label',field+' — '+label);input.placeholder=({HOST:'servidor.exemplo.com',IP_DNS:'192.0.2.53',IP_DESTINO:'192.0.2.10',PORTA:'443',PID:'1234',DISPOSITIVO:'sda1 (sem /dev/)',INTERFACE:'eth0, en0 ou nome indicado pelo sistema',ADAPTADOR:'Ethernet',CAMINHO:'Trecho do caminho no lugar de CAMINHO'})[field]||field;const fieldLabel=createLabel(field);fieldLabel.htmlFor=input.id;form.append(fieldLabel,input);input.addEventListener('input',()=>{values[field]=input.value;update();});}
+                    form.appendChild(status);div.insertBefore(form,commandField);update();
+                }
                 div.appendChild(btn);
                 return div;
             }
@@ -806,6 +829,15 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
             commandSearch.setAttribute('aria-label', 'Pesquisar comandos');
             const commandCategory = document.createElement('select'); commandCategory.id = 'bau-command-category';
             commandCategory.setAttribute('aria-label', 'Categoria dos comandos');
+            const commandScope=document.createElement('select');commandScope.id='bau-command-scope';commandScope.setAttribute('aria-label','Lista de comandos');
+            for(const [value,label] of [['all','Todos os comandos'],['favorites','★ Favoritos'],['recent','Recentes copiados']]){const option=document.createElement('option');option.value=value;option.textContent=label;commandScope.appendChild(option);}
+            const workflowSelect=document.createElement('select');workflowSelect.id='bau-workflow';workflowSelect.setAttribute('aria-label','Roteiro de diagnóstico');
+            for(const item of [{id:'',title:'Escolher roteiro de diagnóstico'},...assistant.workflows]){const option=document.createElement('option');option.value=item.id;option.textContent=item.title;workflowSelect.appendChild(option);}
+            const workflowResults=document.createElement('section');workflowResults.id='bau-workflow-results';
+            function renderWorkflow(){workflowResults.replaceChildren();const workflow=assistant.workflows.find(x=>x.id===workflowSelect.value);if(!workflow)return;const os=getActiveOS();workflowResults.appendChild(createP('Siga as etapas na máquina indicada. Os testes não são executados pelo Baú.'));
+                for(const step of workflow.steps){const entry=window.commandDatabase.flatMap(g=>g.commands).find(c=>c.id===step.commands[os]);workflowResults.append(createH4(step.title),createP(step.why),createP('Como interpretar: '+step.inspect));if(entry) {const copy=createButton('workflow-'+entry.id,'Abrir comando: '+entry.label);copy.onclick=()=>{commandScope.value='all';commandCategory.value='';commandSearch.value=entry.os[os];populateCommandsTab();commandResults.scrollIntoView({block:'nearest'});};workflowResults.appendChild(copy);}else workflowResults.appendChild(createP('Comando ausente no catálogo atual. Restaure o padrão para usar esta etapa.'));}}
+            workflowSelect.addEventListener('change',renderWorkflow);
+            commandScope.addEventListener('change',populateCommandsTab);
             const commandCount = createP(''); commandCount.id = 'bau-command-count'; commandCount.setAttribute('aria-live', 'polite');
             const commandResults = document.createElement('div'); commandResults.id = 'bau-command-results';
             const restoreCommands = createButton('bau-command-restore', 'Restaurar catálogo padrão');
@@ -815,7 +847,7 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                 ctx.ajaStorage.removeItem('bau_commandDatabase_v1'); window.commandDatabase = catalog.defaults();
                 commandSearch.value = ''; commandCategory.value = ''; populateCommandsTab();
             };
-            tabComandos.append(commandSearch, commandCategory, commandCount, restoreCommands, commandResults);
+            tabComandos.append(workflowSelect,workflowResults,commandSearch,commandCategory,commandScope,commandCount,restoreCommands,commandResults);
             commandSearch.addEventListener('input', populateCommandsTab);
             commandCategory.addEventListener('change', populateCommandsTab);
             contentArea.appendChild(tabComandos);
@@ -1124,7 +1156,9 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo"], function(ct
                 commandCategory.replaceChildren();
                 for (const title of ['', ...new Set(titles)]) { const option = document.createElement('option'); option.value = title; option.textContent = title || 'Todas as categorias'; commandCategory.appendChild(option); }
                 commandCategory.value = selected;
-                const found = catalog.search(window.commandDatabase, os, commandSearch.value, selected);
+                let found = catalog.search(window.commandDatabase, os, commandSearch.value, selected);
+                if(commandScope.value!=='all'){const list=commandScope.value==='favorites'?commandFavorites:commandRecent;found=found.map(group=>({...group,commands:group.commands.filter(c=>list.includes(commandKey(os,c.id)))})).filter(g=>g.commands.length);if(commandScope.value==='recent')found=[{title:'Recentes copiados',commands:found.flatMap(g=>g.commands).sort((a,b)=>list.indexOf(commandKey(os,a.id))-list.indexOf(commandKey(os,b.id)))}].filter(g=>g.commands.length);}
+                renderWorkflow();
                 const total = window.commandDatabase.reduce((count,group) => count + group.commands.filter(cmd => cmd.os[os]).length,0);
                 const visible = found.reduce((count,group) => count + group.commands.length,0);
                 commandCount.textContent = `${visible} de ${total} comandos — ${ {win:'Windows',mac:'macOS',linux:'Linux'}[os] || 'selecione um sistema' }`;
