@@ -8636,7 +8636,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.1',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.2',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8647,7 +8647,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.1',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.2',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8694,7 +8694,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.1)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.2)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -8716,7 +8716,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.1';
+    const SCRIPT_VERSION = 'AjaModular_1.6.2';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -9349,12 +9349,14 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             let tData = conversationTimers.get(convEl); if (!tData) {
                 let bubblesContainer = convEl.querySelector('.injected-bubbles-container'); let tDiv = convEl.querySelector('.injected-conversation-timer'); let nDiv = convEl.querySelector('.injected-conversation-number'); let checkmarkDiv = convEl.querySelector('.injected-checkmark'); let recurrenceDiv = convEl.querySelector('.injected-recurrence-icon'); let iconDiv = convEl.querySelector('.injected-interaction-icon');
                 if (!bubblesContainer) { bubblesContainer = document.createElement('div'); bubblesContainer.className = 'injected-bubbles-container'; nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.appendChild(nDiv); iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '❔'; bubblesContainer.appendChild(iconDiv); tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); let contentWrapper = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_CONTENT_WRAPPER, convEl); if (contentWrapper) { contentWrapper.appendChild(bubblesContainer); } else { convEl.appendChild(bubblesContainer); } setTimeout(() => { if (contentWrapper && !contentWrapper.contains(bubblesContainer)) { contentWrapper.appendChild(bubblesContainer); } else if (!convEl.contains(bubblesContainer)) { convEl.appendChild(bubblesContainer); } }, 100); } else { if (!nDiv) { nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.prepend(nDiv); } if (!iconDiv) { iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '❔'; if (nDiv && nDiv.nextSibling) { bubblesContainer.insertBefore(iconDiv, nDiv.nextSibling); } else { bubblesContainer.appendChild(iconDiv); } } if (!tDiv) { tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); } }
+                bubblesContainer.classList.toggle('gcp-tema-escuro', CONFIG.DARK_MODE);
                 const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(convEl); const interactionId = documentExtractor.getInteractionId(convEl);
                 const isRecurrence = phoneNumber !== 'N/A' && analyticsManager.getData().conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
                 if (isRecurrence) { if (!recurrenceDiv) { recurrenceDiv = document.createElement('div'); recurrenceDiv.className = 'injected-element injected-recurrence-icon'; recurrenceDiv.innerHTML = '🔁'; recurrenceDiv.title = 'Cliente recorrente hoje'; bubblesContainer.appendChild(recurrenceDiv); } recurrenceDiv.style.display = 'flex'; } else if (recurrenceDiv) { recurrenceDiv.style.display = 'none'; }
                 tData = { div: tDiv, numDiv: nDiv, iconDiv: iconDiv, checkmarkDiv: checkmarkDiv, recurrenceDiv: recurrenceDiv, bubblesContainer: bubblesContainer, element: convEl, creationTime: Date.now(), startTime: Date.now(), pausedAt: Date.now(), isPaused: true, completedVisual: false, tmaLogged: false, activeDuration: 0, activeSessionStart: null, lastOperatorActivityTimestamp: Date.now(), lastCustomerReplyTimestamp: Date.now(), longConvoNotified: false, operatorAlertPlayed: false, clientAlertPlayed: false, participantName: participantName, phoneNumber: phoneNumber, interactionUrl: 'N/A', interactionId: interactionId, isRecurrence: isRecurrence, interactionType: 'unknown' };
                 conversationTimers.set(convEl, tData);
             }
+            tData.bubblesContainer.classList.toggle('gcp-tema-escuro', CONFIG.DARK_MODE);
             tData.numDiv.textContent = total - index;
             if (tData.isRecurrence && tData.recurrenceDiv) { tData.recurrenceDiv.style.display = 'flex'; }
             return tData;
