@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     const key = '__AJA_MODULAR_LOADER__';
-    const version = '1.6.9';
+    const version = '1.6.10';
     if (window[key]?.version === version) { window[key].refresh(); return; }
     window[key]?.stop?.();
     const pending = new WeakSet();
@@ -25,18 +25,12 @@
             return;
         }
         if (!doc?.documentElement) return;
-        if (!observed.has(doc)) {
-            observed.add(doc);
-            const observer = new MutationObserver(schedule);
-            observer.observe(doc.documentElement, {childList:true, subtree:true, attributes:true, attributeFilter:['src','srcdoc']});
-            observers.push(observer);
-        }
         // Wait for the editor document body; its navigation may replace about:blank.
         if (doc.body && !pending.has(doc) && !win.__AJA_MODULAR_RUNTIME__ && (failures.get(doc) || 0) < 3) {
             pending.add(doc);
             const script = doc.createElement('script');
             script.id = 'ajamodular-runtime';
-            script.src = base + 'runtime/content.bundle.js?v=1.6.9';
+            script.src = base + 'runtime/content.bundle.js?v=1.6.10';
             script.onerror = () => {
                 pending.delete(doc); failures.set(doc, (failures.get(doc) || 0) + 1); script.remove();
                 console.warn('[AjaModular] Falha no carregamento do quadro. Verifique rede e CSP.');
@@ -45,7 +39,17 @@
             script.onload = () => pending.delete(doc);
             (doc.head || doc.documentElement).appendChild(script);
         }
-        for (const frame of doc.querySelectorAll('iframe')) {
+        scanRoot(doc);
+    }
+    function scanRoot(root) {
+        if (stopped) return;
+        if (!observed.has(root)) {
+            observed.add(root);
+            const observer = new MutationObserver(schedule);
+            observer.observe(root.documentElement || root, {childList:true, subtree:true, attributes:true, attributeFilter:['src','srcdoc']});
+            observers.push(observer);
+        }
+        for (const frame of root.querySelectorAll('iframe')) {
             if (!frames.has(frame)) {
                 frames.add(frame);
                 const onload = () => { if (frame.contentWindow) scan(frame.contentWindow); };
@@ -54,6 +58,11 @@
             }
             try { if (frame.contentWindow) scan(frame.contentWindow); }
             catch (error) { console.warn('[AjaModular] Falha ao examinar um quadro:', error.name); }
+        }
+            // Genesys puts the messaging iframe in an open APP-VIEW-STACK shadow root.
+        // querySelectorAll and document observers do not cross this boundary.
+        for (const host of root.querySelectorAll('*')) {
+            if (host.shadowRoot) scanRoot(host.shadowRoot);
         }
     }
     // A document can be replaced without a parent DOM mutation. Reconcile periodically,
