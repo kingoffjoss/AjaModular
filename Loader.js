@@ -30,7 +30,7 @@
             pending.add(doc);
             const script = doc.createElement('script');
             script.id = 'ajamodular-runtime';
-            script.src = base + 'runtime/content.bundle.js?v=1.6.5';
+            script.src = base + 'runtime/content.bundle.js?v=1.6.6';
             script.onerror = () => {
                 pending.delete(doc); failures.set(doc, (failures.get(doc) || 0) + 1); script.remove();
                 console.warn('[AjaModular] Falha no carregamento do quadro. Verifique rede e CSP.');
