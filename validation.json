@@ -50,6 +50,7 @@
     "Corrector uses DOM observation instead of polling",
     "Window controls keep close and minimize grouped",
     "Mini dashboard drag is distinguished from click",
+    "Conversation timers inherit and refresh dark mode",
     "Quick reply shortcut markup is valid",
     "Shared catalog store normalizes and rejects malformed records",
     "Module dependency graph, contracts and complete tool coverage",
