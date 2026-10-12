@@ -41,7 +41,7 @@
 
     const makeDraggable = (popup, header, popupName) => {
         if (!header) header = popup;
-        let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
+        let isDragging = false, dragOffsetX = 0, dragOffsetY = 0, startX = 0, startY = 0, moved = false;
 
         let enforceBounds = (top, left) => {
             const vpW = window.innerWidth, vpH = window.innerHeight;
@@ -97,6 +97,10 @@
             if (e.target.closest('button') || e.target.closest('.compact-btn') || e.target.closest('input') || e.target.classList.contains('os-btn') || e.button !== 0) return;
             e.preventDefault();
             isDragging = true;
+            moved = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            popup.dataset.isDragging = 'false';
             popup.style.transition = 'none';
 
             const rect = popup.getBoundingClientRect();
@@ -112,6 +116,10 @@
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
+            if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) >= 5) {
+                moved = true;
+                popup.dataset.isDragging = 'true';
+            }
             const safe = enforceBounds(e.clientY - dragOffsetY, e.clientX - dragOffsetX);
             popup.style.top = safe.top + 'px';
             popup.style.left = safe.left + 'px';
