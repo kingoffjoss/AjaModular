@@ -1,8 +1,8 @@
 (function(){
 'use strict';
 const prefix='ajamodular:', reserved=prefix+'maintenance:', recovery=reserved+'recovery';
-const arrays=new Set(['bau_commandDatabase_v1','quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
-const objects=new Set(['hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
+const arrays=new Set(['bau_favorites_v1','bau_recent_v1','menu_favorites_v1','menu_order_v1','bau_commandDatabase_v1','quickReplies','pr_protocolos','qr_quickReplies','qr_recentReplies_v3','pr_recentProtocols_v1','purecloudScript_idHistory','gerenciadorPausas_horarios','pcs_spell_dict','smart-ultimate-h','genesys_offline_queue_v1']);
+const objects=new Set(['window_layout_v1','hotkeys','gcp_themeColors_v2','timerColors','popupPositions','car_data_v8_master','gerenciadorPausas_notifConfig','gerenciadorPausas_posMain','gerenciadorPausas_posConfig','uniMenuPos','qr_customThemeColors','dailyAnalytics_v2_data','achievements_v2','encerramentoCounters_v4_balao']);
 const extensionKeys=['car_data_v8_master','car_theme_v8','agentName','IA_THEME','geminiHistory','ajamodular_enabled','SHOW_AGENT_TOOLS','MOD_CRONOMETROS','MOD_PAUSAS','MOD_PROTOCOLOS','MOD_RESPOSTAS','MOD_BAR','MOD_IA','MOD_CAR','MOD_ID','MOD_MENU','MOD_CALC'];
 const secret=k=>/api.?key|geminikey|token|password|senha|credential/i.test(k);
 function valid(key,value){
