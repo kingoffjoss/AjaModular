@@ -408,26 +408,28 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
             // --- Lógica "Na Fila" ---
             function executarLogicaNaFila(isAutomatico = false) {
-                let clicado = false;
-                let elDireto = document.querySelector(SELECTORES.NA_FILA_DIRETO);
-                if (elDireto && elDireto.offsetHeight !== 0) {
-                    console.log("[AÇÃO V49.2] Clicando no botão 'Entrar na fila' (Direto)...");
-                    try { elDireto.click(); clicado = true; }
-                    catch (e) { clicado = clicarElemento(SELECTORES.NA_FILA_DIRETO); }
-                } else {
-                    console.log("[AÇÃO V49.2] Tentando clicar no toggle 'Na Fila' (Shadow DOM)...");
-                    try {
-                        const guxToggle = document.querySelector(SELECTORES.NA_FILA_TOGGLE_HOST);
-                        if (guxToggle && guxToggle.shadowRoot) {
-                            const shadowContent = guxToggle.shadowRoot;
-                            const clickableSlider = shadowContent.querySelector('div[role="checkbox"]');
-                            if (clickableSlider) { clickableSlider.click(); clicado = true; }
-                            else { console.warn("[AÇÃO V49.2] 'gux-toggle' interno (div[role=checkbox]) não encontrado."); }
-                        } else { console.warn("[AÇÃO V49.2] 'gux-toggle' (host) não encontrado ou sem shadowRoot."); }
-                    } catch (e) { console.error("[AÇÃO V49.2] Erro ao tentar clicar no Shadow DOM do 'gux-toggle':", e); }
-                }
+                try {
+                    const guxToggle = document.querySelector(SELECTORES.NA_FILA_TOGGLE_HOST);
+                    const clickableSlider = guxToggle?.shadowRoot?.querySelector('div[role="checkbox"]');
+                    if (clickableSlider) {
+                        const jaEstaNaFila = clickableSlider.getAttribute('aria-checked') === 'true';
+                        if (!jaEstaNaFila) clickableSlider.click();
+                        console.log(jaEstaNaFila ? "[AÇÃO] O agente já está na fila." : "[AÇÃO] Controle 'Na Fila' ativado.");
+                        return true;
+                    }
 
-                if (!clicado) console.warn("Ação 'Na Fila' falhou.");
+                    const elDireto = document.querySelector(SELECTORES.NA_FILA_DIRETO);
+                    if (elDireto && elDireto.getClientRects().length) {
+                        elDireto.click();
+                        console.log("[AÇÃO] Botão direto 'Entrar na fila' acionado.");
+                        return true;
+                    }
+                } catch (e) {
+                    console.error("[AÇÃO] Erro ao ativar 'Na Fila':", e);
+                }
+                console.warn("[AÇÃO] Controle 'Na Fila' não encontrado.");
+                window.AjaModularNotice?.("Não encontrei o controle Na Fila da plataforma.", "error");
+                return false;
             }
 
             // --- Lógica Ações Antigas ---
@@ -477,12 +479,10 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const status = "Na fila";
                 if (isAutomatico) {
                     exibirModalConfirmacao(status, () => {
-                        registrarPausa(status);
-                        executarLogicaNaFila(true);
+                        if (executarLogicaNaFila(true)) registrarPausa(status);
                     });
                 } else {
-                    registrarPausa(status);
-                    executarLogicaNaFila(false);
+                    if (executarLogicaNaFila(false)) registrarPausa(status);
                 }
             }
 
