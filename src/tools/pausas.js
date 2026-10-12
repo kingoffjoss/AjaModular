@@ -377,6 +377,16 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 const label = [...document.querySelectorAll(SELECTORES.STATUS_LABEL_TEXT)].find(el => normalizarPresenca(el.textContent) === alvo && visivelPresenca(el));
                 return label?.closest('button') || null;
             }
+            function clicarPresenca(controle) {
+                if (controle.disabled || controle.getAttribute('aria-disabled') === 'true') throw new Error('Status indisponível na plataforma.');
+                // Genesys attaches navigation/selection to the slotted label, not input.click().
+                const label = controle.closest('gux-form-field-radio')?.querySelector('label[slot="label"]');
+                (label || controle).click();
+            }
+            function statusConfirmado(nome) {
+                const label = document.querySelector(SELECTORES.MENU_STATUS_TOGGLE)?.getAttribute('aria-label') || '';
+                return normalizarPresenca(label.split(',').pop()) === normalizarPresenca(nome);
+            }
             async function aguardarPresenca(encontrar) {
                 for (let tentativa = 0; tentativa < 30; tentativa++) {
                     const elemento = encontrar();
@@ -402,11 +412,11 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                     let destino = procurarPresenca(item || categoria, seletor);
                     if (!destino && item) {
                         const principal = await aguardarPresenca(() => procurarPresenca(categoria));
-                        principal.click();
+                        clicarPresenca(principal);
                     }
                     destino = await aguardarPresenca(() => procurarPresenca(item || categoria, seletor));
-                    if (destino.disabled || destino.getAttribute('aria-disabled') === 'true') throw new Error('Status indisponível na plataforma.');
-                    destino.click();
+                    clicarPresenca(destino);
+                    await aguardarPresenca(() => statusConfirmado(item || categoria));
                     registrarPausa(nomePausa);
                 } catch (error) {
                     console.warn('[Gerenciador] ' + nomePausa, error);
