@@ -366,6 +366,12 @@
         "CONFIG",
         "safeFetch"
       ]
+    },
+    {
+      "id": "chamado-yoda",
+      "file": "src/tools/chamado-yoda.js",
+      "after": [],
+      "shared": []
     }
   ]
 }
