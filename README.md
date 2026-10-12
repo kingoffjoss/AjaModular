@@ -135,3 +135,7 @@ Referências de revisão: [comandos Windows](https://learn.microsoft.com/en-us/w
 O atalho padrão das configurações dos cronômetros é **Ctrl+Shift+S**, fora de campos de texto. Também há o botão **Configurações dos cronômetros** no menu. O atalho atual aparece em Organizar menu e pode ser alterado em Configurações → Atalhos. **Ctrl+Shift+J** alterna o minidashboard e **Ctrl+Shift+D** alterna o tema dos cronômetros, salvo personalização.
 
 Arquivos de manutenção desta versão: `src/tools/menu-preferencias.js`, `src/tools/bau-assistente.js`, `src/catalogs/bau/roteiros.json`, `src/tools/bar.js` e `src/ui/window-service.js`. Validação: `tools/test-productivity.cjs` e `productivity-ui-validation.json`.
+
+### Versão 1.5.0 — revisão compacta
+
+A calculadora preserva o estado aberto do menu de ferramentas. A bolinha no campo mostra somente a contagem; clicar abre a revisão rápida com aceitar, ignorar, corrigir tudo, dicionário, pausa, configurações e reescrita com prévia antes de aplicar. O painel completo mantém voz/tradução. Manutenção da interface compacta: `src/corretor/compact.js`.

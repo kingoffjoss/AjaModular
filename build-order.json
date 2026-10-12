@@ -23,6 +23,7 @@
     "src/corretor/panel.js",
     "src/corretor/interaction.js",
     "src/corretor/dictionary.js",
+    "src/corretor/compact.js",
     "src/ui/theme.js"
   ],
   "modules": [
