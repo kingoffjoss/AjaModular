@@ -70,7 +70,7 @@
         }
     };
     const original = window.askGemini;
-    window.askGemini = prompt => storage.getItem(key('aja_voice_gemini_api_key')) ? api.askGemini(prompt) : original ? original(prompt) : Promise.reject(new Error('Configure sua chave Gemini.'));
+    window.askGemini = (prompt, options = {}) => storage.getItem(key('aja_voice_gemini_api_key')) ? api.askGemini(prompt, undefined, options) : original ? original(prompt) : Promise.reject(new Error('Configure sua chave Gemini.'));
     window.AjaModularOpenSettings = () => {
         let modal = document.getElementById('ajamodular-settings');
         if (modal) {
