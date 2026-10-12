@@ -381,7 +381,12 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 if (controle.disabled || controle.getAttribute('aria-disabled') === 'true') throw new Error('Status indisponível na plataforma.');
                 // Genesys attaches navigation/selection to the slotted label, not input.click().
                 const label = controle.closest('gux-form-field-radio')?.querySelector('label[slot="label"]');
-                (label || controle).click();
+                const alvo = label || controle;
+                alvo.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, composed:true, pointerType:'mouse'}));
+                for (const tipo of ['mousedown', 'mouseup']) {
+                    alvo.dispatchEvent(new MouseEvent(tipo, {bubbles:true, composed:true, button:0}));
+                }
+                alvo.click();
             }
             function statusConfirmado(nome) {
                 const label = document.querySelector(SELECTORES.MENU_STATUS_TOGGLE)?.getAttribute('aria-label') || '';
