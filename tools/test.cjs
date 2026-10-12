@@ -82,6 +82,7 @@ function check(name,fn){fn();checks.push(name);}
  pending[1](response(200,{matches:[{offset:0,length:6,message:'latest'}]}));await second;pending[0](response(200,{matches:[{offset:0,length:5,message:'stale'}]}));await first;assert.equal(checker.errosEncontrados[0].message,'latest');checks.push('Checker discards responses arriving out of order');
  let listener;const bg={URL,Set,Error,String,Object,chrome:{runtime:{onMessage:{addListener:fn=>listener=fn}}},fetch:()=>{throw Error('Unexpected network')}};vm.createContext(bg);vm.runInContext(read('background.js'),bg);let result;listener({action:'fetchAPI',url:'https://evil.example',options:{}},{},r=>result=r);assert.equal(result.success,false);checks.push('Background rejects unlisted hosts');
  checks.push(...await require('./test-presence.cjs')());
+ checks.push(...require('./test-confirmation.cjs')());
  checks.push(...require('./test-loader.cjs')());
  checks.push(...require('./test-clock.cjs')());
  checks.push(...await require('./test-maintenance.cjs')());
@@ -91,6 +92,7 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...require('./test-tool-visibility.cjs')());
  const report={passed:true,checks,sourceCommit:JSON.parse(read('source-inventory.json')).commit,liveGenesysTest:false,liveGeminiTest:false};fs.writeFileSync(path.join(root,'validation.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
 
 
 
