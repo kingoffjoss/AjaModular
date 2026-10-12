@@ -360,34 +360,44 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 };
             }
 
-            // --- MOTOR DE SUBSTITUIÇÃO ---
-            function replaceText(element, trigger, fullText) {
-                try {
-                    element.focus();
-                    for (let i = 0; i <= trigger.length; i++) document.execCommand('delete', false, null);
-                    document.execCommand('insertText', false, fullText);
-                } catch (e) { console.error("[CAR] Erro ao substituir:", e); }
-            }
-
-            document.addEventListener('keyup', (e) => {
-                if (e.key === ' ' || e.code === 'Space' || e.keyCode === 32) {
-                    const active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
-                        Storage.get((data) => {
-                            scripts = data.scripts;
-                            let text = active.value || active.innerText || active.textContent;
-                            if (!text) return;
-                            text = text.replace(/[\u00a0\u200b]/g, ' ');
-                            const words = text.trimEnd().split(' ');
-                            const lastWord = words[words.length - 1];
-                            if (scripts[lastWord]) {
-                                e.preventDefault(); e.stopPropagation();
-                                replaceText(active, lastWord, scripts[lastWord]);
-                            }
-                        });
-                    }
+            // Expand only the command immediately before the caret.
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== ' ' || e.isComposing || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+                const active = (e.composedPath?.() || [e.target]).find(el => el?.matches?.('textarea, input, [contenteditable="true"], [contenteditable=""]'));
+                if (!active || active.disabled || active.readOnly || active.closest('#car-panel')) return;
+                if (active.tagName === 'INPUT' && !['text','search','url','tel'].includes(active.type)) return;
+                const doc = active.ownerDocument;
+                let before, selection, range;
+                if (active.isContentEditable) {
+                    selection = active.getRootNode().getSelection?.() || doc.getSelection();
+                    if (!selection?.rangeCount || !selection.isCollapsed) return;
+                    range = selection.getRangeAt(0);
+                    if (!active.contains(range.endContainer)) return;
+                    const prefix = range.cloneRange(); prefix.selectNodeContents(active); prefix.setEnd(range.endContainer, range.endOffset);
+                    before = prefix.toString();
+                } else {
+                    if (active.selectionStart == null || active.selectionStart !== active.selectionEnd) return;
+                    before = active.value.slice(0, active.selectionStart);
                 }
+                const trigger = before.match(/(?:^|\s)(\S+)$/)?.[1];
+                // Bookmarklet storage is synchronous and shared by same-origin editor frames.
+                if (!isExtension) Storage.get(data => { scripts = data.scripts; });
+                if (!trigger || !Object.prototype.hasOwnProperty.call(scripts, trigger)) return;
+                if (active.isContentEditable) {
+                    const start = before.length - trigger.length;
+                    const walker = doc.createTreeWalker(active, 4);
+                    let node, offset = 0, found = false;
+                    while ((node = walker.nextNode())) {
+                        if (offset + node.length >= start) { range.setStart(node, start-offset); found = true; break; }
+                        offset += node.length;
+                    }
+                    if (!found) return;
+                    selection.removeAllRanges(); selection.addRange(range);
+                } else active.setSelectionRange(active.selectionStart-trigger.length, active.selectionEnd);
+                e.preventDefault();
+                doc.execCommand('insertText', false, scripts[trigger]);
             }, true);
+            if (isExtension) chrome.storage.onChanged?.addListener(loadData);
 
             window.toggleCAR = function () {
                 createUI();
