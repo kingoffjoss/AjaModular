@@ -63,7 +63,7 @@ window.AjaModular.register('avaliacoes', [], function () {
                     const correct=docs.filter(d=>{const p=new URLSearchParams(d.URL.split('?')[1]||'');return Date.parse(p.get('start'))===Date.parse(range.start)&&Date.parse(p.get('end'))===Date.parse(range.end);});
                     if(!correct.length)return null;
                     if(!identifyAgent(correct))return null;
-                    if(correct.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length))){emptySince=0;stableKey='';return null;}
+                    if(correct.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length && e.ownerDocument.defaultView.getComputedStyle(e).visibility==='visible'))){emptySince=0;stableKey='';return null;}
                     if(firstPage){const first=correct.flatMap(d=>deep(d,'button[title="Primeira página"]'))[0];if(first&&!first.disabled){firstPage=false;first.click();return null;}firstPage=false;}
                     const rows=correct.flatMap(d=>deep(d,'tbody tr')).filter(r=>r.querySelector('td.column-conversationId'));
                     const key=rows.map(r=>r.querySelector('td.column-conversationId').textContent.trim()).join('|');
