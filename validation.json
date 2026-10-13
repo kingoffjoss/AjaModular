@@ -53,6 +53,7 @@
     "Window controls keep close and minimize grouped",
     "Mini dashboard drag is distinguished from click",
     "Conversation timers inherit and refresh dark mode",
+    "Conversation channel icons recognize native metadata and unknown messages",
     "Queue action is idempotent and only records a successful platform action",
     "Quick reply shortcut markup is valid",
     "Shared catalog store normalizes and rejects malformed records",
