@@ -104,7 +104,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Pesquisas respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Índice de resolução',percent(s.ir)],['Aguardando · até 15 min',s.pending],['Não avaliados · após 15 min',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-cards]').innerHTML=[['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
         panel.querySelector('tbody').innerHTML=answered.map(r=>`<tr><td>${escape(r.name||'Cliente')}<small>${escape(r.id)}</small></td><td>${escape(r.date)}</td><td>${escape(r.queue)}</td><td>${escape(r.rating||'Não respondeu')}</td><td>${escape(r.resolved||'Não respondeu')}</td><td><a target="_blank" rel="noopener noreferrer" href="${location.origin}/directory/#/analytics/interactions/${r.id}/admin">Abrir</a></td></tr>`).join('');
@@ -140,7 +140,60 @@ window.AjaModular.register('avaliacoes', [], function () {
     function open() {
         if(panel){panel.hidden=false;render();return;}
         panel=document.createElement('section');panel.id='aja-avaliacoes';
-        panel.innerHTML=`<style>#aja-avaliacoes{position:fixed;inset:5vh 4vw;z-index:2147483640;background:#102a43;color:#eef7ff;border:1px solid #4797cf;border-radius:14px;box-shadow:0 20px 60px #0008;font:14px system-ui;overflow:auto;padding:18px}#aja-avaliacoes[hidden]{display:none}#aja-avaliacoes header{display:flex;justify-content:space-between;gap:12px;align-items:center}#aja-avaliacoes button{background:#005bbb;border:1px solid #4995cb;color:white;padding:8px 12px;border-radius:7px;cursor:pointer}#aja-avaliacoes [data-cards]{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}#aja-avaliacoes .av-card{background:#193e60;border-radius:9px;padding:14px;flex:1;min-width:130px}#aja-avaliacoes strong{display:block;font-size:26px}#aja-avaliacoes small{display:block;font-size:10px}#aja-avaliacoes table{border-collapse:collapse;width:100%}#aja-avaliacoes th,#aja-avaliacoes td{text-align:left;padding:10px;border-bottom:1px solid #38617e}#aja-avaliacoes a{color:#83d8ff}#aja-avaliacoes [data-bars]>div{display:flex;gap:12px;align-items:center;margin:7px 0}#aja-avaliacoes progress{flex:1}#aja-avaliacoes .av-scroll{overflow:auto}#aja-avaliacoes button:disabled{opacity:.5}</style><header><h2>Avaliações de clientes · <span data-period>Hoje</span></h2><button data-close aria-label="Fechar avaliações">×</button></header><p>Pesquisas encontradas em Minhas interações. Somente pesquisas atribuídas ao agente vinculado entram nos indicadores. A aba auxiliar deve ficar aberta para a atualização automática.</p><label>Seu ID de agente (userIdPesquisa de uma avaliação sua) <input data-agent autocomplete="off" placeholder="ID do agente"></label><button data-identify>Vincular minha avaliação aberta</button><fieldset><legend>Período de início dos atendimentos · horário de Fortaleza</legend><label>De <input type="date" data-from></label> <label>Até <input type="date" data-to></label> <button data-apply>Consultar período</button> <button data-today>Hoje</button></fieldset><button data-refresh>Conectar e atualizar</button> <button data-toggle></button><p data-status role="status"></p><small data-last></small><div data-cards></div><p data-base></p><div data-bars></div><h3>Clientes que avaliaram</h3><p data-empty>Nenhuma avaliação carregada.</p><div class="av-scroll"><table><thead><tr><th>Cliente / interação</th><th>Início</th><th>Fila</th><th>CSAT</th><th>Resolvido</th><th>Detalhes</th></tr></thead><tbody></tbody></table></div>`;
+        panel.innerHTML=`<style>
+#aja-avaliacoes{position:fixed;inset:72px 24px auto auto;width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 96px);z-index:2147483640;background:#102a47;color:#edf5ff;border:1px solid #ff8200;border-radius:13px;box-shadow:0 14px 38px #00152d66;font:12px/1.45 'Segoe UI',sans-serif;overflow:hidden;display:flex;flex-direction:column}
+#aja-avaliacoes[hidden],#aja-avaliacoes [hidden]{display:none!important}
+#aja-avaliacoes *{box-sizing:border-box}
+#aja-avaliacoes header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:linear-gradient(110deg,#005bbb 15%,#0878bc 48%,#ff8200);flex-shrink:0;color:white}
+#aja-avaliacoes h2{margin:0;font:700 15px 'Segoe UI',sans-serif;color:inherit}
+#aja-avaliacoes header small{display:block;font-size:11px;opacity:.9;margin-top:2px}
+#aja-avaliacoes button{border:1px solid #3872a3;border-radius:7px;padding:6px 10px;background:#173b63;color:#fff;font:600 11px 'Segoe UI',sans-serif;cursor:pointer;min-height:29px}
+#aja-avaliacoes button:hover{background:#225583}
+#aja-avaliacoes button:focus-visible,#aja-avaliacoes input:focus-visible,#aja-avaliacoes summary:focus-visible{outline:2px solid #ffb04b;outline-offset:2px}
+#aja-avaliacoes [data-refresh],#aja-avaliacoes [data-apply]{background:linear-gradient(120deg,#005bbb 35%,#ff8200);border-color:#ff9b32}
+#aja-avaliacoes [data-close]{width:28px;height:28px;min-height:28px;padding:0;font-size:19px;background:#005bbb;border-color:#ffffff55}
+#aja-avaliacoes button:disabled{opacity:.5;cursor:default}
+#aja-avaliacoes .av-body{padding:12px;overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#427aa5 #102a47}
+#aja-avaliacoes .av-filters{display:flex;flex-wrap:wrap;align-items:end;gap:7px;margin-bottom:10px}
+#aja-avaliacoes label{display:grid;gap:3px;font-size:10px;color:#b8cee2}
+#aja-avaliacoes input{min-width:0;max-width:100%;padding:5px 7px;background:#173b63;color:#fff;border:1px solid #38678f;border-radius:6px;font:12px 'Segoe UI',sans-serif;color-scheme:dark;min-height:29px}
+#aja-avaliacoes .av-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+#aja-avaliacoes [data-last]{font-size:10px;color:#a6c1db;margin-left:auto}
+#aja-avaliacoes [data-status]{font-size:11px;color:#bfd6e9;margin:8px 0 10px;overflow-wrap:anywhere}
+#aja-avaliacoes [data-cards]{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;margin-bottom:10px}
+#aja-avaliacoes .av-card{grid-column:span 3;border-radius:8px;padding:8px;background:#153755;border:1px solid #284f72;min-width:0}
+#aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;border-top:2px solid #ff8200;background:#173b63;padding:10px}
+#aja-avaliacoes .av-card span{display:block;font-size:10px;color:#bfd6e9}
+#aja-avaliacoes .av-card strong{display:block;font-size:17px;line-height:1.2;margin-top:4px;color:#f1f7ff}
+#aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:25px}
+#aja-avaliacoes details{border:1px solid #284f72;border-radius:8px;margin:8px 0;background:#112e4d}
+#aja-avaliacoes summary{padding:8px 10px;cursor:pointer;font-weight:600;color:#c8ddf0;font-size:11px}
+#aja-avaliacoes details .av-detail{padding:0 10px 10px}
+#aja-avaliacoes .av-account{display:flex;align-items:end;flex-wrap:wrap;gap:7px}
+#aja-avaliacoes .av-account label{flex:1;min-width:160px}
+#aja-avaliacoes details p{margin:7px 0;color:#a6c1db;font-size:10px}
+#aja-avaliacoes [data-bars]>div{display:flex;gap:10px;align-items:center;margin:6px 0;font-size:11px}
+#aja-avaliacoes progress{flex:1;height:7px;accent-color:#ff9500;min-width:20px}
+#aja-avaliacoes h3{font-size:12px;margin:14px 0 8px;color:#edf5ff}
+#aja-avaliacoes .av-scroll{max-height:210px;overflow:auto;border:1px solid #284f72;border-radius:8px;scrollbar-width:thin;scrollbar-color:#427aa5 #102a47}
+#aja-avaliacoes table{border-collapse:collapse;width:100%;font-size:11px}
+#aja-avaliacoes th{position:sticky;top:0;background:#173b63;color:#abc9e3;font-size:10px;font-weight:600;white-space:nowrap}
+#aja-avaliacoes th,#aja-avaliacoes td{padding:7px 8px;text-align:left;border-bottom:1px solid #284f72}
+#aja-avaliacoes td small{display:block;font-size:9px;color:#8daec9;max-width:135px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#aja-avaliacoes a{color:#8ed4ff;text-decoration:none;white-space:nowrap}
+#aja-avaliacoes a:hover{text-decoration:underline}
+#aja-avaliacoes [data-empty]{padding:14px;text-align:center;color:#91b1cc;border:1px dashed #38678f;border-radius:8px;font-size:11px}
+@media(max-width:440px){#aja-avaliacoes{inset:60px 12px auto auto;max-height:calc(100vh - 72px)}#aja-avaliacoes .av-card{grid-column:span 6}#aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;padding:7px}#aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:21px}#aja-avaliacoes [data-last]{margin-left:0;flex-basis:100%}}
+</style>
+<header><div><h2>▥ Avaliações</h2><small data-period>Hoje</small></div><button data-close aria-label="Fechar avaliações">×</button></header>
+<div class="av-body">
+<div class="av-filters"><label>De<input type="date" data-from></label><label>Até<input type="date" data-to></label><button data-apply>Filtrar</button><button data-today>Hoje</button></div>
+<div class="av-actions"><button data-refresh>Conectar e atualizar</button><button data-toggle></button><small data-last></small></div>
+<p data-status role="status"></p><div data-cards></div>
+<details><summary>Distribuição das notas e cálculo</summary><div class="av-detail"><div data-bars></div><p data-base></p></div></details>
+<h3>Clientes que avaliaram</h3><p data-empty>Nenhuma avaliação carregada.</p><div class="av-scroll"><table><thead><tr><th>Cliente</th><th>Início</th><th>Fila</th><th>Nota</th><th>Resolvido</th><th></th></tr></thead><tbody></tbody></table></div>
+<details data-settings><summary>Configuração do agente</summary><div class="av-detail"><div class="av-account"><label>ID do agente<input data-agent autocomplete="off" placeholder="userIdPesquisa"></label><button data-identify>Vincular minha avaliação aberta</button></div><p>Vincule uma pesquisa enviada por você. Apenas avaliações atribuídas a esse agente entram nos indicadores. Mantenha a aba auxiliar aberta. O período considera o início do atendimento no horário de Fortaleza.</p></div></details>
+</div>`;
         document.body.append(panel);
         try{panel.querySelector('[data-agent]').value=localStorage.getItem(storageKey)||'';}catch{}
         panel.querySelector('[data-agent]').onchange=()=>{try{localStorage.setItem(storageKey,panel.querySelector('[data-agent]').value.trim());}catch{}render();};
@@ -149,9 +202,10 @@ window.AjaModular.register('avaliacoes', [], function () {
             const unique=[...new Set(values)];
             if(unique.length!==1){message='Abra os detalhes de uma pesquisa enviada por você e tente novamente. A atribuição precisa ser única.';render();return;}
             panel.querySelector('[data-agent]').value=unique[0];panel.querySelector('[data-agent]').onchange();
-            message='Agente vinculado. Clique em Conectar e atualizar.';render();
+            panel.querySelector('[data-settings]').open=false;message='Agente vinculado. Clique em Conectar e atualizar.';render();
         };
 
+        panel.querySelector('[data-settings]').open=!panel.querySelector('[data-agent]').value.trim();
         const today=model.today().day;
         panel.querySelector('[data-from]').value=today;panel.querySelector('[data-to]').value=today;
         panel.querySelector('[data-apply]').onclick=()=>{
