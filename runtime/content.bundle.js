@@ -239,16 +239,18 @@ window.AjaEvaluationModel = (() => {
     }
     function resolution(value) { return ({sim:true,nao:false})[normalize(value)] ?? null; }
     function status(item,now=Date.now()) {
+        if (item.open) return 'em-andamento';
         if (item.error) return 'falha';
         if (score(item.rating)!==null || resolution(item.resolved)!==null) return 'respondida';
         if (!Number.isFinite(item.endedAt)) return 'sem-horario';
         return now-item.endedAt<=15*60*1000 ? 'aguardando' : 'nao-avaliada';
     }
     function summarize(items,now=Date.now()) {
-        const result={total:items.length,answered:0,pending:0,unanswered:0,failed:0,unknownEnd:0,ratings:0,positive:0,resolutions:0,yes:0,distribution:[0,0,0,0,0]};
+        const result={total:items.length,answered:0,pending:0,unanswered:0,ongoing:0,failed:0,unknownEnd:0,ratings:0,positive:0,resolutions:0,yes:0,distribution:[0,0,0,0,0]};
         for(const item of items) {
             const state=status(item,now);
             if(state==='falha'){result.failed++;continue;}
+            if(state==='em-andamento'){result.ongoing++;continue;}
             if(state==='aguardando')result.pending++;
             if(state==='nao-avaliada')result.unanswered++;
             if(state==='sem-horario')result.unknownEnd++;
@@ -295,11 +297,11 @@ window.AjaEvaluationModel = (() => {
     }
     function attendanceCount(records){
         const counted=new Set();
-        for(const item of records)if(!item.timingError&&item.id&&Number.isFinite(item.interactMs)&&item.interactMs>60000)counted.add(item.id);
+        for(const item of records)if(!item.open&&Number.isFinite(item.endedAt)&&!item.timingError&&item.id&&Number.isFinite(item.interactMs)&&item.interactMs>60000)counted.add(item.id);
         return counted.size;
     }
     function timeSummary(records){
-        const mean=key=>{const values=records.filter(r=>!r.timingError&&Number.isFinite(r[key])&&r[key]>=0).map(r=>r[key]);return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};};
+        const mean=key=>{const values=records.filter(r=>!r.open&&Number.isFinite(r.endedAt)&&!r.timingError&&Number.isFinite(r[key])&&r[key]>=0).map(r=>r[key]);return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};};
         return {handle:mean('handleMs'),wait:mean('waitMs')};
     }
     function formatTime(ms){if(!Number.isFinite(ms))return 'Sem dados';const sec=Math.round(ms/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(v=>String(v).padStart(2,'0')).join(':');}
@@ -8885,7 +8887,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.25',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.26',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8896,7 +8898,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.25',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.26',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8990,13 +8992,13 @@ window.AjaModular.register('avaliacoes', [], function () {
     const completed=new Map();
     const REFRESH_DELAY=120000;
     function surveyFinal(record) {
-        return !!record && !record.error && (
+        return !!record && !record.open && !record.error && Number.isFinite(record.endedAt) && (
             model.score(record.rating)!==null || model.resolution(record.resolved)!==null ||
             Number.isFinite(record.endedAt) && Number.isFinite(record.checkedAt) && record.checkedAt>=record.endedAt+20*60000
         );
     }
     function timingComplete(record) {
-        return !!record && !record.timingError && Number.isFinite(record.handleMs) && Number.isFinite(record.interactMs);
+        return !!record && !record.open && Number.isFinite(record.endedAt) && !record.timingError && Number.isFinite(record.handleMs) && Number.isFinite(record.interactMs);
     }
     function reusable(record) {
         return surveyFinal(record) && timingComplete(record);
@@ -9123,24 +9125,26 @@ window.AjaModular.register('avaliacoes', [], function () {
     async function details(item) {
         const el=frame(location.origin+'/directory/#/analytics/interactions/'+item.id+'/admin');
         try {
-            let stable='',samples=0;
+            let stable='',stableSince=0,samples=0;
             const values=await until(()=>{
                 const docs=roots(el).filter(d=>d.URL.includes('/interaction-details-ui/') && d.URL.includes(item.id));
                 if(!docs.length)return null;
                 const collapsed=docs.flatMap(d=>deep(d,'[role="button"][aria-label="Expandir participante"][aria-expanded="false"]'));
                 if(collapsed.length){collapsed.forEach(e=>e.click());return null;}
                 const rows=docs.flatMap(d=>deep(d,'.details-row'));
-                if(!rows.some(r=>r.querySelector('.details-header')?.textContent.trim()==='Hora de término'))return null;
+                if(!rows.length)return null;
+                if(docs.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length)))return null;
                 const allowed=new Set(['pesquisa','pesquisa_humano','DataPesquisa','userIdPesquisa','UserPesqAtribuida','Hora de término']);
                 const values={};
                 for(const row of rows){const key=row.querySelector('.details-header')?.textContent.trim();if(allowed.has(key)){const value=row.querySelector('.details-value')?.textContent.trim()||'';if(values[key]&&value&&values[key]!==value)throw Error('Há atribuições ou respostas conflitantes nesta interação.');values[key]=value;}}
-                const signature=JSON.stringify(values);
-                if(signature!==stable){stable=signature;samples=0;return null;}
-                if(++samples<2)return null;
+                const ended=rows.some(r=>r.querySelector('.details-header')?.textContent.trim()==='Hora de término');
+                const signature=JSON.stringify([rows.map(r=>r.querySelector('.details-header')?.textContent.trim()),values]);
+                if(signature!==stable){stable=signature;stableSince=Date.now();samples=0;return null;}
+                if(++samples<2 || Date.now()-stableSince<(ended?700:2000))return null;
                 if(values.userIdPesquisa&&values.UserPesqAtribuida&&values.userIdPesquisa!==values.UserPesqAtribuida)throw Error('A atribuição da pesquisa é ambígua.');
-                return values;
+                return {...values,open:!ended};
             });
-            return {...item,rating:values.pesquisa_humano||'',resolved:values.pesquisa||'',surveyDate:values.DataPesquisa||'',assignedTo:values.userIdPesquisa||values.UserPesqAtribuida||'',endedAt:parseDate(values['Hora de término'])};
+            return {...item,rating:values.pesquisa_humano||'',resolved:values.pesquisa||'',surveyDate:values.DataPesquisa||'',assignedTo:values.userIdPesquisa||values.UserPesqAtribuida||'',endedAt:parseDate(values['Hora de término']),open:values.open};
         }finally{removeFrame(el);}
     }
     async function timing(item){
@@ -9165,7 +9169,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Em andamento',records.filter(r=>r.open).length],['Falhas na consulta',records.filter(r=>r.error||r.timingError).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
         panel.querySelector('[data-time-base]').textContent=`Tempos de todas as interações consultadas, com ou sem avaliação. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
@@ -9200,12 +9204,13 @@ window.AjaModular.register('avaliacoes', [], function () {
                     try{current={...current,...await details(items[i])};delete current.error;current.checkedAt=Date.now();completed.set(cacheKey,current);saveCompleted();}
                     catch(error){if(cancelled||error.rateLimited)throw error;current.error=error.message;}
                 }
-                if(!timingComplete(cached)){
+                if(!current.open && Number.isFinite(current.endedAt) && !timingComplete(cached)){
                     try{
                         if(surveyFinal(cached))frame(location.origin+'/directory/#/analytics/interactions/'+items[i].id+'/admin');
                         Object.assign(current,await timing(items[i]));delete current.timingError;
                     }catch(error){if(cancelled||error.rateLimited)throw error;Object.assign(current,{handleMs:null,interactMs:null,waitMs:null,timingError:error.message});}
                 }
+                if(current.open){current.handleMs=null;current.interactMs=null;current.waitMs=null;delete current.timingError;}
                 collected.push(current);
                 completed.set(cacheKey,current);saveCompleted();
             }
@@ -9304,7 +9309,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.25)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.26)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9326,7 +9331,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.25';
+    const SCRIPT_VERSION = 'AjaModular_1.6.26';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
