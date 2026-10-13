@@ -204,7 +204,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         render();
     }
     function open() {
-        if(panel){panel.hidden=false;if(!automatic)toggle();else render();return;}
+        if(panel){window.AjaModularWindows?.restore(panel);panel.hidden=false;if(!automatic)toggle();else render();return;}
         panel=document.createElement('section');panel.id='aja-avaliacoes';
         panel.innerHTML=`<style>
 #aja-avaliacoes{position:fixed;inset:72px 24px auto auto;width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 96px);z-index:2147483640;background:#102a47;color:#edf5ff;border:1px solid #ff8200;border-radius:13px;box-shadow:0 14px 38px #00152d66;font:12px/1.45 'Segoe UI',sans-serif;overflow:hidden;display:flex;flex-direction:column}
