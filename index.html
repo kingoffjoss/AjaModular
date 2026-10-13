@@ -1,5 +1,45 @@
-<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AjaModular</title><style>body{font:17px system-ui;background:#102a47;color:#eef6ff;max-width:900px;margin:5vh auto;padding:28px}h1,a{color:#ff8200}code,pre{background:#173b63;padding:12px;display:block;white-space:pre-wrap;overflow-wrap:anywhere}button{background:#0057b8;color:white;border:1px solid #ff8200;border-radius:8px;padding:12px}</style><h1>AjaModular 1.6.24</h1><p>Ferramentas Brisanet em módulos. Versão independente do AjaExtension.</p><p>Arraste <a href="javascript:(()=>{const s=document.createElement('script');s.src='https://kingoffjoss.github.io/AjaModular/Loader.js?v=1.6.24';document.documentElement.appendChild(s)})();">AjaModular</a> para a barra de favoritos. Abra seu ambiente de atendimento e clique no favorito.</p><p>Ou copie o conteúdo de <a href="bookmarklet.txt">bookmarklet.txt</a> para a URL de um novo favorito.</p><p>Ferramentas com escopos próprios, dependências declaradas e calculadora separada do menu.</p><h2>Novidades 1.6.24</h2><p>Carregamento do favorito em conversas dinâmicas, expansão de comandos CAR na posição do cursor e detecção de campos já focados pelo corretor.</p><h2>Ferramentas</h2><p>Menu, gerenciador, CAR, Assistant, fila, BAR, respostas, protocolos e corretor com Erros, Dicionário e Tradução.</p><h2>Baú de Acesso Remoto</h2><p>154 comandos Windows, 144 Linux e 145 macOS, com pesquisa, categorias, finalidade e resultado esperado. Mais de 100 novos por sistema. Abra BAR → Comandos.</p><h2>Extensão</h2><p>Baixe o repositório, extraia e use “Carregar sem compactação” na página de extensões do navegador, selecionando a pasta que contém manifest.json.</p><p>As preferências desta versão usam armazenamento separado. Configure sua chave Gemini no próprio corretor. Revisão por IA e LanguageTool envia o texto aos respectivos serviços.</p><p><a href="https://github.com/kingoffjoss/AjaModular">Código e instruções</a></p></html>
-
-
-
-
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b2440">
+  <title>Adicionar AjaModular aos favoritos</title>
+  <style>
+    :root{font-family:Inter,"Segoe UI",system-ui,sans-serif;color:#eef7ff;background:#081c32}
+    *{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 20% 12%,#145181 0,transparent 32%),radial-gradient(circle at 90% 90%,#794017 0,transparent 26%),#081c32}
+    main{width:min(100%,580px);padding:30px;border:1px solid #3a668b;border-radius:22px;background:#102d4b;box-shadow:0 24px 70px #0007}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;color:#9fd3f9;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.dot{width:8px;height:8px;border-radius:50%;background:#ff8b2c;box-shadow:0 0 14px #ff8b2c}
+    h1{font-size:clamp(28px,6vw,39px);line-height:1.08;letter-spacing:-.04em;margin:16px 0 12px}p{color:#bad1e5;line-height:1.55;margin:0 0 18px}
+    .drag{display:flex;align-items:center;justify-content:center;gap:11px;min-height:67px;margin:24px 0 12px;border:1px solid #ffaf54;border-radius:14px;background:linear-gradient(110deg,#0061bc,#0874bc 55%,#f27b1d);color:#fff;text-decoration:none;font-size:20px;font-weight:800;box-shadow:0 8px 26px #0059a47a;cursor:grab;user-select:none}.drag:active{cursor:grabbing}.drag:hover{filter:brightness(1.12)}.drag:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #ffd49b;outline-offset:3px}
+    .hint{font-size:13px;text-align:center;color:#c9def1}.steps{display:grid;gap:9px;margin:22px 0;padding:0;list-style:none}.steps li{display:flex;align-items:flex-start;gap:11px;color:#d5e6f4;font-size:14px}.steps b{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:7px;background:#1a4d75;color:#ffad61}
+    .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid #315575}button{min-height:40px;padding:8px 15px;border:1px solid #5794c2;border-radius:9px;background:#1b527e;color:#fff;font:700 13px Inter,"Segoe UI",sans-serif;cursor:pointer}button:hover{background:#246a9e}.actions a{color:#aad7f7;font-size:13px}.status{min-height:20px;margin:10px 0 0;color:#a8e9c5;font-size:12px}
+    @media(max-width:460px){main{padding:22px}.drag{font-size:18px}}
+  </style>
+</head>
+<body>
+<main>
+  <span class="eyebrow"><span class="dot"></span> Favorito do navegador</span>
+  <h1>AjaModular sempre à mão.</h1>
+  <p>Adicione as ferramentas à barra de favoritos do Chrome. O mesmo favorito carrega a versão mais recente quando você clicar nele.</p>
+  <a class="drag" id="aja-favorito" draggable="true" href="javascript:(()=>{const s=document.createElement('script');s.src='https://kingoffjoss.github.io/AjaModular/Loader.js?t='+Date.now();s.onerror=()=>alert('Não foi possível carregar o AjaModular.');document.documentElement.appendChild(s)})();" aria-label="Arraste AjaModular para a barra de favoritos">✦ AjaModular <span aria-hidden="true">↗</span></a>
+  <div class="hint">Arraste o botão acima para a barra de favoritos.</div>
+  <ol class="steps">
+    <li><b>1</b><span>Se a barra não aparecer, pressione <strong>Ctrl + Shift + B</strong> no Chrome.</span></li>
+    <li><b>2</b><span>Arraste o botão <strong>AjaModular</strong> para essa barra.</span></li>
+    <li><b>3</b><span>Abra a plataforma Genesys e clique no favorito para iniciar.</span></li>
+  </ol>
+  <div class="actions"><button id="copiar" type="button">Copiar código do favorito</button><a href="bookmarklet.txt">Ver código</a></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+</main>
+<script>
+  const favorite=document.getElementById('aja-favorito');
+  favorite.addEventListener('click',event=>{event.preventDefault();document.getElementById('status').textContent='Arraste o botão para a barra de favoritos, ou use “Copiar código do favorito”.';});
+  document.getElementById('copiar').addEventListener('click',async()=>{
+    const status=document.getElementById('status');
+    try{await navigator.clipboard.writeText(favorite.getAttribute('href'));status.textContent='Código copiado. Crie um favorito e cole no campo URL.';}
+    catch{status.textContent='A cópia foi bloqueada. Abra “Ver código” e copie o conteúdo para o campo URL do favorito.';}
+  });
+</script>
+</body>
+</html>
