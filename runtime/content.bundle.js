@@ -8840,7 +8840,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.18',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.19',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8851,7 +8851,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.18',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.19',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9001,7 +9001,7 @@ window.AjaModular.register('avaliacoes', [], function () {
                     const correct=docs.filter(d=>{const p=new URLSearchParams(d.URL.split('?')[1]||'');return Date.parse(p.get('start'))===Date.parse(range.start)&&Date.parse(p.get('end'))===Date.parse(range.end);});
                     if(!correct.length)return null;
                     if(!identifyAgent(correct))return null;
-                    if(correct.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length))){emptySince=0;stableKey='';return null;}
+                    if(correct.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length && e.ownerDocument.defaultView.getComputedStyle(e).visibility==='visible'))){emptySince=0;stableKey='';return null;}
                     if(firstPage){const first=correct.flatMap(d=>deep(d,'button[title="Primeira página"]'))[0];if(first&&!first.disabled){firstPage=false;first.click();return null;}firstPage=false;}
                     const rows=correct.flatMap(d=>deep(d,'tbody tr')).filter(r=>r.querySelector('td.column-conversationId'));
                     const key=rows.map(r=>r.querySelector('td.column-conversationId').textContent.trim()).join('|');
@@ -9180,7 +9180,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.18)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.19)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9202,7 +9202,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.18';
+    const SCRIPT_VERSION = 'AjaModular_1.6.19';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
