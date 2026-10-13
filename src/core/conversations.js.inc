@@ -49,6 +49,40 @@
         if (currentElapsed > longConvoMs && !timerData.longConvoNotified) { UI.createNotification(`A conversa com ${timerData.participantName || 'o cliente'} está longa (${CONFIG.LONG_CONVO_ALERT_MIN} min).`, 'warn', 5000); timerData.longConvoNotified = true; }
     }
 
+    function nextConversationForRotation(groups,selected,timers,visited,threshold) {
+        if(groups.length<2)return null;
+        const start=groups.indexOf(selected);
+        if(start<0)return null;
+        for(let step=1;step<groups.length;step++) {
+            const candidate=groups[(start+step)%groups.length];
+            const timer=timers.get(candidate);
+            if(candidate.isConnected && timer && !visited.has(candidate) && (timer.isPaused?timer.pausedAt:Date.now())-timer.startTime<threshold)return candidate;
+        }
+        return null;
+    }
+    const autoRotation={
+        enabled:false,visited:new WeakSet(),pending:null,
+        updateButton(){const button=document.getElementById('mini-dashboard-auto-rotate-btn');if(!button)return;button.setAttribute('aria-pressed',String(this.enabled));button.title=this.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';button.textContent=this.enabled?'🔄':'⇄';},
+        toggle(){this.enabled=!this.enabled;this.pending=null;this.visited=new WeakSet();this.updateButton();UI.createNotification(this.enabled?'Troca automática ligada: próxima conversa após 1:10.':'Troca automática desligada.','info',3000);return this.enabled;},
+        tick(){
+            if(!this.enabled)return;
+            const selected=findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
+            if(this.pending){
+                if(selected===this.pending.target){this.visited.add(this.pending.source);this.pending=null;}
+                else if(Date.now()-this.pending.at>3000){this.enabled=false;this.pending=null;this.updateButton();UI.createNotification('A plataforma não confirmou a troca de conversa. Troca automática desligada.','warn',5000);}
+                return;
+            }
+            const timer=conversationTimers.get(selected);
+            if(!selected||!timer||timer.isPaused||this.visited.has(selected)||Date.now()-timer.startTime<CONFIG.CHECKMARK_THRESHOLD_MS)return;
+            const groups=[...document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', '))].sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
+            const target=nextConversationForRotation(groups,selected,conversationTimers,this.visited,CONFIG.CHECKMARK_THRESHOLD_MS);
+            if(!target)return;
+            this.pending={source:selected,target,at:Date.now()};
+            try{(target.querySelector('.interaction-content-wrapper, .interaction-content')||target).click();}
+            catch{this.enabled=false;this.pending=null;this.updateButton();UI.createNotification('Não foi possível selecionar a próxima conversa. Troca automática desligada.','warn',5000);}
+        }
+    };
+    window.AjaModularAutoRotation={toggle:()=>autoRotation.toggle(),get enabled(){return autoRotation.enabled;}};
     const timerManager = {
         globalIntervalId: null,
         refreshAll() { conversationTimers.forEach(updateTimerDisplay); },
@@ -60,6 +94,7 @@
                     conversationTimers.forEach((tData) => {
                         updateTimerDisplay(tData);
                     });
+                    autoRotation.tick();
                 }, CONFIG.TIMER_UPDATE_INTERVAL_MS);
             }
         },
