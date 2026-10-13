@@ -70,6 +70,7 @@ module.exports=function(){
  limiting.reader.document.body.innerText='Consulta concluída';assert.doesNotThrow(()=>limiting.checkLimit());
  assert.match(source,/if\(running\)return/);assert.doesNotMatch(source,/setInterval\(refresh/);
  assert.match(source,/assignedTo===agentId/);assert.match(source,/records=collected/);
+ assert.match(source,/model\.attendanceCount\(records\)/);assert.doesNotMatch(source,/model\.attendanceCount\(own\)/);
  assert.match(source,/if\(!surveyFinal\(cached\)\)/);assert.match(source,/if\(!current\.open && Number\.isFinite\(current\.endedAt\) && !timingComplete\(cached\)\)/);
  assert.match(read('src/tools/menu.js'),/'uni-btn-tools':'avaliacoes'/);
  return ['Evaluation metrics match example, partial responses use independent denominators, failures are excluded, pending expires after 15 min and Fortaleza date range includes final day'];
