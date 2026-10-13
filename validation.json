@@ -76,6 +76,7 @@
     "Scheduled pauses default to confirmation, support persisted automatic mode and switching back, retain logout confirmation and handle storage failures",
     "Yoda action uses current visible Scripts link and refuses missing, unrelated and hidden links",
     "Evaluation metrics match example, partial responses use independent denominators, failures are excluded, pending expires after 15 min and Fortaleza date range includes final day",
+    "CPF copy searches nested conversation frames inside open shadow roots before older page data",
     "Voice punctuation preserves technical data, handles accented spoken punctuation and conservative commas, and distinguishes AI from offline/basic fallback",
     "Local dictionary and punctuation work offline, preserve personal/technical words and offsets, merge without overlaps, and run before AI in voice transcription",
     "Loader upgrades old instances, discovers late frames, survives inaccessible siblings, reloads replaced documents and cleans up; discovers late/replaced messaging frames in nested open shadow roots",
