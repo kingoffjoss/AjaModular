@@ -1,0 +1,14 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+module.exports=function(){
+ const source=fs.readFileSync(path.join(__dirname,'../src/tools/extrator.js'),'utf8');
+ const scan=source.slice(source.indexOf('            function coletarTextos()'),source.indexOf('            // --- 4. EXECUTAR'));
+ const leaf=(url,text)=>({URL:url,body:{innerText:text},querySelectorAll(){return []}});
+ const chat=leaf('https://apps.sae1.pure.cloud/messaging-gadget/messaging-gadget.html','Cliente: CPF 111.444.777-35');
+ const nested={URL:'https://apps.sae1.pure.cloud/conversations',body:{innerText:''},querySelectorAll(selector){return selector==='iframe'?[{contentDocument:chat,getAttribute:()=>''}]:[]}};
+ const shadow={children:[],querySelectorAll(selector){return selector==='iframe'?[{contentDocument:nested,getAttribute:()=>''}]:[]}};
+ const main={URL:'https://apps.sae1.pure.cloud/directory/',body:{innerText:'CPF antigo: 529.982.247-25'},querySelectorAll(selector){return selector==='*'?[{shadowRoot:shadow}]:[]}};
+ const context={document:main,Set,Number,String};vm.createContext(context);vm.runInContext(scan,context);
+ assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ chat.body.innerText='Sem documento';assert.equal(context.buscarMelhorDocumento(),'52998224725');
+ return ['CPF copy searches nested conversation frames inside open shadow roots before older page data'];
+};
