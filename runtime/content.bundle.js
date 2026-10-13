@@ -8862,7 +8862,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.21',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.22',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8873,7 +8873,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.21',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.22',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9164,7 +9164,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         render();
     }
     function open() {
-        if(panel){panel.hidden=false;if(!automatic)toggle();else render();return;}
+        if(panel){window.AjaModularWindows?.restore(panel);panel.hidden=false;if(!automatic)toggle();else render();return;}
         panel=document.createElement('section');panel.id='aja-avaliacoes';
         panel.innerHTML=`<style>
 #aja-avaliacoes{position:fixed;inset:72px 24px auto auto;width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 96px);z-index:2147483640;background:#102a47;color:#edf5ff;border:1px solid #ff8200;border-radius:13px;box-shadow:0 14px 38px #00152d66;font:12px/1.45 'Segoe UI',sans-serif;overflow:hidden;display:flex;flex-direction:column}
@@ -9249,7 +9249,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.21)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.22)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9271,7 +9271,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.21';
+    const SCRIPT_VERSION = 'AjaModular_1.6.22';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -12689,7 +12689,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
 (function(){
 'use strict';
-const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal','#aja-menu-options'];
+const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal','#aja-menu-options','#aja-avaliacoes'];
 const selector=roots.join(',');let sequence=2147483000;const ranks=new WeakMap();let shown=new Set();
 const closeSelector='#am-close,#closeSettingsPanelBtn,.purecloud-script-popup-close-btn,[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
 function windows(){const all=[...document.querySelectorAll(selector)],calc=document.getElementById('calc-ultimate-host')?.shadowRoot?.getElementById('modal');if(calc)all.push(calc);return all;}
@@ -12770,7 +12770,7 @@ const style=document.createElement('style');style.textContent=`
 #aja-maintenance button:focus-visible {outline:3px solid #ffb347}
 `;document.head.appendChild(style);
 window.AjaModularNotice=text=>{const note=document.createElement('div');note.setAttribute('role','alert');note.textContent=text;Object.assign(note.style,{position:'fixed',bottom:'20px',left:'20px',zIndex:'2147483647',background:'#102a43',color:'#fff',padding:'16px',borderRadius:'8px',maxWidth:'360px'});document.body.appendChild(note);setTimeout(()=>note.remove(),7000);};
-window.AjaModularWindows=Object.freeze({close,constrain,reset});
+window.AjaModularWindows=Object.freeze({close,constrain,reset,restore:restoreMinimized});
 })();
 
 
