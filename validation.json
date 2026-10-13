@@ -109,6 +109,7 @@
     "Filled commands escape quoted paths and shell metacharacters for PowerShell and Unix shells",
     "Command fields preserve literals and reject invalid port/PID/multiline values",
     "Four diagnostic workflows reference existing commands for all three operating systems",
+    "Automatic conversation rotation stays off by default, switches once after 70 seconds, skips completed conversations and stops when the platform does not confirm selection",
     "Mini dashboard opens tools; repeated timer refresh preserves visibility, notes and tab; explicit close stays closed"
   ],
   "sourceCommit": "e9e65702ba8ce20ff2b2a18f8f7f77fa7b17a96b",
