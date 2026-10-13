@@ -279,25 +279,31 @@ window.AjaEvaluationModel = (() => {
         const unique=[...new Map(segments.map(s=>[s.id,s])).values()];
         const own=unique.filter(s=>s.purpose==='agent'&&s.group.startsWith(agentId+'_'));
         const handled=own.filter(s=>['interact','hold','wrapup','dialing','contacting'].includes(s.type));
-        if(!handled.length||handled.some(s=>!Number.isFinite(s.start)||!Number.isFinite(s.end)||s.end<s.start))return {handleMs:null,waitMs:null};
+        if(!handled.length||handled.some(s=>!Number.isFinite(s.start)||!Number.isFinite(s.end)||s.end<s.start))return {handleMs:null,interactMs:null,waitMs:null};
         const handleMs=handled.reduce((sum,s)=>sum+s.end-s.start,0);
+        const interactMs=handled.filter(s=>s.type==='interact').reduce((sum,s)=>sum+s.end-s.start,0);
         const sessions=new Map();
         for(const s of own.filter(s=>['interact','hold','alert'].includes(s.type))){const key=s.id.split('_')[0];sessions.set(key,Math.min(sessions.get(key)??Infinity,s.start));}
         const queues=unique.filter(s=>s.purpose==='acd'&&s.type==='interact'&&Number.isFinite(s.start)&&Number.isFinite(s.end)&&s.end>=s.start);
         const matched=[];
         for(const start of sessions.values()){
             const candidates=queues.filter(q=>q.start<=start&&Math.abs(q.end-start)<=1000);
-            if(candidates.length!==1||matched.includes(candidates[0]))return {handleMs,waitMs:null};
+            if(candidates.length!==1||matched.includes(candidates[0]))return {handleMs,interactMs,waitMs:null};
             matched.push(candidates[0]);
         }
-        return {handleMs,waitMs:matched.length?matched.reduce((n,q)=>n+q.end-q.start,0):null};
+        return {handleMs,interactMs,waitMs:matched.length?matched.reduce((n,q)=>n+q.end-q.start,0):null};
+    }
+    function attendanceCount(records){
+        const counted=new Set();
+        for(const item of records)if(!item.timingError&&item.id&&Number.isFinite(item.interactMs)&&item.interactMs>60000)counted.add(item.id);
+        return counted.size;
     }
     function timeSummary(records){
         const mean=key=>{const values=records.filter(r=>!r.timingError&&Number.isFinite(r[key])&&r[key]>=0).map(r=>r[key]);return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};};
         return {handle:mean('handleMs'),wait:mean('waitMs')};
     }
     function formatTime(ms){if(!Number.isFinite(ms))return 'Sem dados';const sec=Math.round(ms/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(v=>String(v).padStart(2,'0')).join(':');}
-    return {score,resolution,status,summarize,today,dateRange,agentTimes,timeSummary,formatTime};
+    return {score,resolution,status,summarize,today,dateRange,agentTimes,attendanceCount,timeSummary,formatTime};
 })();
 
 (function () {
@@ -8862,7 +8868,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.22',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.23',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8873,7 +8879,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.22',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.23',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9119,7 +9125,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
         panel.querySelector('[data-time-base]').textContent=`Tempos de todas as interações consultadas, com ou sem avaliação. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
@@ -9188,11 +9194,11 @@ window.AjaModular.register('avaliacoes', [], function () {
 #aja-avaliacoes [data-status]{font-size:11px;color:#bfd6e9;margin:8px 0 10px;overflow-wrap:anywhere}
 #aja-avaliacoes [data-cards]{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;margin-bottom:10px}
 #aja-avaliacoes .av-card{grid-column:span 3;border-radius:8px;padding:8px;background:#153755;border:1px solid #284f72;min-width:0}
-#aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;border-top:2px solid #ff8200;background:#173b63;padding:10px}
-#aja-avaliacoes .av-card:nth-child(4),#aja-avaliacoes .av-card:nth-child(5){grid-column:span 6;border-left:2px solid #ff8200}
+#aja-avaliacoes .av-card:nth-child(-n+4){border-top:2px solid #ff8200;background:#173b63;padding:10px}
+#aja-avaliacoes .av-card:nth-child(5),#aja-avaliacoes .av-card:nth-child(6){grid-column:span 6;border-left:2px solid #ff8200}
 #aja-avaliacoes .av-card span{display:block;font-size:10px;color:#bfd6e9}
 #aja-avaliacoes .av-card strong{display:block;font-size:17px;line-height:1.2;margin-top:4px;color:#f1f7ff}
-#aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:25px}
+#aja-avaliacoes .av-card:nth-child(-n+4) strong{font-size:25px}
 #aja-avaliacoes details{border:1px solid #284f72;border-radius:8px;margin:8px 0;background:#112e4d}
 #aja-avaliacoes summary{padding:8px 10px;cursor:pointer;font-weight:600;color:#c8ddf0;font-size:11px}
 #aja-avaliacoes details .av-detail{padding:0 10px 10px}
@@ -9210,7 +9216,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 #aja-avaliacoes a{color:#8ed4ff;text-decoration:none;white-space:nowrap}
 #aja-avaliacoes a:hover{text-decoration:underline}
 #aja-avaliacoes [data-empty]{padding:14px;text-align:center;color:#91b1cc;border:1px dashed #38678f;border-radius:8px;font-size:11px}
-@media(max-width:440px){#aja-avaliacoes{inset:60px 12px auto auto;max-height:calc(100vh - 72px)}#aja-avaliacoes .av-card{grid-column:span 6}#aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;padding:7px}#aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:21px}#aja-avaliacoes [data-last]{margin-left:0;flex-basis:100%}}
+@media(max-width:440px){#aja-avaliacoes{inset:60px 12px auto auto;max-height:calc(100vh - 72px)}#aja-avaliacoes .av-card{grid-column:span 6}#aja-avaliacoes .av-card:nth-child(-n+4){padding:7px}#aja-avaliacoes .av-card:nth-child(-n+4) strong{font-size:21px}#aja-avaliacoes [data-last]{margin-left:0;flex-basis:100%}}
 </style>
 <header><div><h2>▥ Avaliações</h2><small data-period>Hoje</small></div><button data-close aria-label="Fechar avaliações">×</button></header>
 <div class="av-body">
@@ -9249,7 +9255,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.22)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.23)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9271,7 +9277,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.22';
+    const SCRIPT_VERSION = 'AjaModular_1.6.23';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
