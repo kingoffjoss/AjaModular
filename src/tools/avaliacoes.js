@@ -159,7 +159,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
         panel.querySelector('[data-time-base]').textContent=`Tempos de todas as interações consultadas, com ou sem avaliação. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
@@ -228,11 +228,11 @@ window.AjaModular.register('avaliacoes', [], function () {
 #aja-avaliacoes [data-status]{font-size:11px;color:#bfd6e9;margin:8px 0 10px;overflow-wrap:anywhere}
 #aja-avaliacoes [data-cards]{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;margin-bottom:10px}
 #aja-avaliacoes .av-card{grid-column:span 3;border-radius:8px;padding:8px;background:#153755;border:1px solid #284f72;min-width:0}
-#aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;border-top:2px solid #ff8200;background:#173b63;padding:10px}
-#aja-avaliacoes .av-card:nth-child(4),#aja-avaliacoes .av-card:nth-child(5){grid-column:span 6;border-left:2px solid #ff8200}
+#aja-avaliacoes .av-card:nth-child(-n+4){border-top:2px solid #ff8200;background:#173b63;padding:10px}
+#aja-avaliacoes .av-card:nth-child(5),#aja-avaliacoes .av-card:nth-child(6){grid-column:span 6;border-left:2px solid #ff8200}
 #aja-avaliacoes .av-card span{display:block;font-size:10px;color:#bfd6e9}
 #aja-avaliacoes .av-card strong{display:block;font-size:17px;line-height:1.2;margin-top:4px;color:#f1f7ff}
-#aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:25px}
+#aja-avaliacoes .av-card:nth-child(-n+4) strong{font-size:25px}
 #aja-avaliacoes details{border:1px solid #284f72;border-radius:8px;margin:8px 0;background:#112e4d}
 #aja-avaliacoes summary{padding:8px 10px;cursor:pointer;font-weight:600;color:#c8ddf0;font-size:11px}
 #aja-avaliacoes details .av-detail{padding:0 10px 10px}
@@ -250,7 +250,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 #aja-avaliacoes a{color:#8ed4ff;text-decoration:none;white-space:nowrap}
 #aja-avaliacoes a:hover{text-decoration:underline}
 #aja-avaliacoes [data-empty]{padding:14px;text-align:center;color:#91b1cc;border:1px dashed #38678f;border-radius:8px;font-size:11px}
-@media(max-width:440px){#aja-avaliacoes{inset:60px 12px auto auto;max-height:calc(100vh - 72px)}#aja-avaliacoes .av-card{grid-column:span 6}#aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;padding:7px}#aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:21px}#aja-avaliacoes [data-last]{margin-left:0;flex-basis:100%}}
+@media(max-width:440px){#aja-avaliacoes{inset:60px 12px auto auto;max-height:calc(100vh - 72px)}#aja-avaliacoes .av-card{grid-column:span 6}#aja-avaliacoes .av-card:nth-child(-n+4){padding:7px}#aja-avaliacoes .av-card:nth-child(-n+4) strong{font-size:21px}#aja-avaliacoes [data-last]{margin-left:0;flex-basis:100%}}
 </style>
 <header><div><h2>▥ Avaliações</h2><small data-period>Hoje</small></div><button data-close aria-label="Fechar avaliações">×</button></header>
 <div class="av-body">
