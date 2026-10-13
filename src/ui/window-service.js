@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal','#aja-menu-options'];
+const roots=['.qr-script-popup','.pr-script-base-popup','#gemini-modal','#bau-rede','#purecloud-script-tools-panel','#central-dashboard','.central-modal','#pausa-script-config-container','#spell-main-panel','#ajamodular-settings','#car-panel','.queue-monitor-container','.purecloud-script-settings-panel','#aja-maintenance','#calc-modal','#aja-menu-options','#aja-avaliacoes'];
 const selector=roots.join(',');let sequence=2147483000;const ranks=new WeakMap();let shown=new Set();
 const closeSelector='#am-close,#closeSettingsPanelBtn,.purecloud-script-popup-close-btn,[data-close],.qr-script-popup-close-btn,.pr-script-popup-close-btn,#btn-close,#bau-close-btn,#closeToolsBtn,#btn-close-dashboard,.btn-close-modal,#btn-spell-close,#car-close-btn,.close-btn,[title="Fechar"],[title="Fechar (Esc)"]';
 function windows(){const all=[...document.querySelectorAll(selector)],calc=document.getElementById('calc-ultimate-host')?.shadowRoot?.getElementById('modal');if(calc)all.push(calc);return all;}
@@ -81,7 +81,7 @@ const style=document.createElement('style');style.textContent=`
 #aja-maintenance button:focus-visible {outline:3px solid #ffb347}
 `;document.head.appendChild(style);
 window.AjaModularNotice=text=>{const note=document.createElement('div');note.setAttribute('role','alert');note.textContent=text;Object.assign(note.style,{position:'fixed',bottom:'20px',left:'20px',zIndex:'2147483647',background:'#102a43',color:'#fff',padding:'16px',borderRadius:'8px',maxWidth:'360px'});document.body.appendChild(note);setTimeout(()=>note.remove(),7000);};
-window.AjaModularWindows=Object.freeze({close,constrain,reset});
+window.AjaModularWindows=Object.freeze({close,constrain,reset,restore:restoreMinimized});
 })();
 
 
