@@ -7,6 +7,8 @@ module.exports=function(){
  assert.equal(m.summarize([]).csat,null);assert.equal(m.summarize([]).ir,null);
  assert.equal(m.status({endedAt:0},900000),'aguardando');assert.equal(m.status({endedAt:0},900001),'nao-avaliada');
  assert.equal(m.status({endedAt:null},900001),'sem-horario');assert.equal(m.status({error:'timeout',rating:5}),'falha');
+ assert.equal(m.status({open:true,error:'timeout',rating:5}),'em-andamento');
+ assert.equal(m.summarize([{open:true,rating:5,resolved:'Sim'}]).ratings,0);
  assert.equal(m.summarize([{rating:'Ótimo'},{resolved:'Não'},{error:'timeout',rating:1}]).csat,100);
  assert.equal(m.summarize([{rating:'Ótimo'},{resolved:'Não'}]).ir,0);
  assert.equal(m.score('Péssimo'),1);assert.equal(m.score('0'),0);assert.equal(m.score('desconhecido'),null);
@@ -16,15 +18,15 @@ module.exports=function(){
  const segment=(id,purpose,group,type,start,end)=>({id,purpose,group,type,start,end});
  const ownTimes=[segment('q_0','acd','queue','interact',0,10000),segment('session_1','agent','me_inbound_agent_message','interact',10000,70000),segment('session_2','agent','me_inbound_agent_message','hold',70000,80000),segment('session_3','agent','me_inbound_agent_message','wrapup',80000,90000),segment('other_1','agent','other_inbound_agent_message','interact',90000,200000)];
  assert.equal(m.agentTimes(ownTimes,'me').handleMs,80000);assert.equal(m.agentTimes(ownTimes,'me').interactMs,60000);assert.equal(m.agentTimes(ownTimes,'me').waitMs,10000);
- const attended={id:'conversation-1',...m.agentTimes([...ownTimes,segment('session2_1','agent','me_inbound_agent_message','interact',200000,200001)],'me')};
- assert.equal(m.attendanceCount([{id:'exactly-one-minute',...m.agentTimes(ownTimes,'me')},attended,attended,{id:'failed-timing',interactMs:90000,timingError:'failed'}]),1);
+ const attended={id:'conversation-1',endedAt:90000,...m.agentTimes([...ownTimes,segment('session2_1','agent','me_inbound_agent_message','interact',200000,200001)],'me')};
+ assert.equal(m.attendanceCount([{id:'exactly-one-minute',endedAt:90000,...m.agentTimes(ownTimes,'me')},attended,attended,{id:'failed-timing',endedAt:90000,interactMs:90000,timingError:'failed'},{...attended,id:'active',open:true}]),1);
  assert.equal(m.attendanceCount([{id:'other-agent',...m.agentTimes([segment('other_2','agent','other_inbound_agent_message','interact',0,90000)],'me')}]),0);
  assert.equal(m.agentTimes([...ownTimes,ownTimes[1]],'me').handleMs,80000);
  assert.equal(m.agentTimes(ownTimes.filter(s=>s.purpose!=='acd'),'me').waitMs,null);
  assert.equal(m.agentTimes([...ownTimes,segment('q2_0','acd','queue2','interact',0,10000)],'me').waitMs,null);
  assert.equal(m.agentTimes([segment('s_0','agent','me_agent','interact',0,NaN)],'me').handleMs,null);
  assert.equal(m.agentTimes([segment('s_0','agent','me_agent','interact',0,NaN)],'me').interactMs,null);
- const times=m.timeSummary([{handleMs:0,waitMs:0},{handleMs:10000,waitMs:null},{handleMs:999999,timingError:'failed'}]);assert.equal(times.handle.value,5000);assert.equal(times.wait.value,0);assert.equal(m.formatTime(times.handle.value),'00:00:05');
+ const times=m.timeSummary([{endedAt:90000,handleMs:0,waitMs:0},{endedAt:90000,handleMs:10000,waitMs:null},{endedAt:90000,handleMs:999999,timingError:'failed'},{open:true,handleMs:999999,waitMs:999999}]);assert.equal(times.handle.value,5000);assert.equal(times.wait.value,0);assert.equal(m.formatTime(times.handle.value),'00:00:05');
  assert.equal(m.formatTime(null),'Sem dados');
  const source=read('src/tools/avaliacoes.js');
  const startup=source.slice(source.indexOf('    function identifyAgent('),source.indexOf('    async function until('));
@@ -51,6 +53,7 @@ module.exports=function(){
  assert.equal(cache.reusable({...closed,timingError:'failed'}),false);
  assert.equal(cache.reusable({...closed,interactMs:null}),false);
  assert.equal(cache.reusable({...closed,endedAt:null}),false);
+ assert.equal(cache.reusable({...closed,open:true,rating:5}),false);
  cache.completed.set('agent:one',{...closed,checkedAt:Date.now()});cache.saveCompleted();
  cache.completed.clear();cache.restoreCompleted();assert.equal(cache.reusable(cache.completed.get('agent:one')),true);
  const now=4000000;
@@ -67,7 +70,7 @@ module.exports=function(){
  limiting.reader.document.body.innerText='Consulta concluída';assert.doesNotThrow(()=>limiting.checkLimit());
  assert.match(source,/if\(running\)return/);assert.doesNotMatch(source,/setInterval\(refresh/);
  assert.match(source,/assignedTo===agentId/);assert.match(source,/records=collected/);
- assert.match(source,/if\(!surveyFinal\(cached\)\)/);assert.match(source,/if\(!timingComplete\(cached\)\)/);
+ assert.match(source,/if\(!surveyFinal\(cached\)\)/);assert.match(source,/if\(!current\.open && Number\.isFinite\(current\.endedAt\) && !timingComplete\(cached\)\)/);
  assert.match(read('src/tools/menu.js'),/'uni-btn-tools':'avaliacoes'/);
  return ['Evaluation metrics match example, partial responses use independent denominators, failures are excluded, pending expires after 15 min and Fortaleza date range includes final day'];
 };
