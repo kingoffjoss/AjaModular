@@ -24,12 +24,23 @@ window.AjaModular.register('avaliacoes', [], function () {
         visit(win);return docs;
     }
     function nodes(win,selector){return roots(win).flatMap(d=>deep(d,selector));}
+    function identifyAgent(docs){
+        const ids=[...new Set(docs.flatMap(d=>deep(d,'a[href]')).map(a=>a.getAttribute('href').match(/#\/person\/([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})(?:[/?#]|$)/i)?.[1]).filter(Boolean))];
+        if(ids.length!==1)return false;
+        panel.querySelector('[data-agent]').value=ids[0];
+        panel.querySelector('[data-agent]').onchange();
+        return true;
+    }
+    function listUrl(range){
+        return location.origin+'/directory/#/analytics/agents/interactions/me?'+new URLSearchParams({start:range.start,end:range.end,mediaType:'all'});
+    }
     function connect(){
-        if(!reader || reader.closed)reader=window.open('about:blank','AjaModularAvaliacoesConsulta');
+        if(running)return;
+        if(!reader || reader.closed)reader=window.open(listUrl(selectedRange||model.today()),'AjaModularAvaliacoesConsulta');
         if(!reader){message='Permita a abertura da aba de consulta para continuar.';render();return;}
         refresh();
     }
-    async function until(fn,timeout=20000) {
+    async function until(fn,timeout=45000) {
         const deadline=Date.now()+timeout;
         while(Date.now()<deadline){if(cancelled)throw Error('Consulta pausada.');if(reader?.closed)throw Error('A aba de consulta foi fechada. Clique em Conectar e atualizar.');try{const value=fn();if(value)return value;}catch(e){if(e.name==='SecurityError')throw Error('O navegador bloqueou a leitura da tela.');throw e;}await wait(350);}
         throw Error('A tela não carregou a tempo. A contagem está incompleta.');
@@ -42,21 +53,31 @@ window.AjaModular.register('avaliacoes', [], function () {
         return Date.parse(`${m[3]}-${String(months.indexOf(m[2])+1).padStart(2,'0')}-${m[1].padStart(2,'0')}T${m[4]}:${m[5]}:${m[6]}-03:00`);
     }
     async function listToday(range) {
-        const params=new URLSearchParams({start:range.start,end:range.end,mediaType:'all'});
-        const el=frame(location.origin+'/directory/#/analytics/agents/interactions/me?'+params);
+        const el=frame(listUrl(range));
         const result=new Map();
         try {
-            let previous='',firstPage=true;
+            let previous='',firstPage=true,emptySince=0,stableKey='',stableSince=0;
             for(let page=0;page<100;page++) {
                 const rows=await until(()=>{
                     const docs=roots(el).filter(d=>d.URL.includes('/analytics-ui/') && d.URL.includes('/agents/interactions/me'));
                     const correct=docs.filter(d=>{const p=new URLSearchParams(d.URL.split('?')[1]||'');return Date.parse(p.get('start'))===Date.parse(range.start)&&Date.parse(p.get('end'))===Date.parse(range.end);});
                     if(!correct.length)return null;
+                    if(!identifyAgent(correct))return null;
+                    if(correct.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length))){emptySince=0;stableKey='';return null;}
                     if(firstPage){const first=correct.flatMap(d=>deep(d,'button[title="Primeira página"]'))[0];if(first&&!first.disabled){firstPage=false;first.click();return null;}firstPage=false;}
-                    if(correct.some(d=>deep(d,'.gux-empty-table-message').some(e=>e.textContent.trim()==='Não há dados disponíveis'&&e.getClientRects().length)))return {rows:[],key:'empty'};
                     const rows=correct.flatMap(d=>deep(d,'tbody tr')).filter(r=>r.querySelector('td.column-conversationId'));
                     const key=rows.map(r=>r.querySelector('td.column-conversationId').textContent.trim()).join('|');
-                    return rows.length && key!==previous?{rows,key}:null;
+                    if(rows.length){
+                        emptySince=0;
+                        if(key===previous)return null;
+                        if(key!==stableKey){stableKey=key;stableSince=Date.now();return null;}
+                        return Date.now()-stableSince>=700?{rows,key}:null;
+                    }
+                    stableKey='';
+                    const empty=correct.some(d=>deep(d,'.gux-empty-table-message').some(e=>e.textContent.trim()==='Não há dados disponíveis'&&e.getClientRects().length));
+                    if(!empty){emptySince=0;return null;}
+                    if(!emptySince)emptySince=Date.now();
+                    return Date.now()-emptySince>=5000?{rows:[],key:'empty'}:null;
                 });
                 previous=rows.key;
                 if(!rows.rows.length)return [...result.values()];
@@ -116,7 +137,6 @@ window.AjaModular.register('avaliacoes', [], function () {
     }
     async function refresh() {
         if(running)return;
-        if(!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(panel.querySelector('[data-agent]').value.trim())){message='Informe seu ID de agente, conforme userIdPesquisa em uma avaliação sua. Nenhum indicador será calculado sem confirmar a atribuição.';render();return;}
         running=true;cancelled=false;
         const range=selectedRange||model.today();if(day!==range.key){records=[];lastUpdate=null;day=range.key;}
         panel.querySelector('[data-period]').textContent=selectedRange ? range.first.split('-').reverse().join('/')+' a '+range.last.split('-').reverse().join('/') : 'Hoje';
@@ -127,18 +147,18 @@ window.AjaModular.register('avaliacoes', [], function () {
             for(let i=0;i<items.length;i++) {
                 if(cancelled)throw Error('Consulta pausada.');
                 message=`Consultando avaliações: ${i+1} de ${items.length}…`;render();
-                try{collected.push(await details(items[i]));}catch(error){if(cancelled)throw error;collected.push({...previous.get(items[i].id),...items[i],error:error.message});}
+                try{let value;try{value=await details(items[i]);}catch(error){if(cancelled)throw error;await wait(700);value=await details(items[i]);}collected.push(value);}catch(error){if(cancelled)throw error;collected.push({...previous.get(items[i].id),...items[i],error:error.message});}
             }
             records=collected;lastUpdate=Date.now();message=records.some(r=>r.error)?'Consulta parcial: algumas interações falharam.':'Consulta concluída.';
         }catch(error){message=error.message;}finally{running=false;render();}
     }
     function toggle() {
         if(timer){clearInterval(timer);timer=null;cancelled=true;message='Atualização pausada.';}
-        else{timer=setInterval(refresh,120000);if(reader&&!reader.closed)refresh();else message='Vincule seu agente e clique em Conectar e atualizar. A consulta repete a cada 2 minutos.';}
+        else{timer=setInterval(refresh,120000);connect();}
         render();
     }
     function open() {
-        if(panel){panel.hidden=false;render();return;}
+        if(panel){panel.hidden=false;if(!timer)toggle();else connect();render();return;}
         panel=document.createElement('section');panel.id='aja-avaliacoes';
         panel.innerHTML=`<style>
 #aja-avaliacoes{position:fixed;inset:72px 24px auto auto;width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 96px);z-index:2147483640;background:#102a47;color:#edf5ff;border:1px solid #ff8200;border-radius:13px;box-shadow:0 14px 38px #00152d66;font:12px/1.45 'Segoe UI',sans-serif;overflow:hidden;display:flex;flex-direction:column}
@@ -188,24 +208,15 @@ window.AjaModular.register('avaliacoes', [], function () {
 <header><div><h2>▥ Avaliações</h2><small data-period>Hoje</small></div><button data-close aria-label="Fechar avaliações">×</button></header>
 <div class="av-body">
 <div class="av-filters"><label>De<input type="date" data-from></label><label>Até<input type="date" data-to></label><button data-apply>Filtrar</button><button data-today>Hoje</button></div>
-<div class="av-actions"><button data-refresh>Conectar e atualizar</button><button data-toggle></button><small data-last></small></div>
+<div class="av-actions"><button data-refresh>Atualizar agora</button><button data-toggle></button><small data-last></small></div>
 <p data-status role="status"></p><div data-cards></div>
 <details><summary>Distribuição das notas e cálculo</summary><div class="av-detail"><div data-bars></div><p data-base></p></div></details>
 <h3>Clientes que avaliaram</h3><p data-empty>Nenhuma avaliação carregada.</p><div class="av-scroll"><table><thead><tr><th>Cliente</th><th>Início</th><th>Fila</th><th>Nota</th><th>Resolvido</th><th></th></tr></thead><tbody></tbody></table></div>
-<details data-settings><summary>Configuração do agente</summary><div class="av-detail"><div class="av-account"><label>ID do agente<input data-agent autocomplete="off" placeholder="userIdPesquisa"></label><button data-identify>Vincular minha avaliação aberta</button></div><p>Vincule uma pesquisa enviada por você. Apenas avaliações atribuídas a esse agente entram nos indicadores. Mantenha a aba auxiliar aberta. O período considera o início do atendimento no horário de Fortaleza.</p></div></details>
+<details data-settings><summary>Agente identificado automaticamente</summary><div class="av-detail"><div class="av-account"><label>ID do agente<input data-agent readonly autocomplete="off" placeholder="Identificando…"></label></div><p>O agente é identificado em Minhas interações. Apenas pesquisas atribuídas a ele entram nos indicadores. Mantenha a aba auxiliar aberta. O período considera o início do atendimento no horário de Fortaleza.</p></div></details>
 </div>`;
         document.body.append(panel);
         try{panel.querySelector('[data-agent]').value=localStorage.getItem(storageKey)||'';}catch{}
         panel.querySelector('[data-agent]').onchange=()=>{try{localStorage.setItem(storageKey,panel.querySelector('[data-agent]').value.trim());}catch{}render();};
-        panel.querySelector('[data-identify]').onclick=()=>{
-            const values=nodes(window,'.details-row').filter(row=>['userIdPesquisa','UserPesqAtribuida'].includes(row.querySelector('.header-text')?.textContent.trim())).map(row=>row.querySelector('.details-value')?.textContent.trim()).filter(Boolean);
-            const unique=[...new Set(values)];
-            if(unique.length!==1){message='Abra os detalhes de uma pesquisa enviada por você e tente novamente. A atribuição precisa ser única.';render();return;}
-            panel.querySelector('[data-agent]').value=unique[0];panel.querySelector('[data-agent]').onchange();
-            panel.querySelector('[data-settings]').open=false;message='Agente vinculado. Clique em Conectar e atualizar.';render();
-        };
-
-        panel.querySelector('[data-settings]').open=!panel.querySelector('[data-agent]').value.trim();
         const today=model.today().day;
         panel.querySelector('[data-from]').value=today;panel.querySelector('[data-to]').value=today;
         panel.querySelector('[data-apply]').onclick=()=>{
@@ -214,13 +225,13 @@ window.AjaModular.register('avaliacoes', [], function () {
             catch(error){message=error.message;render();return;}
             records=[];lastUpdate=null;day='';
             panel.querySelector('[data-period]').textContent=selectedRange.first.split('-').reverse().join('/')+' a '+selectedRange.last.split('-').reverse().join('/');
-            refresh();
+            connect();
         };
         panel.querySelector('[data-today]').onclick=()=>{
             if(running)return;
             selectedRange=null;records=[];lastUpdate=null;day='';
             panel.querySelector('[data-from]').value=model.today().day;panel.querySelector('[data-to]').value=model.today().day;
-            panel.querySelector('[data-period]').textContent='Hoje';refresh();
+            panel.querySelector('[data-period]').textContent='Hoje';connect();
         };
         panel.querySelector('[data-close]').onclick=()=>{panel.hidden=true;};
         panel.querySelector('[data-refresh]').onclick=connect;panel.querySelector('[data-toggle]').onclick=toggle;
