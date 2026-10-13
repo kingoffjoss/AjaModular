@@ -143,6 +143,8 @@
             #purecloud-script-mini-dashboard.expanded .mini-dashboard-controls { display: flex; } 
             .compact-btn { border-radius: 6px; width: 28px; height: 28px; background: var(--purecloud-script-bg-secondary); border: 1px solid var(--purecloud-script-border-color); color: var(--purecloud-script-text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; padding: 0; } 
             .compact-btn:hover { background: var(--purecloud-script-border-color); color: var(--purecloud-script-accent-color); }
+            #mini-dashboard-auto-rotate-btn { flex: 0 0 28px; pointer-events: auto; }
+            #mini-dashboard-auto-rotate-btn[aria-pressed="true"] { background: #0878bc !important; border-color: #ff8200 !important; color: #fff !important; box-shadow: 0 0 0 2px #ff820044; }
             #purecloud-script-mini-dashboard.expanded .compact-btn { background: transparent; border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
             #purecloud-script-mini-dashboard.expanded .compact-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
             .stats-grid-original.mini-dashboard-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 0; } 
