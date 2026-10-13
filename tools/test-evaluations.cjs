@@ -14,6 +14,14 @@ module.exports=function(){
  assert.equal(m.today(new Date('2026-10-13T02:59:00Z')).day,'2026-10-12');
  assert.throws(()=>m.dateRange('2026-02-29','2026-03-01'));assert.throws(()=>m.dateRange('2026-10-12','2026-10-11'));
  const source=read('src/tools/avaliacoes.js');
+ const startup=source.slice(source.indexOf('    function identifyAgent('),source.indexOf('    async function until('));
+ let opened=[],refreshed=0;const input={value:'',onchange(){}};
+ const startupContext={running:false,reader:null,selectedRange:null,message:'',render(){},refresh(){refreshed++;},model:m,URLSearchParams,location:{origin:'https://example.test'},deep:(d)=>d,panel:{querySelector(){return input;}},window:{open(url){opened.push(url);return {closed:false};}}};
+ vm.runInNewContext(startup,startupContext);startupContext.connect();assert.equal(opened.length,1);assert.ok(opened[0].startsWith('https://example.test/directory/#/analytics/agents/interactions/me?'));assert.equal(refreshed,1);
+ startupContext.running=true;startupContext.connect();assert.equal(refreshed,1);
+ const profile=id=>({getAttribute:()=>'/analytics-ui/#/person/'+id});
+ assert.equal(startupContext.identifyAgent([[profile('22222222-2222-4222-8222-222222222222')]]),true);assert.equal(input.value,'22222222-2222-4222-8222-222222222222');
+ assert.equal(startupContext.identifyAgent([[]]),false);assert.equal(startupContext.identifyAgent([[profile('22222222-2222-4222-8222-222222222222'),profile('33333333-3333-4333-8333-333333333333')]]),false);
  const dateFunction=source.slice(source.indexOf('    function parseDate('),source.indexOf('    async function listToday('));vm.runInNewContext(dateFunction,c);
  assert.equal(c.parseDate('segunda-feira, 12 de outubro de 2026 às 19:18:56'),Date.parse('2026-10-12T22:18:56Z'));
  assert.equal(c.parseDate('—'),null);
