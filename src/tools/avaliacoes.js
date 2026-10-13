@@ -7,13 +7,13 @@ window.AjaModular.register('avaliacoes', [], function () {
     const completed=new Map();
     const REFRESH_DELAY=120000;
     function surveyFinal(record) {
-        return !!record && !record.error && (
+        return !!record && !record.open && !record.error && Number.isFinite(record.endedAt) && (
             model.score(record.rating)!==null || model.resolution(record.resolved)!==null ||
             Number.isFinite(record.endedAt) && Number.isFinite(record.checkedAt) && record.checkedAt>=record.endedAt+20*60000
         );
     }
     function timingComplete(record) {
-        return !!record && !record.timingError && Number.isFinite(record.handleMs) && Number.isFinite(record.interactMs);
+        return !!record && !record.open && Number.isFinite(record.endedAt) && !record.timingError && Number.isFinite(record.handleMs) && Number.isFinite(record.interactMs);
     }
     function reusable(record) {
         return surveyFinal(record) && timingComplete(record);
@@ -140,24 +140,26 @@ window.AjaModular.register('avaliacoes', [], function () {
     async function details(item) {
         const el=frame(location.origin+'/directory/#/analytics/interactions/'+item.id+'/admin');
         try {
-            let stable='',samples=0;
+            let stable='',stableSince=0,samples=0;
             const values=await until(()=>{
                 const docs=roots(el).filter(d=>d.URL.includes('/interaction-details-ui/') && d.URL.includes(item.id));
                 if(!docs.length)return null;
                 const collapsed=docs.flatMap(d=>deep(d,'[role="button"][aria-label="Expandir participante"][aria-expanded="false"]'));
                 if(collapsed.length){collapsed.forEach(e=>e.click());return null;}
                 const rows=docs.flatMap(d=>deep(d,'.details-row'));
-                if(!rows.some(r=>r.querySelector('.details-header')?.textContent.trim()==='Hora de término'))return null;
+                if(!rows.length)return null;
+                if(docs.some(d=>deep(d,'[aria-busy="true"], [role="progressbar"]').some(e=>e.getClientRects().length)))return null;
                 const allowed=new Set(['pesquisa','pesquisa_humano','DataPesquisa','userIdPesquisa','UserPesqAtribuida','Hora de término']);
                 const values={};
                 for(const row of rows){const key=row.querySelector('.details-header')?.textContent.trim();if(allowed.has(key)){const value=row.querySelector('.details-value')?.textContent.trim()||'';if(values[key]&&value&&values[key]!==value)throw Error('Há atribuições ou respostas conflitantes nesta interação.');values[key]=value;}}
-                const signature=JSON.stringify(values);
-                if(signature!==stable){stable=signature;samples=0;return null;}
-                if(++samples<2)return null;
+                const ended=rows.some(r=>r.querySelector('.details-header')?.textContent.trim()==='Hora de término');
+                const signature=JSON.stringify([rows.map(r=>r.querySelector('.details-header')?.textContent.trim()),values]);
+                if(signature!==stable){stable=signature;stableSince=Date.now();samples=0;return null;}
+                if(++samples<2 || Date.now()-stableSince<(ended?700:2000))return null;
                 if(values.userIdPesquisa&&values.UserPesqAtribuida&&values.userIdPesquisa!==values.UserPesqAtribuida)throw Error('A atribuição da pesquisa é ambígua.');
-                return values;
+                return {...values,open:!ended};
             });
-            return {...item,rating:values.pesquisa_humano||'',resolved:values.pesquisa||'',surveyDate:values.DataPesquisa||'',assignedTo:values.userIdPesquisa||values.UserPesqAtribuida||'',endedAt:parseDate(values['Hora de término'])};
+            return {...item,rating:values.pesquisa_humano||'',resolved:values.pesquisa||'',surveyDate:values.DataPesquisa||'',assignedTo:values.userIdPesquisa||values.UserPesqAtribuida||'',endedAt:parseDate(values['Hora de término']),open:values.open};
         }finally{removeFrame(el);}
     }
     async function timing(item){
@@ -182,7 +184,7 @@ window.AjaModular.register('avaliacoes', [], function () {
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Em andamento',records.filter(r=>r.open).length],['Falhas na consulta',records.filter(r=>r.error||r.timingError).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
         panel.querySelector('[data-time-base]').textContent=`Tempos de todas as interações consultadas, com ou sem avaliação. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
@@ -217,12 +219,13 @@ window.AjaModular.register('avaliacoes', [], function () {
                     try{current={...current,...await details(items[i])};delete current.error;current.checkedAt=Date.now();completed.set(cacheKey,current);saveCompleted();}
                     catch(error){if(cancelled||error.rateLimited)throw error;current.error=error.message;}
                 }
-                if(!timingComplete(cached)){
+                if(!current.open && Number.isFinite(current.endedAt) && !timingComplete(cached)){
                     try{
                         if(surveyFinal(cached))frame(location.origin+'/directory/#/analytics/interactions/'+items[i].id+'/admin');
                         Object.assign(current,await timing(items[i]));delete current.timingError;
                     }catch(error){if(cancelled||error.rateLimited)throw error;Object.assign(current,{handleMs:null,interactMs:null,waitMs:null,timingError:error.message});}
                 }
+                if(current.open){current.handleMs=null;current.interactMs=null;current.waitMs=null;delete current.timingError;}
                 collected.push(current);
                 completed.set(cacheKey,current);saveCompleted();
             }
