@@ -8,16 +8,18 @@ window.AjaEvaluationModel = (() => {
     }
     function resolution(value) { return ({sim:true,nao:false})[normalize(value)] ?? null; }
     function status(item,now=Date.now()) {
+        if (item.open) return 'em-andamento';
         if (item.error) return 'falha';
         if (score(item.rating)!==null || resolution(item.resolved)!==null) return 'respondida';
         if (!Number.isFinite(item.endedAt)) return 'sem-horario';
         return now-item.endedAt<=15*60*1000 ? 'aguardando' : 'nao-avaliada';
     }
     function summarize(items,now=Date.now()) {
-        const result={total:items.length,answered:0,pending:0,unanswered:0,failed:0,unknownEnd:0,ratings:0,positive:0,resolutions:0,yes:0,distribution:[0,0,0,0,0]};
+        const result={total:items.length,answered:0,pending:0,unanswered:0,ongoing:0,failed:0,unknownEnd:0,ratings:0,positive:0,resolutions:0,yes:0,distribution:[0,0,0,0,0]};
         for(const item of items) {
             const state=status(item,now);
             if(state==='falha'){result.failed++;continue;}
+            if(state==='em-andamento'){result.ongoing++;continue;}
             if(state==='aguardando')result.pending++;
             if(state==='nao-avaliada')result.unanswered++;
             if(state==='sem-horario')result.unknownEnd++;
@@ -64,11 +66,11 @@ window.AjaEvaluationModel = (() => {
     }
     function attendanceCount(records){
         const counted=new Set();
-        for(const item of records)if(!item.timingError&&item.id&&Number.isFinite(item.interactMs)&&item.interactMs>60000)counted.add(item.id);
+        for(const item of records)if(!item.open&&Number.isFinite(item.endedAt)&&!item.timingError&&item.id&&Number.isFinite(item.interactMs)&&item.interactMs>60000)counted.add(item.id);
         return counted.size;
     }
     function timeSummary(records){
-        const mean=key=>{const values=records.filter(r=>!r.timingError&&Number.isFinite(r[key])&&r[key]>=0).map(r=>r[key]);return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};};
+        const mean=key=>{const values=records.filter(r=>!r.open&&Number.isFinite(r.endedAt)&&!r.timingError&&Number.isFinite(r[key])&&r[key]>=0).map(r=>r[key]);return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};};
         return {handle:mean('handleMs'),wait:mean('waitMs')};
     }
     function formatTime(ms){if(!Number.isFinite(ms))return 'Sem dados';const sec=Math.round(ms/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(v=>String(v).padStart(2,'0')).join(':');}
