@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     const key = '__AJA_MODULAR_LOADER__';
-    const version = '1.6.22';
+    const version = '1.6.23';
     if (window[key]?.version === version) { window[key].refresh(); return; }
     window[key]?.stop?.();
     const pending = new WeakSet();
@@ -30,7 +30,7 @@
             pending.add(doc);
             const script = doc.createElement('script');
             script.id = 'ajamodular-runtime';
-            script.src = base + 'runtime/content.bundle.js?v=1.6.22';
+            script.src = base + 'runtime/content.bundle.js?v=1.6.23';
             script.onerror = () => {
                 pending.delete(doc); failures.set(doc, (failures.get(doc) || 0) + 1); script.remove();
                 console.warn('[AjaModular] Falha no carregamento do quadro. Verifique rede e CSP.');
