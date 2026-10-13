@@ -15,11 +15,15 @@ module.exports=function(){
  assert.throws(()=>m.dateRange('2026-02-29','2026-03-01'));assert.throws(()=>m.dateRange('2026-10-12','2026-10-11'));
  const segment=(id,purpose,group,type,start,end)=>({id,purpose,group,type,start,end});
  const ownTimes=[segment('q_0','acd','queue','interact',0,10000),segment('session_1','agent','me_inbound_agent_message','interact',10000,70000),segment('session_2','agent','me_inbound_agent_message','hold',70000,80000),segment('session_3','agent','me_inbound_agent_message','wrapup',80000,90000),segment('other_1','agent','other_inbound_agent_message','interact',90000,200000)];
- assert.equal(m.agentTimes(ownTimes,'me').handleMs,80000);assert.equal(m.agentTimes(ownTimes,'me').waitMs,10000);
+ assert.equal(m.agentTimes(ownTimes,'me').handleMs,80000);assert.equal(m.agentTimes(ownTimes,'me').interactMs,60000);assert.equal(m.agentTimes(ownTimes,'me').waitMs,10000);
+ const attended={id:'conversation-1',...m.agentTimes([...ownTimes,segment('session2_1','agent','me_inbound_agent_message','interact',200000,200001)],'me')};
+ assert.equal(m.attendanceCount([{id:'exactly-one-minute',...m.agentTimes(ownTimes,'me')},attended,attended,{id:'failed-timing',interactMs:90000,timingError:'failed'}]),1);
+ assert.equal(m.attendanceCount([{id:'other-agent',...m.agentTimes([segment('other_2','agent','other_inbound_agent_message','interact',0,90000)],'me')}]),0);
  assert.equal(m.agentTimes([...ownTimes,ownTimes[1]],'me').handleMs,80000);
  assert.equal(m.agentTimes(ownTimes.filter(s=>s.purpose!=='acd'),'me').waitMs,null);
  assert.equal(m.agentTimes([...ownTimes,segment('q2_0','acd','queue2','interact',0,10000)],'me').waitMs,null);
  assert.equal(m.agentTimes([segment('s_0','agent','me_agent','interact',0,NaN)],'me').handleMs,null);
+ assert.equal(m.agentTimes([segment('s_0','agent','me_agent','interact',0,NaN)],'me').interactMs,null);
  const times=m.timeSummary([{handleMs:0,waitMs:0},{handleMs:10000,waitMs:null},{handleMs:999999,timingError:'failed'}]);assert.equal(times.handle.value,5000);assert.equal(times.wait.value,0);assert.equal(m.formatTime(times.handle.value),'00:00:05');
  assert.equal(m.formatTime(null),'Sem dados');
  const source=read('src/tools/avaliacoes.js');
