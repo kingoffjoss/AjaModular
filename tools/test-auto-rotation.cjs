@@ -5,7 +5,7 @@ module.exports=function(){
     const code=source.slice(source.indexOf('    function nextConversationForRotation('),source.indexOf('    const timerManager ='));
     let now=100000,selected=null,clicks=0,confirmSelection=true;
     const button={attrs:{},setAttribute(k,v){this.attrs[k]=v;}};
-    const groups=[0,1,2].map(top=>({isConnected:true,getBoundingClientRect:()=>({top}),querySelector:()=>null,click(){clicks++;if(confirmSelection)selected=this;}}));
+const groups=[0,1,2].map(top=>{const group={isConnected:true,getBoundingClientRect:()=>({top}),querySelector(selector){assert.equal(selector,'button.acd-interaction-card-v2-container');return {click(){clicks++;if(confirmSelection)selected=group;}};},click(){throw Error('A rotação não deve clicar no contêiner da conversa.');}};return group;});
     const timers=new Map(groups.map((g,i)=>[g,{startTime:i?50000:30000,pausedAt:100000,isPaused:i!==0}]));
     selected=groups[0];
     const notices=[];
