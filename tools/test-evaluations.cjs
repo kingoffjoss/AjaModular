@@ -38,15 +38,22 @@ module.exports=function(){
  const dateFunction=source.slice(source.indexOf('    function parseDate('),source.indexOf('    async function listToday('));vm.runInNewContext(dateFunction,c);
  assert.equal(c.parseDate('segunda-feira, 12 de outubro de 2026 às 19:18:56'),Date.parse('2026-10-12T22:18:56Z'));
  assert.equal(c.parseDate('—'),null);
- const cacheCode=source.slice(source.indexOf('    function reusable('),source.indexOf('    function schedule('));
- vm.runInNewContext(cacheCode,c);
- const now=4000000,closed={endedAt:1000000,checkedAt:3900000};
- assert.equal(c.reusable(closed,now),true);
- assert.equal(c.reusable({...closed,checkedAt:1800000},now),false); // Recheck after survey window.
- assert.equal(c.reusable({...closed,checkedAt:2000000},now),false); // Periodic reconciliation.
- assert.equal(c.reusable({...closed,error:'failed'},now),false);
- assert.equal(c.reusable({...closed,timingError:'failed'},now),false);
- assert.equal(c.reusable({...closed,endedAt:null},now),false);
+ const cacheCode=source.slice(source.indexOf('    function surveyFinal('),source.indexOf('    function schedule('));
+ const cache={model:m,completed:new Map(),cacheStorageKey:'test',Date};
+ const stored=new Map();cache.localStorage={getItem:key=>stored.get(key)||null,setItem:(key,value)=>stored.set(key,value)};
+ vm.runInNewContext(cacheCode,cache);
+ const timing={handleMs:80000,interactMs:60001,waitMs:10000},closed={id:'one',endedAt:1000000,checkedAt:2200000,...timing};
+ assert.equal(cache.reusable(closed),true); // At least 20 minutes after closure.
+ assert.equal(cache.reusable({...closed,checkedAt:2199999}),false);
+ assert.equal(cache.reusable({...closed,checkedAt:1800000,rating:5}),true); // Answered surveys are final immediately.
+ assert.equal(cache.reusable({...closed,checkedAt:1800000}),false);
+ assert.equal(cache.reusable({...closed,error:'failed'}),false);
+ assert.equal(cache.reusable({...closed,timingError:'failed'}),false);
+ assert.equal(cache.reusable({...closed,interactMs:null}),false);
+ assert.equal(cache.reusable({...closed,endedAt:null}),false);
+ cache.completed.set('agent:one',{...closed,checkedAt:Date.now()});cache.saveCompleted();
+ cache.completed.clear();cache.restoreCompleted();assert.equal(cache.reusable(cache.completed.get('agent:one')),true);
+ const now=4000000;
  const scheduling={automatic:true,timer:1,cooldownUntil:0,REFRESH_DELAY:120000,Date:{now:()=>now},clearTimeout(){},setTimeout(fn,delay){this.delay=delay;return 2;},refresh(){}};
  scheduling.setTimeout=(fn,delay)=>{scheduling.delay=delay;return 2;};
  vm.runInNewContext(source.slice(source.indexOf('    function schedule('),source.indexOf('    function checkLimit(')),scheduling);
@@ -60,6 +67,7 @@ module.exports=function(){
  limiting.reader.document.body.innerText='Consulta concluída';assert.doesNotThrow(()=>limiting.checkLimit());
  assert.match(source,/if\(running\)return/);assert.doesNotMatch(source,/setInterval\(refresh/);
  assert.match(source,/assignedTo===agentId/);assert.match(source,/records=collected/);
+ assert.match(source,/if\(!surveyFinal\(cached\)\)/);assert.match(source,/if\(!timingComplete\(cached\)\)/);
  assert.match(read('src/tools/menu.js'),/'uni-btn-tools':'avaliacoes'/);
  return ['Evaluation metrics match example, partial responses use independent denominators, failures are excluded, pending expires after 15 min and Fortaleza date range includes final day'];
 };
