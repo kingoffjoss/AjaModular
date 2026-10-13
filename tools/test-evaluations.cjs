@@ -34,7 +34,27 @@ module.exports=function(){
  const dateFunction=source.slice(source.indexOf('    function parseDate('),source.indexOf('    async function listToday('));vm.runInNewContext(dateFunction,c);
  assert.equal(c.parseDate('segunda-feira, 12 de outubro de 2026 às 19:18:56'),Date.parse('2026-10-12T22:18:56Z'));
  assert.equal(c.parseDate('—'),null);
- assert.match(source,/if\(running\)return/);assert.match(source,/setInterval\(refresh,120000\)/);
+ const cacheCode=source.slice(source.indexOf('    function reusable('),source.indexOf('    function schedule('));
+ vm.runInNewContext(cacheCode,c);
+ const now=4000000,closed={endedAt:1000000,checkedAt:3900000};
+ assert.equal(c.reusable(closed,now),true);
+ assert.equal(c.reusable({...closed,checkedAt:1800000},now),false); // Recheck after survey window.
+ assert.equal(c.reusable({...closed,checkedAt:2000000},now),false); // Periodic reconciliation.
+ assert.equal(c.reusable({...closed,error:'failed'},now),false);
+ assert.equal(c.reusable({...closed,timingError:'failed'},now),false);
+ assert.equal(c.reusable({...closed,endedAt:null},now),false);
+ const scheduling={automatic:true,timer:1,cooldownUntil:0,REFRESH_DELAY:120000,Date:{now:()=>now},clearTimeout(){},setTimeout(fn,delay){this.delay=delay;return 2;},refresh(){}};
+ scheduling.setTimeout=(fn,delay)=>{scheduling.delay=delay;return 2;};
+ vm.runInNewContext(source.slice(source.indexOf('    function schedule('),source.indexOf('    function checkLimit(')),scheduling);
+ scheduling.schedule();assert.equal(scheduling.delay,120000);
+ scheduling.cooldownUntil=now+300000;scheduling.schedule();assert.equal(scheduling.delay,300000);
+ scheduling.automatic=false;scheduling.schedule();assert.equal(scheduling.timer,null);
+ const limiting={reader:{document:{body:{innerText:'Uma solicitação falhou porque foram efetuadas muitas solicitações recentemente.'}}},cooldownUntil:0,limitCount:0,Date};
+ vm.runInNewContext(source.slice(source.indexOf('    function checkLimit('),source.indexOf('    let panel=')),limiting);
+ const before=Date.now();assert.throws(()=>limiting.checkLimit(),e=>e.rateLimited===true);assert.ok(limiting.cooldownUntil>=before+300000);
+ assert.throws(()=>limiting.checkLimit(),e=>e.rateLimited===true);assert.ok(limiting.cooldownUntil>=before+600000);
+ limiting.reader.document.body.innerText='Consulta concluída';assert.doesNotThrow(()=>limiting.checkLimit());
+ assert.match(source,/if\(running\)return/);assert.doesNotMatch(source,/setInterval\(refresh/);
  assert.match(source,/assignedTo===agentId/);assert.match(source,/records=collected/);
  assert.match(read('src/tools/menu.js'),/'uni-btn-tools':'avaliacoes'/);
  return ['Evaluation metrics match example, partial responses use independent denominators, failures are excluded, pending expires after 15 min and Fortaleza date range includes final day'];
