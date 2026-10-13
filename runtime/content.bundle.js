@@ -8862,7 +8862,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.20',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.21',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8873,7 +8873,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.20',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.21',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8962,6 +8962,25 @@ window.AjaModular.register('avaliacoes', [], function () {
     'use strict';
     const model=window.AjaEvaluationModel;
     let selectedRange=null;
+    let automatic=false, cooldownUntil=0, limitCount=0;
+    const completed=new Map();
+    const REFRESH_DELAY=120000;
+    function reusable(record,now=Date.now()) {
+        return !!record && !record.error && !record.timingError && Number.isFinite(record.endedAt)
+            && record.checkedAt>=record.endedAt+15*60000 && now-record.checkedAt<30*60000;
+    }
+    function schedule() {
+        clearTimeout(timer);timer=null;
+        if(automatic)timer=setTimeout(()=>{timer=null;refresh();},Math.max(REFRESH_DELAY,cooldownUntil-Date.now()));
+    }
+    function checkLimit() {
+        const text=reader?.document?.body?.innerText||'';
+        if(/muitas solicitações recentemente|too many requests/i.test(text)) {
+            cooldownUntil=Date.now()+Math.min(30,5*2**limitCount++)*60000;
+            const error=Error('O Genesys limitou as consultas. Nova tentativa após '+new Date(cooldownUntil).toLocaleTimeString('pt-BR')+'. Os resultados anteriores foram mantidos.');
+            error.rateLimited=true;throw error;
+        }
+    }
     let panel=null, timer=null, running=false, cancelled=false, records=[], day='', lastUpdate=null, message='Pronto para consultar Hoje.', frames=[];
     const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const percent=value=>value===null?'Sem dados':value.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
@@ -9002,7 +9021,7 @@ window.AjaModular.register('avaliacoes', [], function () {
     }
     async function until(fn,timeout=45000) {
         const deadline=Date.now()+timeout;
-        while(Date.now()<deadline){if(cancelled)throw Error('Consulta pausada.');if(reader?.closed)throw Error('A aba de consulta foi fechada. Clique em Conectar e atualizar.');try{const value=fn();if(value)return value;}catch(e){if(e.name==='SecurityError')throw Error('O navegador bloqueou a leitura da tela.');throw e;}await wait(350);}
+        while(Date.now()<deadline){if(cancelled)throw Error('Consulta pausada.');if(reader?.closed)throw Error('A aba de consulta foi fechada. Clique em Conectar e atualizar.');try{checkLimit();const value=fn();if(value)return value;}catch(e){if(e.name==='SecurityError')throw Error('O navegador bloqueou a leitura da tela.');throw e;}await wait(350);}
         throw Error('A tela não carregou a tempo. A contagem está incompleta.');
     }
     function removeFrame(el){} // Reuse the authenticated reader tab between requests.
@@ -9107,14 +9126,16 @@ window.AjaModular.register('avaliacoes', [], function () {
         panel.querySelector('tbody').innerHTML=answered.map(r=>`<tr><td>${escape(r.name||'Cliente')}<small>${escape(r.id)}</small></td><td>${escape(r.date)}</td><td>${escape(r.queue)}</td><td>${escape(r.rating||'Não respondeu')}</td><td>${escape(r.resolved||'Não respondeu')}</td><td><a target="_blank" rel="noopener noreferrer" href="${location.origin}/directory/#/analytics/interactions/${r.id}/admin">Abrir</a></td></tr>`).join('');
         panel.querySelector('[data-empty]').hidden=answered.length>0;
         panel.querySelector('[data-refresh]').disabled=running;
-        panel.querySelector('[data-toggle]').disabled=running && !timer;
+        panel.querySelector('[data-toggle]').disabled=running && !automatic;
         panel.querySelectorAll('[data-from],[data-to],[data-apply],[data-today],[data-agent],[data-identify]').forEach(el=>el.disabled=running);
-        panel.querySelector('[data-toggle]').textContent=timer?'Pausar atualização':'Ativar a cada 2 minutos';
+        panel.querySelector('[data-toggle]').textContent=automatic?'Pausar atualização':'Ativar a cada 2 minutos';
     }
     async function refresh() {
         if(running)return;
+        if(Date.now()<cooldownUntil){message='Aguardando o limite do Genesys até '+new Date(cooldownUntil).toLocaleTimeString('pt-BR')+'.';schedule();render();return;}
+        clearTimeout(timer);timer=null;
         running=true;cancelled=false;
-        const range=selectedRange||model.today();if(day!==range.key){records=[];lastUpdate=null;day=range.key;}
+        const range=selectedRange||model.today();if(day!==range.key){records=[];completed.clear();lastUpdate=null;day=range.key;}
         panel.querySelector('[data-period]').textContent=selectedRange ? range.first.split('-').reverse().join('/')+' a '+range.last.split('-').reverse().join('/') : 'Hoje';
         message='Buscando interações do período selecionado…';render();
         try {
@@ -9122,20 +9143,28 @@ window.AjaModular.register('avaliacoes', [], function () {
             const previous=new Map(records.map(r=>[r.id,r]));const collected=[];
             for(let i=0;i<items.length;i++) {
                 if(cancelled)throw Error('Consulta pausada.');
+                const cacheKey=panel.querySelector('[data-agent]').value.trim()+':'+items[i].id;
+                const cached=completed.get(cacheKey)||previous.get(items[i].id);
+                if(reusable(cached)){collected.push({...cached,...items[i]});continue;}
                 message=`Consultando avaliações: ${i+1} de ${items.length}…`;render();
-                try{let value;try{value=await details(items[i]);}catch(error){if(cancelled)throw error;await wait(700);value=await details(items[i]);}collected.push(value);}catch(error){if(cancelled)throw error;collected.push({...previous.get(items[i].id),...items[i],error:error.message});}
-                try{Object.assign(collected[collected.length-1],await timing(items[i]));}catch(error){if(cancelled)throw error;Object.assign(collected[collected.length-1],{handleMs:null,waitMs:null,timingError:error.message});}
+                await wait(2000);
+                if(cancelled)throw Error('Consulta pausada.');
+                try{collected.push(await details(items[i]));}catch(error){if(cancelled||error.rateLimited)throw error;collected.push({...cached,...items[i],error:error.message});}
+                try{Object.assign(collected[collected.length-1],await timing(items[i]));}catch(error){if(cancelled||error.rateLimited)throw error;Object.assign(collected[collected.length-1],{handleMs:null,waitMs:null,timingError:error.message});}
+                collected[collected.length-1].checkedAt=Date.now();
+                completed.set(cacheKey,collected[collected.length-1]);
             }
             records=collected;lastUpdate=Date.now();message=records.some(r=>r.error||r.timingError)?'Consulta parcial: algumas interações falharam.':'Consulta concluída.';
-        }catch(error){message=error.message;}finally{running=false;render();}
+            limitCount=0;
+        }catch(error){message=error.message;}finally{running=false;schedule();render();}
     }
     function toggle() {
-        if(timer){clearInterval(timer);timer=null;cancelled=true;message='Atualização pausada.';}
-        else{timer=setInterval(refresh,120000);connect();}
+        if(automatic){automatic=false;clearTimeout(timer);timer=null;cancelled=true;message='Atualização pausada.';}
+        else{automatic=true;connect();}
         render();
     }
     function open() {
-        if(panel){panel.hidden=false;if(!timer)toggle();else connect();render();return;}
+        if(panel){panel.hidden=false;if(!automatic)toggle();else render();return;}
         panel=document.createElement('section');panel.id='aja-avaliacoes';
         panel.innerHTML=`<style>
 #aja-avaliacoes{position:fixed;inset:72px 24px auto auto;width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 96px);z-index:2147483640;background:#102a47;color:#edf5ff;border:1px solid #ff8200;border-radius:13px;box-shadow:0 14px 38px #00152d66;font:12px/1.45 'Segoe UI',sans-serif;overflow:hidden;display:flex;flex-direction:column}
@@ -9220,7 +9249,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.20)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.21)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9242,7 +9271,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.20';
+    const SCRIPT_VERSION = 'AjaModular_1.6.21';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
