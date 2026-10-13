@@ -8887,7 +8887,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.27',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.28',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8898,7 +8898,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.27',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.28',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9169,8 +9169,8 @@ window.AjaModular.register('avaliacoes', [], function () {
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(own)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Em andamento',records.filter(r=>r.open).length],['Falhas na consulta',records.filter(r=>r.error||r.timingError).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
-        panel.querySelector('[data-time-base]').textContent=`Tempos de todas as interações consultadas, com ou sem avaliação. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
+        panel.querySelector('[data-cards]').innerHTML=[['Atendimentos · acima de 1 min',model.attendanceCount(records)],['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Em andamento',records.filter(r=>r.open).length],['Falhas na consulta',records.filter(r=>r.error||r.timingError).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-time-base]').textContent=`Atendimentos: todas as interações encerradas com mais de 1 minuto na sua etapa, mesmo sem pesquisa atribuída. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
         panel.querySelector('tbody').innerHTML=answered.map(r=>`<tr><td>${escape(r.name||'Cliente')}<small>${escape(r.id)}</small></td><td>${escape(r.date)}</td><td>${escape(r.queue)}</td><td>${escape(r.rating||'Não respondeu')}</td><td>${escape(r.resolved||'Não respondeu')}</td><td><a target="_blank" rel="noopener noreferrer" href="${location.origin}/directory/#/analytics/interactions/${r.id}/admin">Abrir</a></td></tr>`).join('');
@@ -9309,7 +9309,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.27)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.28)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9331,7 +9331,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.27';
+    const SCRIPT_VERSION = 'AjaModular_1.6.28';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
