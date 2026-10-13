@@ -78,7 +78,11 @@
             const target=nextConversationForRotation(groups,selected,conversationTimers,this.visited,CONFIG.CHECKMARK_THRESHOLD_MS);
             if(!target)return;
             this.pending={source:selected,target,at:Date.now()};
-            try{(target.querySelector('.interaction-content-wrapper, .interaction-content')||target).click();}
+            try{
+                const action=target.querySelector('button.acd-interaction-card-v2-container');
+                if(!action)throw new Error('Botão de abrir interação não encontrado');
+                action.click();
+            }
             catch{this.enabled=false;this.pending=null;this.updateButton();UI.createNotification('Não foi possível selecionar a próxima conversa. Troca automática desligada.','warn',5000);}
         }
     };
