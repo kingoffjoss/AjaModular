@@ -372,6 +372,12 @@
       "file": "src/tools/chamado-yoda.js",
       "after": [],
       "shared": []
+    },
+    {
+      "id": "avaliacoes",
+      "file": "src/tools/avaliacoes.js",
+      "after": [],
+      "shared": []
     }
   ]
 }
