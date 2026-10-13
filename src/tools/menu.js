@@ -117,7 +117,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             <button class="uni-fab-btn" id="uni-btn-car" data-label="Automação (CAR)"><span style="font-size:18px;">⌨️</span></button>
             <button class="uni-fab-btn" id="uni-btn-id" data-label="Copiar ID"><span style="font-size:20px;font-weight:800;">🆔</span></button>
             <button class="uni-fab-btn" id="uni-btn-bar" data-label="Ferramentas (Bar)"><svg class="uni-icon" viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg></button>
-            <button class="uni-fab-btn" id="uni-btn-tools" data-label="Ferramentas"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg></button>
+            <button class="uni-fab-btn" id="uni-btn-tools" data-label="Avaliações" aria-label="Avaliações"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 3v17h17M8 16v-5M13 16V7M18 16V4"></path></svg></button>
             <button class="uni-fab-btn" id="uni-btn-pr" data-label="Protocolos"><svg class="uni-icon" viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></svg></button>
             <button class="uni-fab-btn" id="uni-btn-qr" data-label="Respostas"><svg class="uni-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6zm8 5H6v-2h8zm4-6H6V6h12z"/></svg></button>
         </div>
@@ -166,7 +166,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             try { const savedPos = ctx.ajaStorage.getItem('uniMenuPos'); if (savedPos) { const p = JSON.parse(savedPos); container.style.left = p.left; container.style.top = p.top; container.style.bottom = 'auto'; container.style.right = 'auto'; } } catch (e) { }
 
             // Navigation uses module contracts rather than private trigger identifiers.
-const routes = { 'uni-btn-maintenance':'manutencao', 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'ferramentas', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
+const routes = { 'uni-btn-maintenance':'manutencao', 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'avaliacoes', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
 for (const [buttonId, moduleId] of Object.entries(routes)) {
     document.getElementById(buttonId).onclick = () => window.AjaModular.open(moduleId);
 }
