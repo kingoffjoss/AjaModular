@@ -17,21 +17,32 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
             'use strict';
 
             // --- 1. FUNÇÕES AUXILIARES (DEEP SCAN) ---
-            function coletarTextoTotal() {
-                let texto = document.body.innerText + " ";
-                const iframes = document.getElementsByTagName('iframe');
-
-                for (let i = 0; i < iframes.length; i++) {
-                    try {
-                        let docInterno = iframes[i].contentDocument || iframes[i].contentWindow.document;
-                        if (docInterno) {
-                            texto += " " + docInterno.body.innerText + " ";
-                        }
-                    } catch (e) {
-                        // Ignora iframes bloqueados
+            function coletarTextos() {
+                const fontes=[],vistos=new Set(),raizes=new Set();
+                function visitarDocumento(doc,conversa=false) {
+                    if(!doc?.body||vistos.has(doc))return;
+                    vistos.add(doc);
+                    const origem=String(doc.URL||'');
+                    const ehConversa=conversa||/\/messaging-gadget\//i.test(origem);
+                    const texto=doc.body.innerText||'';
+                    if(texto.trim())fontes.push({texto,conversa:ehConversa});
+                    visitarRaiz(doc,ehConversa);
+                }
+                function visitarRaiz(raiz,conversa) {
+                    if(raizes.has(raiz))return;
+                    raizes.add(raiz);
+                    for(const iframe of raiz.querySelectorAll('iframe')){
+                        try{visitarDocumento(iframe.contentDocument||iframe.contentWindow?.document,conversa||/messaging-gadget/i.test(iframe.getAttribute('src')||''));}
+                        catch{} // Quadros de outra origem não podem ser lidos pelo navegador.
+                    }
+                    for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot){
+                        const texto=[...elemento.shadowRoot.children].map(filho=>filho.innerText||'').join(' ');
+                        if(texto.trim())fontes.push({texto,conversa});
+                        visitarRaiz(elemento.shadowRoot,conversa);
                     }
                 }
-                return texto;
+                visitarDocumento(document);
+                return fontes.sort((a,b)=>Number(b.conversa)-Number(a.conversa));
             }
 
             // --- 2. VALIDADORES MATEMÁTICOS ---
@@ -86,8 +97,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
             }
 
             // --- 3. SISTEMA DE BUSCA INTELIGENTE ---
-            function buscarMelhorDocumento() {
-                const textoTotal = coletarTextoTotal();
+            function buscarNoTexto(textoTotal) {
                 const regexDoc = /(?<!\d)(\d{3}\.?\d{3}\.?\d{3}-?\d{2})(?!\d)|(?<!\d)(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})(?!\d)/g;
 
                 const encontrados = textoTotal.match(regexDoc);
@@ -127,6 +137,13 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
                 if (melhorCandidato && maiorPontuacao > -500) {
                     return melhorCandidato;
+                }
+                return null;
+            }
+            function buscarMelhorDocumento() {
+                for(const fonte of coletarTextos()) {
+                    const documento=buscarNoTexto(fonte.texto);
+                    if(documento)return documento;
                 }
                 return null;
             }
