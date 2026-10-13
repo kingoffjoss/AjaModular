@@ -84,6 +84,7 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...await require('./test-presence.cjs')());
  checks.push(...require('./test-confirmation.cjs')());
  checks.push(...require('./test-yoda.cjs')());
+ checks.push(...require('./test-evaluations.cjs')());
  checks.push(...await require('./test-voice.cjs')());
  checks.push(...await require('./test-local-spell.cjs')());
  checks.push(...require('./test-loader.cjs')());

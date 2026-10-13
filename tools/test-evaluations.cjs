@@ -1,0 +1,24 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+module.exports=function(){
+ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');const c={window:{}};
+ vm.runInNewContext(read('src/core/avaliacoes-model.js'),c);const m=c.window.AjaEvaluationModel;
+ const items=Array.from({length:25},(_,i)=>({rating:i<12?5:i<22?4:25-i,resolved:i<20?'Sim':'Não'}));
+ const s=m.summarize(items);assert.equal(s.csat,88);assert.equal(s.ir,80);assert.equal(s.answered,25);
+ assert.equal(m.summarize([]).csat,null);assert.equal(m.summarize([]).ir,null);
+ assert.equal(m.status({endedAt:0},900000),'aguardando');assert.equal(m.status({endedAt:0},900001),'nao-avaliada');
+ assert.equal(m.status({endedAt:null},900001),'sem-horario');assert.equal(m.status({error:'timeout',rating:5}),'falha');
+ assert.equal(m.summarize([{rating:'Ótimo'},{resolved:'Não'},{error:'timeout',rating:1}]).csat,100);
+ assert.equal(m.summarize([{rating:'Ótimo'},{resolved:'Não'}]).ir,0);
+ assert.equal(m.score('Péssimo'),1);assert.equal(m.score('0'),0);assert.equal(m.score('desconhecido'),null);
+ assert.equal(m.dateRange('2026-10-10','2026-10-12').end,'2026-10-13T03:00:00.000Z');
+ assert.equal(m.today(new Date('2026-10-13T02:59:00Z')).day,'2026-10-12');
+ assert.throws(()=>m.dateRange('2026-02-29','2026-03-01'));assert.throws(()=>m.dateRange('2026-10-12','2026-10-11'));
+ const source=read('src/tools/avaliacoes.js');
+ const dateFunction=source.slice(source.indexOf('    function parseDate('),source.indexOf('    async function listToday('));vm.runInNewContext(dateFunction,c);
+ assert.equal(c.parseDate('segunda-feira, 12 de outubro de 2026 às 19:18:56'),Date.parse('2026-10-12T22:18:56Z'));
+ assert.equal(c.parseDate('—'),null);
+ assert.match(source,/if\(running\)return/);assert.match(source,/setInterval\(refresh,120000\)/);
+ assert.match(source,/assignedTo===agentId/);assert.match(source,/records=collected/);
+ assert.match(read('src/tools/menu.js'),/'uni-btn-tools':'avaliacoes'/);
+ return ['Evaluation metrics match example, partial responses use independent denominators, failures are excluded, pending expires after 15 min and Fortaleza date range includes final day'];
+};
