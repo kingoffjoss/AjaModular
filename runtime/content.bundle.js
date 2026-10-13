@@ -275,7 +275,29 @@ window.AjaEvaluationModel = (() => {
         const day=`${part('year')}-${part('month')}-${part('day')}`;
         return dateRange(day,day);
     }
-    return {score,resolution,status,summarize,today,dateRange};
+    function agentTimes(segments,agentId){
+        const unique=[...new Map(segments.map(s=>[s.id,s])).values()];
+        const own=unique.filter(s=>s.purpose==='agent'&&s.group.startsWith(agentId+'_'));
+        const handled=own.filter(s=>['interact','hold','wrapup','dialing','contacting'].includes(s.type));
+        if(!handled.length||handled.some(s=>!Number.isFinite(s.start)||!Number.isFinite(s.end)||s.end<s.start))return {handleMs:null,waitMs:null};
+        const handleMs=handled.reduce((sum,s)=>sum+s.end-s.start,0);
+        const sessions=new Map();
+        for(const s of own.filter(s=>['interact','hold','alert'].includes(s.type))){const key=s.id.split('_')[0];sessions.set(key,Math.min(sessions.get(key)??Infinity,s.start));}
+        const queues=unique.filter(s=>s.purpose==='acd'&&s.type==='interact'&&Number.isFinite(s.start)&&Number.isFinite(s.end)&&s.end>=s.start);
+        const matched=[];
+        for(const start of sessions.values()){
+            const candidates=queues.filter(q=>q.start<=start&&Math.abs(q.end-start)<=1000);
+            if(candidates.length!==1||matched.includes(candidates[0]))return {handleMs,waitMs:null};
+            matched.push(candidates[0]);
+        }
+        return {handleMs,waitMs:matched.length?matched.reduce((n,q)=>n+q.end-q.start,0):null};
+    }
+    function timeSummary(records){
+        const mean=key=>{const values=records.filter(r=>!r.timingError&&Number.isFinite(r[key])&&r[key]>=0).map(r=>r[key]);return {value:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,count:values.length};};
+        return {handle:mean('handleMs'),wait:mean('waitMs')};
+    }
+    function formatTime(ms){if(!Number.isFinite(ms))return 'Sem dados';const sec=Math.round(ms/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(v=>String(v).padStart(2,'0')).join(':');}
+    return {score,resolution,status,summarize,today,dateRange,agentTimes,timeSummary,formatTime};
 })();
 
 (function () {
@@ -8840,7 +8862,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.19',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.20',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8851,7 +8873,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.19',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.20',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9056,14 +9078,30 @@ window.AjaModular.register('avaliacoes', [], function () {
             return {...item,rating:values.pesquisa_humano||'',resolved:values.pesquisa||'',surveyDate:values.DataPesquisa||'',assignedTo:values.userIdPesquisa||values.UserPesqAtribuida||'',endedAt:parseDate(values['Hora de término'])};
         }finally{removeFrame(el);}
     }
+    async function timing(item){
+        const docs=()=>roots(reader).filter(d=>d.URL.includes('/interaction-details-ui/')&&d.URL.includes(item.id));
+        const tab=await until(()=>docs().flatMap(d=>deep(d,'[role="tab"]')).find(e=>e.textContent.trim()==='Cronograma'));
+        tab.click();
+        let last='',since=0;
+        const segments=await until(()=>{
+            const nodes=docs().flatMap(d=>deep(d,'.segment-item'));
+            if(!nodes.length)return null;
+            const data=nodes.map(e=>({id:e.id,group:e.getAttribute('group')||'',purpose:e.getAttribute('purpose'),type:e.getAttribute('segmenttype'),start:e.hasAttribute('startms')?Number(e.getAttribute('startms')):NaN,end:e.hasAttribute('endms')?Number(e.getAttribute('endms')):NaN}));
+            const key=JSON.stringify(data);if(key!==last){last=key;since=Date.now();return null;}
+            return Date.now()-since>=700?data:null;
+        });
+        return model.agentTimes(segments,panel.querySelector('[data-agent]').value.trim());
+    }
     function render() {
         if(!panel)return;
         const agentId=panel.querySelector('[data-agent]').value.trim();
         const own=records.filter(r=>agentId && r.assignedTo===agentId);
+        const times=model.timeSummary(records);
         const s=model.summarize(own),answered=own.filter(r=>model.status(r)==='respondida');
         panel.querySelector('[data-status]').textContent=message;
         panel.querySelector('[data-last]').textContent=lastUpdate?'Última atualização: '+new Date(lastUpdate).toLocaleTimeString('pt-BR',{timeZone:'America/Fortaleza'}):'Ainda não atualizado';
-        panel.querySelector('[data-cards]').innerHTML=[['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-cards]').innerHTML=[['Respondidas',s.answered],['CSAT · notas 4 e 5',percent(s.csat)],['Resolução',percent(s.ir)],['TMA · sua etapa',model.formatTime(times.handle.value)],['TME · fila da sua etapa',model.formatTime(times.wait.value)],['Aguardando · 15 min',s.pending],['Não avaliados',s.unanswered],['Sem horário confirmado',s.unknownEnd],['Falhas na consulta',records.filter(r=>r.error).length]].map(([label,value])=>`<div class="av-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+        panel.querySelector('[data-time-base]').textContent=`Tempos de todas as interações consultadas, com ou sem avaliação. TMA: ${times.handle.count}/${records.length}. TME: ${times.wait.count}/${records.length}. Valores ausentes ou ambíguos não entram na média.`;
         panel.querySelector('[data-base]').textContent=`CSAT: ${s.positive}/${s.ratings} notas válidas. Resolução: ${s.yes}/${s.resolutions} respostas Sim/Não. ${s.total} interações atribuídas ao agente. ${records.length-own.length} interações fora do cálculo por atribuição diferente ou ausente.`;
         panel.querySelector('[data-bars]').innerHTML=['Péssimo (0–1)','Ruim (2)','Neutro (3)','Bom (4)','Ótimo (5)'].map((label,i)=>`<div>${label}<progress max="${Math.max(1,s.ratings)}" value="${s.distribution[i]}"></progress><b>${s.distribution[i]}</b></div>`).join('');
         panel.querySelector('tbody').innerHTML=answered.map(r=>`<tr><td>${escape(r.name||'Cliente')}<small>${escape(r.id)}</small></td><td>${escape(r.date)}</td><td>${escape(r.queue)}</td><td>${escape(r.rating||'Não respondeu')}</td><td>${escape(r.resolved||'Não respondeu')}</td><td><a target="_blank" rel="noopener noreferrer" href="${location.origin}/directory/#/analytics/interactions/${r.id}/admin">Abrir</a></td></tr>`).join('');
@@ -9086,8 +9124,9 @@ window.AjaModular.register('avaliacoes', [], function () {
                 if(cancelled)throw Error('Consulta pausada.');
                 message=`Consultando avaliações: ${i+1} de ${items.length}…`;render();
                 try{let value;try{value=await details(items[i]);}catch(error){if(cancelled)throw error;await wait(700);value=await details(items[i]);}collected.push(value);}catch(error){if(cancelled)throw error;collected.push({...previous.get(items[i].id),...items[i],error:error.message});}
+                try{Object.assign(collected[collected.length-1],await timing(items[i]));}catch(error){if(cancelled)throw error;Object.assign(collected[collected.length-1],{handleMs:null,waitMs:null,timingError:error.message});}
             }
-            records=collected;lastUpdate=Date.now();message=records.some(r=>r.error)?'Consulta parcial: algumas interações falharam.':'Consulta concluída.';
+            records=collected;lastUpdate=Date.now();message=records.some(r=>r.error||r.timingError)?'Consulta parcial: algumas interações falharam.':'Consulta concluída.';
         }catch(error){message=error.message;}finally{running=false;render();}
     }
     function toggle() {
@@ -9121,6 +9160,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 #aja-avaliacoes [data-cards]{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px;margin-bottom:10px}
 #aja-avaliacoes .av-card{grid-column:span 3;border-radius:8px;padding:8px;background:#153755;border:1px solid #284f72;min-width:0}
 #aja-avaliacoes .av-card:nth-child(-n+3){grid-column:span 4;border-top:2px solid #ff8200;background:#173b63;padding:10px}
+#aja-avaliacoes .av-card:nth-child(4),#aja-avaliacoes .av-card:nth-child(5){grid-column:span 6;border-left:2px solid #ff8200}
 #aja-avaliacoes .av-card span{display:block;font-size:10px;color:#bfd6e9}
 #aja-avaliacoes .av-card strong{display:block;font-size:17px;line-height:1.2;margin-top:4px;color:#f1f7ff}
 #aja-avaliacoes .av-card:nth-child(-n+3) strong{font-size:25px}
@@ -9148,7 +9188,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 <div class="av-filters"><label>De<input type="date" data-from></label><label>Até<input type="date" data-to></label><button data-apply>Filtrar</button><button data-today>Hoje</button></div>
 <div class="av-actions"><button data-refresh>Atualizar agora</button><button data-toggle></button><small data-last></small></div>
 <p data-status role="status"></p><div data-cards></div>
-<details><summary>Distribuição das notas e cálculo</summary><div class="av-detail"><div data-bars></div><p data-base></p></div></details>
+<details><summary>Distribuição das notas e cálculo</summary><div class="av-detail"><div data-bars></div><p data-base></p><p data-time-base></p></div></details>
 <h3>Clientes que avaliaram</h3><p data-empty>Nenhuma avaliação carregada.</p><div class="av-scroll"><table><thead><tr><th>Cliente</th><th>Início</th><th>Fila</th><th>Nota</th><th>Resolvido</th><th></th></tr></thead><tbody></tbody></table></div>
 <details data-settings><summary>Agente identificado automaticamente</summary><div class="av-detail"><div class="av-account"><label>ID do agente<input data-agent readonly autocomplete="off" placeholder="Identificando…"></label></div><p>O agente é identificado em Minhas interações. Apenas pesquisas atribuídas a ele entram nos indicadores. Mantenha a aba auxiliar aberta. O período considera o início do atendimento no horário de Fortaleza.</p></div></details>
 </div>`;
@@ -9180,7 +9220,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.19)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.20)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9202,7 +9242,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.19';
+    const SCRIPT_VERSION = 'AjaModular_1.6.20';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
