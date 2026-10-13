@@ -666,7 +666,7 @@ const implementation = {createMiniDashboard() {
 
                 dashboard.innerHTML = `
                     <div class="mini-dashboard-header">
-                        <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
+                        <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><button id="mini-dashboard-auto-rotate-btn" class="compact-btn" type="button" aria-label="Troca automática de conversas" aria-pressed="false" title="Ligar troca automática de conversas após 1:10">⇄</button><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
                         <div class="mini-dashboard-controls">
                             <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar Tema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🌗</button>
                             <button id="mini-dashboard-tools-btn" class="compact-btn" title="Ferramentas do Agente">${iconTools}</button>
@@ -685,6 +685,8 @@ const implementation = {createMiniDashboard() {
                     </div>
                 `;
                 const dashboardHeader = dashboard.querySelector('.mini-dashboard-header'); ctx.makeDraggable(dashboard, dashboardHeader, 'miniDashboard');
+                const autoRotateButton=dashboard.querySelector('#mini-dashboard-auto-rotate-btn');
+                autoRotateButton.onclick=e=>{e.stopPropagation();window.AjaModularAutoRotation?.toggle();autoRotateButton.setAttribute('aria-pressed',String(!!window.AjaModularAutoRotation?.enabled));autoRotateButton.title=window.AjaModularAutoRotation?.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';autoRotateButton.textContent=window.AjaModularAutoRotation?.enabled?'🔄':'⇄';};
 
                 const themeBtnDash = dashboard.querySelector('#mini-dashboard-btn-theme');
                 const savedThemeDash = ctx.ajaStorage.getItem('DASHBOARD_THEME');
@@ -8887,7 +8889,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.29',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.30',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8898,7 +8900,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.29',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.30',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9309,7 +9311,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.29)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.30)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9331,7 +9333,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.29';
+    const SCRIPT_VERSION = 'AjaModular_1.6.30';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -9946,6 +9948,40 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         if (currentElapsed > longConvoMs && !timerData.longConvoNotified) { UI.createNotification(`A conversa com ${timerData.participantName || 'o cliente'} está longa (${CONFIG.LONG_CONVO_ALERT_MIN} min).`, 'warn', 5000); timerData.longConvoNotified = true; }
     }
 
+    function nextConversationForRotation(groups,selected,timers,visited,threshold) {
+        if(groups.length<2)return null;
+        const start=groups.indexOf(selected);
+        if(start<0)return null;
+        for(let step=1;step<groups.length;step++) {
+            const candidate=groups[(start+step)%groups.length];
+            const timer=timers.get(candidate);
+            if(candidate.isConnected && timer && !visited.has(candidate) && (timer.isPaused?timer.pausedAt:Date.now())-timer.startTime<threshold)return candidate;
+        }
+        return null;
+    }
+    const autoRotation={
+        enabled:false,visited:new WeakSet(),pending:null,
+        updateButton(){const button=document.getElementById('mini-dashboard-auto-rotate-btn');if(!button)return;button.setAttribute('aria-pressed',String(this.enabled));button.title=this.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';button.textContent=this.enabled?'🔄':'⇄';},
+        toggle(){this.enabled=!this.enabled;this.pending=null;this.visited=new WeakSet();this.updateButton();UI.createNotification(this.enabled?'Troca automática ligada: próxima conversa após 1:10.':'Troca automática desligada.','info',3000);return this.enabled;},
+        tick(){
+            if(!this.enabled)return;
+            const selected=findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
+            if(this.pending){
+                if(selected===this.pending.target){this.visited.add(this.pending.source);this.pending=null;}
+                else if(Date.now()-this.pending.at>3000){this.enabled=false;this.pending=null;this.updateButton();UI.createNotification('A plataforma não confirmou a troca de conversa. Troca automática desligada.','warn',5000);}
+                return;
+            }
+            const timer=conversationTimers.get(selected);
+            if(!selected||!timer||timer.isPaused||this.visited.has(selected)||Date.now()-timer.startTime<CONFIG.CHECKMARK_THRESHOLD_MS)return;
+            const groups=[...document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', '))].sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
+            const target=nextConversationForRotation(groups,selected,conversationTimers,this.visited,CONFIG.CHECKMARK_THRESHOLD_MS);
+            if(!target)return;
+            this.pending={source:selected,target,at:Date.now()};
+            try{(target.querySelector('.interaction-content-wrapper, .interaction-content')||target).click();}
+            catch{this.enabled=false;this.pending=null;this.updateButton();UI.createNotification('Não foi possível selecionar a próxima conversa. Troca automática desligada.','warn',5000);}
+        }
+    };
+    window.AjaModularAutoRotation={toggle:()=>autoRotation.toggle(),get enabled(){return autoRotation.enabled;}};
     const timerManager = {
         globalIntervalId: null,
         refreshAll() { conversationTimers.forEach(updateTimerDisplay); },
@@ -9957,6 +9993,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
                     conversationTimers.forEach((tData) => {
                         updateTimerDisplay(tData);
                     });
+                    autoRotation.tick();
                 }, CONFIG.TIMER_UPDATE_INTERVAL_MS);
             }
         },
@@ -10227,6 +10264,8 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             #purecloud-script-mini-dashboard.expanded .mini-dashboard-controls { display: flex; } 
             .compact-btn { border-radius: 6px; width: 28px; height: 28px; background: var(--purecloud-script-bg-secondary); border: 1px solid var(--purecloud-script-border-color); color: var(--purecloud-script-text-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; padding: 0; } 
             .compact-btn:hover { background: var(--purecloud-script-border-color); color: var(--purecloud-script-accent-color); }
+            #mini-dashboard-auto-rotate-btn { flex: 0 0 28px; pointer-events: auto; }
+            #mini-dashboard-auto-rotate-btn[aria-pressed="true"] { background: #0878bc !important; border-color: #ff8200 !important; color: #fff !important; box-shadow: 0 0 0 2px #ff820044; }
             #purecloud-script-mini-dashboard.expanded .compact-btn { background: transparent; border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
             #purecloud-script-mini-dashboard.expanded .compact-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
             .stats-grid-original.mini-dashboard-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 0; } 
