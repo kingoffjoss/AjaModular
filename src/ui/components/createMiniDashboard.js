@@ -15,7 +15,7 @@ const implementation = {createMiniDashboard() {
 
                 dashboard.innerHTML = `
                     <div class="mini-dashboard-header">
-                        <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
+                        <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><button id="mini-dashboard-auto-rotate-btn" class="compact-btn" type="button" aria-label="Troca automática de conversas" aria-pressed="false" title="Ligar troca automática de conversas após 1:10">⇄</button><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
                         <div class="mini-dashboard-controls">
                             <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar Tema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🌗</button>
                             <button id="mini-dashboard-tools-btn" class="compact-btn" title="Ferramentas do Agente">${iconTools}</button>
@@ -34,6 +34,8 @@ const implementation = {createMiniDashboard() {
                     </div>
                 `;
                 const dashboardHeader = dashboard.querySelector('.mini-dashboard-header'); ctx.makeDraggable(dashboard, dashboardHeader, 'miniDashboard');
+                const autoRotateButton=dashboard.querySelector('#mini-dashboard-auto-rotate-btn');
+                autoRotateButton.onclick=e=>{e.stopPropagation();window.AjaModularAutoRotation?.toggle();autoRotateButton.setAttribute('aria-pressed',String(!!window.AjaModularAutoRotation?.enabled));autoRotateButton.title=window.AjaModularAutoRotation?.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';autoRotateButton.textContent=window.AjaModularAutoRotation?.enabled?'🔄':'⇄';};
 
                 const themeBtnDash = dashboard.querySelector('#mini-dashboard-btn-theme');
                 const savedThemeDash = ctx.ajaStorage.getItem('DASHBOARD_THEME');
