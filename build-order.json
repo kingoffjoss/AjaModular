@@ -24,7 +24,8 @@
     "src/corretor/interaction.js",
     "src/corretor/dictionary.js",
     "src/corretor/compact.js",
-    "src/ui/theme.js"
+    "src/ui/theme.js",
+    "src/ui/tool-layout-models.js"
   ],
   "modules": [
     {
