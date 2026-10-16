@@ -9,10 +9,10 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     const THEME_KEY = 'aja_global_theme_v1';
     const paletteKeys = ['#0057B8','#0072CE','#003B7A','#FF8200','#D96B00','#0F2742','#173B63','#214D7E','#F8FBFF','#EAF4FF','#D6E4F2','#2B5F93','#52667A'];
     const profiles = {
-        brisanet: { name: 'Brisanet', description: 'Azul e laranja', icon: '🔵', mode: 'dark', colors: paletteKeys },
-        atlantico: { name: 'Atlântico', description: 'Verde petróleo e âmbar', icon: '🌊', mode: 'dark', colors: ['#087E8B','#0B99A8','#075A65','#B45309','#92400E','#0B2932','#153F49','#205761','#F5FCFC','#E4F6F7','#C8E7E9','#316B73','#49676C'] },
-        aurora: { name: 'Aurora', description: 'Violeta e rosa', icon: '🟣', mode: 'dark', colors: ['#6D28D9','#7C3AED','#4C1D95','#BE185D','#9D174D','#251437','#382151','#4B3067','#FCF9FF','#F3E8FF','#E9D5FF','#745490','#61536D'] },
-        solar: { name: 'Solar', description: 'Creme e terracota', icon: '☀️', mode: 'light', colors: ['#A3440B','#B45309','#78350F','#C2410C','#9A3412','#422006','#713F12','#854D0E','#FFFBEB','#FEF3C7','#FDE68A','#A16207','#6B4F2A'] }
+        brisanet: { name: 'Brisanet', description: 'Menu circular · dashboard clássico', icon: '🔵', mode: 'dark', colors: paletteKeys },
+        atlantico: { name: 'Atlântico', description: 'Menu em lista · indicadores em linhas', icon: '🌊', mode: 'dark', colors: ['#087E8B','#0B99A8','#075A65','#B45309','#92400E','#0B2932','#153F49','#205761','#F5FCFC','#E4F6F7','#C8E7E9','#316B73','#49676C'] },
+        aurora: { name: 'Aurora', description: 'Menu mosaico · cartões destacados', icon: '🟣', mode: 'dark', colors: ['#6D28D9','#7C3AED','#4C1D95','#BE185D','#9D174D','#251437','#382151','#4B3067','#FCF9FF','#F3E8FF','#E9D5FF','#745490','#61536D'] },
+        solar: { name: 'Solar', description: 'Menu com nomes · indicadores compactos', icon: '☀️', mode: 'light', colors: ['#A3440B','#B45309','#78350F','#C2410C','#9A3412','#422006','#713F12','#854D0E','#FFFBEB','#FEF3C7','#FDE68A','#A16207','#6B4F2A'] }
     };
     function selectedTheme() { try { const id = ajaStorage.getItem(THEME_KEY); return Object.hasOwn(profiles, id) ? id : 'brisanet'; } catch { return 'brisanet'; } }
     let activeTheme = selectedTheme();
@@ -642,9 +642,45 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             #purecloud-script-mini-dashboard.expanded .stat-item-original { border-radius: ${activeTheme === 'aurora' ? '16px' : activeTheme === 'atlantico' ? '5px' : activeTheme === 'solar' ? '12px' : '10px'} !important; }
             #purecloud-script-mini-dashboard.expanded { border-radius: ${activeTheme === 'aurora' ? '22px' : activeTheme === 'atlantico' ? '8px' : activeTheme === 'solar' ? '18px' : '16px'} !important; }
         `;
+        const modelCss = `
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-quick-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-quick-actions button { min-height:32px;border-radius:8px;border:1px solid var(--aja-border-dark);background:var(--aja-dark-2);color:#fff;font:600 11px system-ui;cursor:pointer }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-quick-actions button:hover { background:var(--aja-gradient);border-color:var(--aja-orange) }
+            #uni-menu-container .uni-fab-btn[data-aja-theme-icon] { font-size:0 !important }
+            #uni-menu-container .uni-fab-btn[data-aja-theme-icon] > * { display:none !important }
+            #uni-menu-container .uni-fab-btn[data-aja-theme-icon]::before { content:attr(data-aja-theme-icon);font:22px system-ui;line-height:1 }
+            #purecloud-script-mini-dashboard .stat-label[data-aja-theme-icon] svg { display:none !important }
+            #purecloud-script-mini-dashboard .stat-label[data-aja-theme-icon]::before { content:attr(data-aja-theme-icon);font-size:15px }
+        ` + (activeTheme === 'atlantico' ? `
+            #uni-menu-container .uni-fab-actions { grid-template-columns:minmax(0,1fr) !important;gap:5px !important;border-radius:9px !important }
+            #uni-menu-container .uni-fab-btn { width:100% !important;height:39px !important;min-height:39px !important;min-width:0 !important;border-radius:6px !important;justify-content:flex-start !important;gap:10px;padding:0 10px !important;transform:none !important }
+            #uni-menu-container .uni-fab-btn::after { content:attr(data-label);display:block !important;position:static !important;opacity:1 !important;visibility:visible !important;padding:0 !important;background:none !important;border:0 !important;box-shadow:none !important;font:600 12px system-ui !important;white-space:normal !important;text-align:left !important }
+            #purecloud-script-mini-dashboard.expanded { width:min(320px,calc(100vw - 24px)) !important;max-width:calc(100vw - 24px) !important }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-stats-grid { grid-template-columns:minmax(0,1fr) !important;gap:5px !important }
+            #purecloud-script-mini-dashboard.expanded .stat-item-original { min-height:39px;padding:5px 12px;flex-direction:row;justify-content:space-between }
+            #purecloud-script-mini-dashboard.expanded .stat-label { margin:0 }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)) }
+        ` : activeTheme === 'aurora' ? `
+            #uni-menu-container .uni-fab-actions { grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:6px !important;border-radius:22px !important }
+            #uni-menu-container .uni-fab-btn { width:100% !important;height:54px !important;min-width:0 !important;min-height:54px !important;border-radius:13px !important;transform:none !important }
+            #purecloud-script-mini-dashboard.expanded { width:min(350px,calc(100vw - 24px)) !important;max-width:calc(100vw - 24px) !important;box-shadow:0 18px 45px #6D28D955 !important }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important }
+            #purecloud-script-mini-dashboard.expanded .stat-item-original { min-height:72px;border:1px solid var(--aja-orange) !important;box-shadow:0 6px 20px #6D28D933 !important }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-quick-actions { grid-template-columns:repeat(2,minmax(0,1fr)) }
+        ` : activeTheme === 'solar' ? `
+            #uni-menu-container .uni-fab-actions { grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:7px !important;border-radius:14px !important }
+            #uni-menu-container .uni-fab-btn { width:100% !important;height:56px !important;min-width:0 !important;min-height:56px !important;border-radius:10px !important;flex-direction:column !important;gap:2px;transform:none !important }
+            #uni-menu-container .uni-fab-btn[data-aja-theme-icon]::before { font-size:18px }
+            #uni-menu-container .uni-fab-btn::after { content:attr(data-label);display:block !important;position:static !important;opacity:1 !important;visibility:visible !important;padding:0 !important;background:none !important;border:0 !important;box-shadow:none !important;font:600 10px system-ui !important;white-space:normal !important;text-align:center !important;line-height:1.1 !important }
+            #purecloud-script-mini-dashboard.expanded { width:min(450px,calc(100vw - 24px)) !important;max-width:calc(100vw - 24px) !important }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-stats-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:5px !important }
+            #purecloud-script-mini-dashboard.expanded .stat-item-original { min-width:0;padding:9px 3px;min-height:63px }
+            #purecloud-script-mini-dashboard.expanded .stat-item-original strong { font-size:1.1em }
+            #purecloud-script-mini-dashboard.expanded .mini-dashboard-quick-actions { grid-template-columns:repeat(4,minmax(0,1fr)) }
+        ` : '');
 
-        if (style.textContent !== css) {
-            style.textContent = css;
+        if (style.textContent !== css + modelCss) {
+            style.textContent = css + modelCss;
         }
     }
 
@@ -715,12 +751,24 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         ensureStyle();
         syncThemeDefaults();
         document.documentElement.dataset.ajaTheme = activeTheme;
+        const menuIcons = {
+            'uni-btn-maintenance':'⚙','uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-ia':'✦','uni-btn-central':'?','uni-btn-mon':'▤','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-tools':'▥','uni-btn-pr':'≡','uni-btn-qr':'✉','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷'
+        };
+        document.querySelectorAll('#uni-menu-container .uni-fab-btn').forEach(button => {
+            if (activeTheme === 'brisanet') button.removeAttribute('data-aja-theme-icon');
+            else button.setAttribute('data-aja-theme-icon', menuIcons[button.id] || '•');
+        });
         const dashboard = document.getElementById('purecloud-script-mini-dashboard');
         if (dashboard) {
             dashboard.classList.toggle('local-light-mode', profiles[activeTheme].mode === 'light');
             dashboard.classList.toggle('cc-escurinho', profiles[activeTheme].mode === 'dark');
             const button = dashboard.querySelector('#mini-dashboard-btn-theme');
             if (button) { button.textContent = profiles[activeTheme].icon; button.title = 'Tema global: ' + profiles[activeTheme].name + '. Clique para mudar.'; button.setAttribute('aria-label', button.title); }
+            const statIcons = { atlantico:['✓','◷','↗','◇'], aurora:['✦','◉','⚡','◌'], solar:['✓','◷','⌛','▢'] }[activeTheme];
+            dashboard.querySelectorAll('.stat-item-original .stat-label').forEach((label, index) => {
+                if (statIcons) label.setAttribute('data-aja-theme-icon', statIcons[index]);
+                else label.removeAttribute('data-aja-theme-icon');
+            });
         }
     }
 
