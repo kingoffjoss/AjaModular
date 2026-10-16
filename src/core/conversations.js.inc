@@ -12,6 +12,7 @@
 
     function updateTimerDisplay(timerData) {
         if (!timerData.div?.isConnected || !timerData.numDiv?.isConnected || !timerData.bubblesContainer?.isConnected) { return; }
+        timerData.bubblesContainer.classList.toggle('gcp-tema-escuro', CONFIG.DARK_MODE);
         let currentElapsed; if (timerData.isPaused) { currentElapsed = timerData.pausedAt - timerData.startTime; } else { currentElapsed = Date.now() - timerData.startTime; }
         currentElapsed = Math.max(0, currentElapsed);
         const secs = Math.floor(currentElapsed / 1000); timerData.div.textContent = `${formatTime(Math.floor(secs / 60))}:${formatTime(secs % 60)}`;

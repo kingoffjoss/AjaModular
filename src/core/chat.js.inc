@@ -28,6 +28,7 @@
         toggleDarkMode: () => {
             CONFIG.DARK_MODE = !CONFIG.DARK_MODE;
             saveData();
+            timerManager.refreshAll();
         },
         quickGreeting: () => { const chatInputField = getChatInput(); if (chatInputField) { chatInputField.value = templateProcessor.process(CONFIG.QUICK_REPLIES[0] ? CONFIG.QUICK_REPLIES[0].text : "Olá!"); chatInputField.dispatchEvent(new Event('input', { bubbles: true })); chatInputField.focus(); } else { UI.createNotification("Campo de chat não encontrado.", "warn"); } },
         exportData: () => { const dataToExport = analyticsManager.getData().conversations; if (!dataToExport || dataToExport.length === 0) { UI.createNotification("Não há dados para exportar.", "warn"); return; } const filename = `purecloud_script_attendances_${getBrazilTime(new Date()).toISOString().split('T')[0]}.json`; const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification("Download iniciado!", "success"); },
