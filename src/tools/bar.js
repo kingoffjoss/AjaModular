@@ -167,8 +167,8 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assiste
 
                     element.style.transition = 'none';
 
-                    document.onmousemove = resizeElement;
-                    document.onmouseup = stopResize;
+                    document.addEventListener('mousemove', resizeElement);
+                    document.addEventListener('mouseup', stopResize);
                 };
 
                 function resizeElement(e) {
@@ -194,8 +194,8 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assiste
 
                 function stopResize() {
                     element.style.transition = 'var(--transicao-padrao)';
-                    document.onmousemove = null;
-                    document.onmouseup = null;
+                    document.removeEventListener('mousemove', resizeElement);
+                    document.removeEventListener('mouseup', stopResize);
                 }
             }
             // *** FIM DAS FUNÇÕES PRINCIPAIS ***
@@ -1417,11 +1417,14 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assiste
             // 4. Restaurar Posição
             const savedPos = ctx.ajaStorage.getItem('bauTriggerPos');
             if (savedPos) {
-                const p = JSON.parse(savedPos);
-                triggerBtn.style.left = p.left;
-                triggerBtn.style.top = p.top;
-                triggerBtn.style.right = 'auto';
-                triggerBtn.style.bottom = 'auto';
+                let p = null;
+                try { p = JSON.parse(savedPos); } catch {}
+                if (p && /^\d+(?:\.\d+)?px$/.test(p.left) && /^\d+(?:\.\d+)?px$/.test(p.top) && parseFloat(p.left) < innerWidth && parseFloat(p.top) < innerHeight) {
+                    triggerBtn.style.left = p.left;
+                    triggerBtn.style.top = p.top;
+                    triggerBtn.style.right = 'auto';
+                    triggerBtn.style.bottom = 'auto';
+                }
             }
         }
     })();

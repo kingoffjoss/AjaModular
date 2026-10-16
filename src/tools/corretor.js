@@ -356,7 +356,10 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                             const card = document.createElement('div'); card.className = 'panel-card';
                             const erroTexto = err.context.text.substr(err.context.offset, err.context.length) || "Ponto/Vírgula";
                             const sugTexto = err.replacements[0] ? err.replacements[0].value : "-";
-                            card.innerHTML = `<span class="card-category">${err.rule.category.name}</span><div class="card-change"><span class="card-wrong">${erroTexto}</span> ➔ <span class="card-right" title="Clique para aplicar">${sugTexto}</span></div>`;
+                            card.innerHTML = '<span class="card-category"></span><div class="card-change"><span class="card-wrong"></span> ➔ <span class="card-right" title="Clique para aplicar"></span></div>';
+                            card.querySelector('.card-category').textContent = err.rule?.category?.name || 'Revisão';
+                            card.querySelector('.card-wrong').textContent = erroTexto;
+                            card.querySelector('.card-right').textContent = sugTexto;
                             if (err.replacements[0]) { card.querySelector('.card-right').onclick = () => { this.aplicarCorrecao(err, sugTexto); }; }
                             area.appendChild(card);
                         });
@@ -371,7 +374,8 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                         this.dicionarioPessoal.forEach(word => {
                             const item = document.createElement('div');
                             item.style.cssText = "display:flex; justify-content:space-between; padding:8px 12px; background:#f8fafc; border-radius:6px; margin-bottom:5px; font-size:13px; color:#334155; border:1px solid #e2e8f0;";
-                            item.innerHTML = `<span>${word}</span> <button style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">×</button>`;
+                            item.innerHTML = '<span></span> <button style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">×</button>';
+                            item.querySelector('span').textContent = word;
                             item.querySelector('button').onclick = () => {
                                 this.dicionarioPessoal = this.dicionarioPessoal.filter(w => w !== word);
                                 ctx.ajaStorage.setItem('pcs_spell_dict', JSON.stringify(this.dicionarioPessoal));

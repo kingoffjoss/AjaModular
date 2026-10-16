@@ -615,7 +615,7 @@ Telecine	Telecine filmes erros APP app.
                             getEl('input-setup-name').value = agentName;
 
                             const greeting = getBrazilGreeting();
-                            getEl('chat-welcome-msg').innerHTML = `${greeting} <b>${agentName}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?`;
+                            getEl('chat-welcome-msg').innerHTML = `${greeting} <b>${ctx.escapeHTML(String(agentName))}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?`;
 
                             getEl('logged-in-tools').style.display = 'flex';
                             getEl('ia-nav-tabs').style.display = 'flex';
@@ -640,7 +640,7 @@ Telecine	Telecine filmes erros APP app.
                 // --- HISTÓRICO ---
                 function saveToHistory(text) {
                     store.get(['geminiHistory'], (res) => {
-                        let hist = res.geminiHistory || [];
+                        let hist = Array.isArray(res.geminiHistory) ? res.geminiHistory : [];
                         hist.unshift({ id: Date.now(), date: new Date().toLocaleString(), text: text });
                         if (hist.length > 20) hist = hist.slice(0, 20);
                         store.set({ geminiHistory: hist });
@@ -650,16 +650,16 @@ Telecine	Telecine filmes erros APP app.
                 function renderHistory() {
                     const list = getEl('history-list');
                     store.get(['geminiHistory'], (res) => {
-                        const hist = res.geminiHistory || [];
+                        const hist = Array.isArray(res.geminiHistory) ? res.geminiHistory : [];
                         list.innerHTML = hist.length ? '' : '<p style="text-align:center; color:var(--ia-text-muted); margin-top:20px;">Nenhum histórico.</p>';
-                        hist.forEach(item => {
+                        hist.filter(item => item && typeof item.text === 'string').forEach(item => {
                             const div = document.createElement('div'); div.className = 'history-item';
                             div.innerHTML = `
-                        <div class="history-meta"><span>${item.date}</span></div>
-                        <div class="history-preview">${item.text}</div>
+                        <div class="history-meta"><span>${ctx.escapeHTML(String(item.date || ''))}</span></div>
+                        <div class="history-preview">${ctx.escapeHTML(item.text)}</div>
                         <div class="h-actions">
                              <button class="h-btn btn-primary h-copy purecloud-script-button" data-text="${encodeURIComponent(item.text)}">Copiar</button>
-                             <button class="h-btn btn-danger h-del purecloud-script-button" data-id="${item.id}">🗑️</button>
+                             <button class="h-btn btn-danger h-del purecloud-script-button" data-id="${Number(item.id) || 0}">🗑️</button>
                         </div>
                     `;
                             list.appendChild(div);
@@ -671,7 +671,7 @@ Telecine	Telecine filmes erros APP app.
                         list.querySelectorAll('.h-del').forEach(b => b.onclick = (e) => {
                             const id = parseInt(e.target.dataset.id);
                             store.get(['geminiHistory'], r => {
-                                store.set({ geminiHistory: (r.geminiHistory || []).filter(i => i.id !== id) }, renderHistory);
+                                store.set({ geminiHistory: (Array.isArray(r.geminiHistory) ? r.geminiHistory : []).filter(i => i && i.id !== id) }, renderHistory);
                             });
                         });
                     });
@@ -861,7 +861,7 @@ Telecine	Telecine filmes erros APP app.
                 getEl('input-chat').onkeypress = (e) => { if (e.key === 'Enter') sendChat(); };
                 getEl('btn-clear-chat').onclick = () => {
                     const greeting = getBrazilGreeting();
-                    getEl('chat-container').innerHTML = `<div id="chat-welcome-msg" class="chat-bubble chat-ai">${greeting} <b>${agentName}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?</div>`;
+                    getEl('chat-container').innerHTML = `<div id="chat-welcome-msg" class="chat-bubble chat-ai">${greeting} <b>${ctx.escapeHTML(String(agentName))}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?</div>`;
                     chatHistoryContext = [];
                 };
                 // --- ARRASTO LIVRE ---
@@ -884,21 +884,21 @@ Telecine	Telecine filmes erros APP app.
                     dragOffsetY = e.clientY - rect.top;
                 };
 
-                document.onmousemove = (e) => {
+                document.addEventListener('mousemove', (e) => {
                     if (!isDragging) return;
                     e.preventDefault();
                     const newLeft = e.clientX - dragOffsetX;
                     const newTop = e.clientY - dragOffsetY;
                     modal.style.left = newLeft + 'px';
                     modal.style.top = newTop + 'px';
-                };
+                });
 
-                document.onmouseup = () => {
+                document.addEventListener('mouseup', () => {
                     if (isDragging) {
                         isDragging = false;
                         handle.style.cursor = 'move';
                     }
-                };
+                });
 
                 loadState();
             }

@@ -290,14 +290,24 @@ return (function initCalc() {
                 curV.oninput = updateCur;
 
                 // Histórico
-                let hData = JSON.parse(ctx.ajaStorage.getItem('smart-ultimate-h')) || [];
+                let hData;
+                try { hData = JSON.parse(ctx.ajaStorage.getItem('smart-ultimate-h') || '[]'); } catch { hData = []; }
+                if (!Array.isArray(hData)) hData = [];
+                hData = hData.filter(x => x && typeof x.e === 'string' && (typeof x.r === 'number' || typeof x.r === 'string')).slice(0, 10);
                 const saveH = (e, r) => {
                     hData.unshift({e, r}); hData = hData.slice(0,10);
                     ctx.ajaStorage.setItem('smart-ultimate-h', JSON.stringify(hData));
                     renderH();
                 };
                 const renderH = () => {
-                    shadow.getElementById('hist-list').innerHTML = hData.map(x => `<div class="hist-item">${x.e} = <strong>${x.r}</strong></div>`).join('');
+                    const list = shadow.getElementById('hist-list');
+                    list.replaceChildren();
+                    hData.forEach(x => {
+                        const row = document.createElement('div'); row.className = 'hist-item';
+                        row.append(document.createTextNode(x.e + ' = '));
+                        const result = document.createElement('strong'); result.textContent = String(x.r);
+                        row.append(result); list.append(row);
+                    });
                 };
                 shadow.getElementById('btn-clear-h').onclick = () => { hData = []; ctx.ajaStorage.removeItem('smart-ultimate-h'); renderH(); };
                 renderH();

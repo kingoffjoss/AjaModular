@@ -1,6 +1,7 @@
 window.AjaModular.register("historico-documentos", [], function(ctx) {
 const key = 'purecloudScript_idHistory';
 function record(doc) {
+    if (typeof doc !== 'string' || !/^(?:\d{11}|\d{14})$/.test(doc)) return;
     let history; try { history = JSON.parse(ctx.ajaStorage.getItem(key) || '[]'); } catch { history = []; }
     if (!Array.isArray(history)) history = [];
     history.unshift({doc, tipo:doc.length === 11 ? 'CPF' : 'CNPJ', hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
@@ -21,14 +22,18 @@ return { record, mount(panel) {
                                 return;
                             }
 
-                            history.forEach((item, index) => {
+                            history.filter(item => item && typeof item.doc === 'string' && /^(?:\d{11}|\d{14})$/.test(item.doc)).forEach(item => {
                                 const btn = document.createElement('button');
                                 btn.className = 'purecloud-script-button';
                                 btn.style.cssText = `text-align: left; padding: 8px; font-size: 0.85em; background: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); border: 1px solid var(--purecloud-script-border-color); display: flex; justify-content: space-between;`;
-                                btn.innerHTML = `<span><strong>${item.doc}</strong> (${item.tipo})</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
-                                btn.onclick = () => {
-                                    navigator.clipboard.writeText(item.doc);
-                                    btn.innerHTML = `<span><strong>Copiado!</strong> ✅</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
+                                btn.innerHTML = '<span><strong></strong> (<span class="document-type"></span>)</span> <span class="document-time" style="color:var(--purecloud-script-text-secondary);"></span>';
+                                btn.querySelector('strong').textContent = item.doc;
+                                btn.querySelector('.document-type').textContent = item.doc.length === 11 ? 'CPF' : 'CNPJ';
+                                btn.querySelector('.document-time').textContent = typeof item.hora === 'string' ? item.hora : '';
+                                btn.onclick = async () => {
+                                    try { await navigator.clipboard.writeText(item.doc); }
+                                    catch { return; }
+                                    btn.querySelector('strong').textContent = 'Copiado!';
                                     setTimeout(() => refreshHistoryUI(), 1000);
                                 };
                                 list.appendChild(btn);

@@ -21,6 +21,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 "ex1": "Exemplo de texto expandido automaticamente.",
                 "ajuda": "Digite o atalho e aperte ESPAÇO para expandir."
             };
+            const isScriptMap = value => value !== null && typeof value === 'object' && !Array.isArray(value) &&
+                Object.entries(value).every(([key, text]) => key.length > 0 && typeof text === 'string');
 
             let scripts = {};
             let isDark = true;
@@ -30,12 +32,14 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 get: (callback) => {
                     if (isExtension) {
                         chrome.storage.local.get([STORAGE_KEY, THEME_KEY], (res) => {
-                            callback({ scripts: res[STORAGE_KEY] || defaultScripts, theme: res[THEME_KEY] || 'dark' });
+                            callback({ scripts: isScriptMap(res[STORAGE_KEY]) ? res[STORAGE_KEY] : defaultScripts, theme: res[THEME_KEY] || 'dark' });
                         });
                     } else {
                         const s = ctx.ajaStorage.getItem(STORAGE_KEY);
                         const t = ctx.ajaStorage.getItem(THEME_KEY);
-                        callback({ scripts: s ? JSON.parse(s) : defaultScripts, theme: t || 'dark' });
+                        let saved;
+                        try { saved = s ? JSON.parse(s) : null; } catch { saved = null; }
+                        callback({ scripts: isScriptMap(saved) ? saved : defaultScripts, theme: t || 'dark' });
                     }
                 },
                 set: (data) => {
@@ -326,6 +330,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     reader.onload = (ev) => {
                         try {
                             const imported = JSON.parse(ev.target.result);
+                            if (!isScriptMap(imported)) throw new Error('Backup de comandos inválido');
                             scripts = { ...scripts, ...imported };
                             Storage.set({ scripts: scripts });
                             updateVisualList();
@@ -344,9 +349,12 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     keys.forEach(key => {
                         const item = document.createElement('div'); item.className = 'car-item';
                         item.innerHTML = `
-                            <div class="item-content"><span class="item-key">${key}</span><span class="item-val" title="${scripts[key]}">${scripts[key]}</span></div>
+                            <div class="item-content"><span class="item-key"></span><span class="item-val"></span></div>
                             <div class="item-actions"><button class="btn-edit" title="Editar">✏️</button><button class="btn-del" title="Excluir">🗑️</button></div>
                         `;
+                        item.querySelector('.item-key').textContent = key;
+                        item.querySelector('.item-val').textContent = scripts[key];
+                        item.querySelector('.item-val').title = scripts[key];
                         item.querySelector('.btn-edit').onclick = () => { inpKey.value = key; inpVal.value = scripts[key]; inpVal.focus(); };
                         item.querySelector('.btn-del').onclick = () => {
                             if (confirm(`Apagar atalho "${key}"?`)) {
