@@ -135,7 +135,7 @@ window.AjaModularDOM=Object.freeze({watch,refresh:schedule,count:()=>subscriptio
 (function(){
 'use strict';
 const clone=value=>JSON.parse(JSON.stringify(value));
-function normalize(items){if(!Array.isArray(items))throw Error('O catálogo não é uma lista');return items.map((item,index)=>{if(!item||typeof item.title!=='string'||typeof item.text!=='string')throw Error('Item inválido na posição '+(index+1));return {...item,isFavorite:Boolean(item.isFavorite),requiredData:Array.isArray(item.requiredData)?item.requiredData:[],hotkey:typeof item.hotkey==='string'&&item.hotkey.trim()?item.hotkey.trim():null};});}
+function normalize(items){if(!Array.isArray(items))throw Error('O catálogo não é uma lista');return items.map((item,index)=>{if(!item||typeof item.title!=='string'||typeof item.text!=='string')throw Error('Item inválido na posição '+(index+1));return {...item,isFavorite:Boolean(item.isFavorite),requiredData:Array.isArray(item.requiredData)?item.requiredData.filter(tag=>typeof tag==='string'):[],hotkey:typeof item.hotkey==='string'&&item.hotkey.trim()?item.hotkey.trim():null};});}
 function load(storage,key,defaults,area){const raw=storage.getItem(key);if(!raw)return normalize(clone(defaults));try{const items=normalize(JSON.parse(raw));if(!items.length){storage.removeItem(key);window.AjaModularNotice?.(area+' restaurado com os dados padrão.');return normalize(clone(defaults));}return items;}catch(error){window.AjaModularReportError?.(area+' — dados salvos inválidos',error);storage.removeItem(key);return normalize(clone(defaults));}}
 function save(storage,key,items,area){try{const normalized=normalize(items);storage.setItem(key,JSON.stringify(normalized));return normalized;}catch(error){window.AjaModularReportError?.(area+' — não foi possível salvar',error);throw error;}}
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
@@ -862,6 +862,7 @@ return { mount(panel, USEFUL_LINKS) { // Populando Links Úteis
 window.AjaModular.register("historico-documentos", [], function(ctx) {
 const key = 'purecloudScript_idHistory';
 function record(doc) {
+    if (typeof doc !== 'string' || !/^(?:\d{11}|\d{14})$/.test(doc)) return;
     let history; try { history = JSON.parse(ctx.ajaStorage.getItem(key) || '[]'); } catch { history = []; }
     if (!Array.isArray(history)) history = [];
     history.unshift({doc, tipo:doc.length === 11 ? 'CPF' : 'CNPJ', hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
@@ -882,14 +883,18 @@ return { record, mount(panel) {
                                 return;
                             }
 
-                            history.forEach((item, index) => {
+                            history.filter(item => item && typeof item.doc === 'string' && /^(?:\d{11}|\d{14})$/.test(item.doc)).forEach(item => {
                                 const btn = document.createElement('button');
                                 btn.className = 'purecloud-script-button';
                                 btn.style.cssText = `text-align: left; padding: 8px; font-size: 0.85em; background: var(--purecloud-script-bg-secondary); color: var(--purecloud-script-text-primary); border: 1px solid var(--purecloud-script-border-color); display: flex; justify-content: space-between;`;
-                                btn.innerHTML = `<span><strong>${item.doc}</strong> (${item.tipo})</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
-                                btn.onclick = () => {
-                                    navigator.clipboard.writeText(item.doc);
-                                    btn.innerHTML = `<span><strong>Copiado!</strong> ✅</span> <span style="color:var(--purecloud-script-text-secondary);">${item.hora}</span>`;
+                                btn.innerHTML = '<span><strong></strong> (<span class="document-type"></span>)</span> <span class="document-time" style="color:var(--purecloud-script-text-secondary);"></span>';
+                                btn.querySelector('strong').textContent = item.doc;
+                                btn.querySelector('.document-type').textContent = item.doc.length === 11 ? 'CPF' : 'CNPJ';
+                                btn.querySelector('.document-time').textContent = typeof item.hora === 'string' ? item.hora : '';
+                                btn.onclick = async () => {
+                                    try { await navigator.clipboard.writeText(item.doc); }
+                                    catch { return; }
+                                    btn.querySelector('strong').textContent = 'Copiado!';
                                     setTimeout(() => refreshHistoryUI(), 1000);
                                 };
                                 list.appendChild(btn);
@@ -1295,8 +1300,8 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assiste
 
                     element.style.transition = 'none';
 
-                    document.onmousemove = resizeElement;
-                    document.onmouseup = stopResize;
+                    document.addEventListener('mousemove', resizeElement);
+                    document.addEventListener('mouseup', stopResize);
                 };
 
                 function resizeElement(e) {
@@ -1322,8 +1327,8 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assiste
 
                 function stopResize() {
                     element.style.transition = 'var(--transicao-padrao)';
-                    document.onmousemove = null;
-                    document.onmouseup = null;
+                    document.removeEventListener('mousemove', resizeElement);
+                    document.removeEventListener('mouseup', stopResize);
                 }
             }
             // *** FIM DAS FUNÇÕES PRINCIPAIS ***
@@ -2545,11 +2550,14 @@ window.AjaModular.register("bar", ["compatibility", "bau-catalogo", "bau-assiste
             // 4. Restaurar Posição
             const savedPos = ctx.ajaStorage.getItem('bauTriggerPos');
             if (savedPos) {
-                const p = JSON.parse(savedPos);
-                triggerBtn.style.left = p.left;
-                triggerBtn.style.top = p.top;
-                triggerBtn.style.right = 'auto';
-                triggerBtn.style.bottom = 'auto';
+                let p = null;
+                try { p = JSON.parse(savedPos); } catch {}
+                if (p && /^\d+(?:\.\d+)?px$/.test(p.left) && /^\d+(?:\.\d+)?px$/.test(p.top) && parseFloat(p.left) < innerWidth && parseFloat(p.top) < innerHeight) {
+                    triggerBtn.style.left = p.left;
+                    triggerBtn.style.top = p.top;
+                    triggerBtn.style.right = 'auto';
+                    triggerBtn.style.bottom = 'auto';
+                }
             }
         }
     })();
@@ -3095,8 +3103,10 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
 
                     try {
                         CONFIG.LAST_COPIED_PROTOCOLO = ctx.ajaStorage.getItem('pr_lastCopiedProtocol') || '';
-                        CONFIG.RECENT_PROTOCOLOS = JSON.parse(ctx.ajaStorage.getItem('pr_recentProtocols_v1')) || [];
-                        CONFIG.POPUP_POSITIONS = JSON.parse(ctx.ajaSessionStorage.getItem('pr_popupPositions') || '{}');
+                        const recent = JSON.parse(ctx.ajaStorage.getItem('pr_recentProtocols_v1') || '[]');
+                        CONFIG.RECENT_PROTOCOLOS = Array.isArray(recent) ? recent.filter(item => item && typeof item.title === 'string') : [];
+                        const positions = JSON.parse(ctx.ajaSessionStorage.getItem('pr_popupPositions') || '{}');
+                        CONFIG.POPUP_POSITIONS = positions && typeof positions === 'object' && !Array.isArray(positions) ? positions : {};
                         CONFIG.PR_DARK_MODE = ctx.ajaStorage.getItem('pr_darkMode') === 'true';
                     } catch (e) {
                         CONFIG.RECENT_PROTOCOLOS = [];
@@ -3274,15 +3284,15 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                         const highlightText = (text, keywords) => { const safe=window.AjaModularCatalogStore.escapeHTML(text); if (!keywords || keywords.length === 0 || !text) { return safe; } const regexKeywords = keywords.map(kw => escapeRegExp(window.AjaModularCatalogStore.escapeHTML(kw))).join('|'); const regex = new RegExp(`(${regexKeywords})`, 'gi'); return safe.replace(regex, '<span class="pr-highlight">$1</span>'); };
 
                         const populateReplies = (category, searchTerm, tagFilter) => {
-                            const name = documentExtractor.getParticipantName(); const id = documentExtractor.getInteractionId(); resultsContainer.innerHTML = ''; let filteredReplies = []; let headerText = ''; const lowerSearch = searchTerm ? searchTerm.toLowerCase() : ''; const searchKeywords = lowerSearch ? lowerSearch.split(/\s+/).filter(k => k) : []; if (searchTerm) { const scored = []; CONFIG.PROTOCOLOS.forEach(reply => { const lt = reply.title.toLowerCase(); const ltxt = reply.text.toLowerCase(); let score = 0; if (lt.startsWith(lowerSearch)) { score += 1000; } else if (lt.includes(lowerSearch)) { score += 100; } let keywordsFoundCount = 0; searchKeywords.forEach(kw => { if (lt.includes(kw)) { score += 20; keywordsFoundCount++; } else if (ltxt.includes(kw)) { score += 5; keywordsFoundCount++; } }); if (searchKeywords.length > 1 && keywordsFoundCount === searchKeywords.length) { score += 50; } if (score > 0) scored.push({ ...reply, score }); }); scored.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)); filteredReplies = scored; headerText = `Busca por "${searchTerm}"`; } else if (tagFilter) { let base = CONFIG.PROTOCOLOS; if (category && !['all', 'favorites', 'recent', 'search'].includes(category)) { base = base.filter(r => r.title.startsWith(category + ' - ')); } filteredReplies = base.filter(r => getReplyDataTags(r.title).includes(tagFilter)); const catLabel = categoryDisplayMap[category] || category; headerText = `Filtro Tag: "${tagFilter.replace(/_/g, ' ')}"` + (category && !['all', 'search'].includes(category) ? ` em ${catLabel}` : ''); filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'favorites') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.isFavorite); headerText = categoryDisplayMap['favorites']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'recent') { const titles = CONFIG.RECENT_PROTOCOLOS.map(r => r.title); filteredReplies = CONFIG.PROTOCOLOS.filter(r => titles.includes(r.title)).sort((a, b) => titles.indexOf(a.title) - titles.indexOf(b.title)); headerText = categoryDisplayMap['recent']; } else if (category && category !== 'all') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.title.startsWith(category + ' - ')); headerText = categoryDisplayMap[category] || `Categoria: ${category}`; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else { filteredReplies = [...CONFIG.PROTOCOLOS]; headerText = categoryDisplayMap['all']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } if (activeQuickFilters.length > 0) { headerText += ` (Filtros: ${activeQuickFilters.join(', ')})`; filteredReplies = filteredReplies.filter(reply => { const lowerTextAndTitle = (reply.title + ' ' + reply.text).toLowerCase(); return activeQuickFilters.every(filterKeyword => lowerTextAndTitle.includes(filterKeyword)); }); } if (filteredReplies.length === 0) { resultsContainer.innerHTML = `<p class="pr-no-results">Nenhum protocolo encontrado.</p>`; return; } resultsContainer.innerHTML = `<h4 class="pr-results-header">${headerText} (${filteredReplies.length})</h4>`;
+                            const name = documentExtractor.getParticipantName(); const id = documentExtractor.getInteractionId(); resultsContainer.innerHTML = ''; let filteredReplies = []; let headerText = ''; const lowerSearch = searchTerm ? searchTerm.toLowerCase() : ''; const searchKeywords = lowerSearch ? lowerSearch.split(/\s+/).filter(k => k) : []; if (searchTerm) { const scored = []; CONFIG.PROTOCOLOS.forEach(reply => { const lt = reply.title.toLowerCase(); const ltxt = reply.text.toLowerCase(); let score = 0; if (lt.startsWith(lowerSearch)) { score += 1000; } else if (lt.includes(lowerSearch)) { score += 100; } let keywordsFoundCount = 0; searchKeywords.forEach(kw => { if (lt.includes(kw)) { score += 20; keywordsFoundCount++; } else if (ltxt.includes(kw)) { score += 5; keywordsFoundCount++; } }); if (searchKeywords.length > 1 && keywordsFoundCount === searchKeywords.length) { score += 50; } if (score > 0) scored.push({ ...reply, score }); }); scored.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)); filteredReplies = scored; headerText = `Busca por "${searchTerm}"`; } else if (tagFilter) { let base = CONFIG.PROTOCOLOS; if (category && !['all', 'favorites', 'recent', 'search'].includes(category)) { base = base.filter(r => r.title.startsWith(category + ' - ')); } filteredReplies = base.filter(r => getReplyDataTags(r.title).includes(tagFilter)); const catLabel = categoryDisplayMap[category] || category; headerText = `Filtro Tag: "${tagFilter.replace(/_/g, ' ')}"` + (category && !['all', 'search'].includes(category) ? ` em ${catLabel}` : ''); filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'favorites') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.isFavorite); headerText = categoryDisplayMap['favorites']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else if (category === 'recent') { const titles = CONFIG.RECENT_PROTOCOLOS.map(r => r.title); filteredReplies = CONFIG.PROTOCOLOS.filter(r => titles.includes(r.title)).sort((a, b) => titles.indexOf(a.title) - titles.indexOf(b.title)); headerText = categoryDisplayMap['recent']; } else if (category && category !== 'all') { filteredReplies = CONFIG.PROTOCOLOS.filter(r => r.title.startsWith(category + ' - ')); headerText = categoryDisplayMap[category] || `Categoria: ${category}`; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } else { filteredReplies = [...CONFIG.PROTOCOLOS]; headerText = categoryDisplayMap['all']; filteredReplies.sort((a, b) => a.title.localeCompare(b.title)); } if (activeQuickFilters.length > 0) { headerText += ` (Filtros: ${activeQuickFilters.join(', ')})`; filteredReplies = filteredReplies.filter(reply => { const lowerTextAndTitle = (reply.title + ' ' + reply.text).toLowerCase(); return activeQuickFilters.every(filterKeyword => lowerTextAndTitle.includes(filterKeyword)); }); } if (filteredReplies.length === 0) { resultsContainer.innerHTML = `<p class="pr-no-results">Nenhum protocolo encontrado.</p>`; return; } resultsContainer.innerHTML = ''; const title = document.createElement('h4'); title.className = 'pr-results-header'; title.textContent = `${headerText} (${filteredReplies.length})`; resultsContainer.appendChild(title);
 
                             filteredReplies.forEach(reply => {
                                 const code = reply.title.split(' - ')[0].trim();
                                 let sub = reply.title.substring(code.length).replace(/^ - /, '').trim() || reply.title;
                                 let textSnippet = reply.text.substring(0, 150) + (reply.text.length > 150 ? '...' : '');
-                                if (searchKeywords.length > 0) { sub = highlightText(sub, searchKeywords); textSnippet = highlightText(textSnippet, searchKeywords); }
+                                if (searchKeywords.length > 0) { sub = highlightText(sub, searchKeywords); textSnippet = highlightText(textSnippet, searchKeywords); } else { sub = window.AjaModularCatalogStore.escapeHTML(sub); textSnippet = window.AjaModularCatalogStore.escapeHTML(textSnippet); }
                                 const tags = getReplyDataTags(reply.title);
-                                const tagsHTML = tags.map(t => `<span class="pr-data-tag pr-tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}" title="${t.replace(/_/g, ' ')}">${t.substring(0, Math.min(t.length, 4))}${t.length > 4 ? '.' : ''}</span>`).join('');
+                                const tagsHTML = tags.map(t => `<span class="pr-data-tag pr-tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}" title="${window.AjaModularCatalogStore.escapeHTML(t.replace(/_/g, ' '))}">${window.AjaModularCatalogStore.escapeHTML(t.substring(0, Math.min(t.length, 4)))}${t.length > 4 ? '.' : ''}</span>`).join('');
                                 const reqClass = tags.length > 0 ? 'pr-requires-tags-highlight' : '';
                                 const item = document.createElement('div');
                                 item.className = `item pr-reply-item ${reqClass}`;
@@ -3440,11 +3450,11 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                                 item.innerHTML = `
                         <div class="pr-reply-row-top">
                             <input type="checkbox" class="pr-favorite-toggle" ${r.isFavorite ? 'checked' : ''} title="Favorito">
-                            <input type="text" value="${r.title}" class="pr-reply-title" placeholder="CATEGORIA - Título">
+                            <input type="text" value="${window.AjaModularCatalogStore.escapeHTML(r.title)}" class="pr-reply-title" placeholder="CATEGORIA - Título">
                             <button class="pr-remove-reply-btn purecloud-script-button" title="Remover">${ICONS.TRASH}</button>
                         </div>
                         <div class="pr-reply-row-bottom">
-                            <textarea class="pr-reply-text" rows="2">${r.text}</textarea>
+                            <textarea class="pr-reply-text" rows="2">${window.AjaModularCatalogStore.escapeHTML(r.text)}</textarea>
                         </div>
                      `;
                                 list.appendChild(item);
@@ -3497,8 +3507,8 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                             const file = importInput.files[0]; if (!file) return;
                             try {
                                 const data = JSON.parse(await file.text()); const items = Array.isArray(data) ? data : data.protocols;
-                                if (!Array.isArray(items) || items.some(item => typeof item.title !== 'string' || typeof item.text !== 'string')) throw new Error('Arquivo de protocolos inválido.');
-                                if (confirm('Importar esta lista? Revise antes de Salvar e Fechar.')) { CONFIG.PROTOCOLOS = items; renderSettings(); }
+                                if (!Array.isArray(items) || items.some(item => !item || typeof item.title !== 'string' || typeof item.text !== 'string')) throw new Error('Arquivo de protocolos inválido.');
+                                if (confirm('Importar esta lista? Revise antes de Salvar e Fechar.')) { CONFIG.PROTOCOLOS = window.AjaModularCatalogStore.normalize(items); renderSettings(); }
                             } catch (error) { UI.createNotification(error.message, 'error'); }
                             finally { importInput.value = ''; }
                         };
@@ -3508,7 +3518,7 @@ window.AjaModular.register("protocolos", ["compatibility"], function(ctx) {
                     createTriggerButton() {
                         let btn = document.getElementById('pr-trigger-button'); if (btn) return;
                         btn = document.createElement('button'); btn.id = 'pr-trigger-button'; btn.innerHTML = '📋'; btn.title = 'Protocolos (Ctrl+Shift+U)'; document.body.appendChild(btn);
-                        let isDragging = false; const savedPos = ctx.ajaStorage.getItem('prTriggerButtonPos'); if (savedPos) { const p = JSON.parse(savedPos); btn.style.left = p.left; btn.style.top = p.top; } else { btn.style.right = '25px'; btn.style.bottom = '30px'; }
+                        let isDragging = false; const savedPos = ctx.ajaStorage.getItem('prTriggerButtonPos'); let p = null; try { p = JSON.parse(savedPos || 'null'); } catch {} if (p && /^\d+(?:\.\d+)?px$/.test(p.left) && /^\d+(?:\.\d+)?px$/.test(p.top) && parseFloat(p.left) < innerWidth && parseFloat(p.top) < innerHeight) { btn.style.left = p.left; btn.style.top = p.top; } else { btn.style.right = '25px'; btn.style.bottom = '30px'; }
                         btn.onmousedown = (e) => { if (e.button !== 0) return; isDragging = false; const startX = e.clientX, startY = e.clientY; const rect = btn.getBoundingClientRect(); const initL = rect.left, initT = rect.top; btn.style.cursor = 'grabbing'; const move = (me) => { if (Math.abs(me.clientX - startX) > 5 || Math.abs(me.clientY - startY) > 5) { isDragging = true; btn.style.left = (initL + me.clientX - startX) + 'px'; btn.style.top = (initT + me.clientY - startY) + 'px'; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; const up = () => { btn.style.cursor = 'pointer'; if (isDragging) ctx.ajaStorage.setItem('prTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
                         btn.onclick = () => { if (!isDragging) UI.createProtocoloPopup(); };
                     }
@@ -3843,12 +3853,15 @@ let publicApi;
                 // 3. Carregar o resto das configurações (não-respostas)
                 try {
                     CONFIG.LAST_COPIED_REPLY = ctx.ajaStorage.getItem('qr_lastCopiedReply') || '';
-                    CONFIG.RECENT_REPLIES = JSON.parse(ctx.ajaStorage.getItem('qr_recentReplies_v3')) || [];
-                    CONFIG.POPUP_POSITIONS = JSON.parse(ctx.ajaSessionStorage.getItem('qr_popupPositions') || '{}');
+                    const recent = JSON.parse(ctx.ajaStorage.getItem('qr_recentReplies_v3') || '[]');
+                    CONFIG.RECENT_REPLIES = Array.isArray(recent) ? recent.filter(item => item && typeof item.title === 'string') : [];
+                    const positions = JSON.parse(ctx.ajaSessionStorage.getItem('qr_popupPositions') || '{}');
+                    CONFIG.POPUP_POSITIONS = positions && typeof positions === 'object' && !Array.isArray(positions) ? positions : {};
                     const e = ctx.ajaStorage.getItem('qr_darkMode');
                     CONFIG.DARK_MODE = e !== 'false';
                     const t = ctx.ajaStorage.getItem('qr_customThemeColors');
-                    CONFIG.customThemeColors = t ? JSON.parse(t) : { ...DEFAULT_CYBERPUNK_COLORS };
+                    const colors = t ? JSON.parse(t) : null;
+                    CONFIG.customThemeColors = colors && typeof colors === 'object' && !Array.isArray(colors) ? colors : { ...DEFAULT_CYBERPUNK_COLORS };
                     for (const o in DEFAULT_CYBERPUNK_COLORS) { if (!CONFIG.customThemeColors[o]) { CONFIG.customThemeColors[o] = DEFAULT_CYBERPUNK_COLORS[o] } }
                     log("Outras configs (Recentes, Posição, Tema) carregadas.");
                 } catch (e) {
@@ -3987,7 +4000,7 @@ let publicApi;
                     else panel.classList.add('cc-escurinho'); // fallback escuro
                     panel.querySelector('.qr-script-popup-close-btn').onclick = () => panel.remove(); // PREFIXADO
                     // ... (restante da lógica da função é interna e não precisa de prefixo)
-                    const tabs = panel.querySelectorAll('.tab-button'); const contents = panel.querySelectorAll('.settings-tab-content'); tabs.forEach(tab => { tab.addEventListener('click', () => { log(`Tab clicked: ${tab.dataset.tab}`); const targetId = `tab-content-${tab.dataset.tab}`; const targetContent = panel.querySelector(`#${targetId}`); tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); if (targetContent) { targetContent.classList.add('active'); log(`Activated tab content: #${targetId}`); } else { log(`Error: Target content not found for id #${targetId}`); } }); }); const getReplyDataTags = (title) => CONFIG.QUICK_REPLIES.find(r => r.title === title)?.requiredData || []; const renderRepliesSettings = () => { const list = panel.querySelector('#settings-quick-replies-list'); list.innerHTML = ''; const sorted = [...CONFIG.QUICK_REPLIES].sort((a, b) => a.title.localeCompare(b.title)); sorted.forEach((reply) => { const idx = CONFIG.QUICK_REPLIES.findIndex(r => r.title === reply.title && r.text === reply.text); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = idx; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}">${t.replace(/_/g, ' ')}</span>`).join(' '); item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito" ${reply.isFavorite ? 'checked' : ''}><input type="text" value="${window.AjaModularCatalogStore.escapeHTML(reply.title)}" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="${window.AjaModularCatalogStore.escapeHTML(reply.hotkey || '')}" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags">${tagsHtml}</div><textarea class="reply-text" rows="3" placeholder="Texto...">${window.AjaModularCatalogStore.escapeHTML(reply.text)}</textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.appendChild(item); }); list.querySelectorAll('.remove-reply-btn').forEach(btn => { btn.onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; }); }; panel.querySelector('#add-reply-btn').onclick = () => { const list = panel.querySelector('#settings-quick-replies-list'); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = '-1'; item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito"><input type="text" value="NOVA - Título" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags"></div><textarea class="reply-text" rows="3" placeholder="Texto..."></textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.prepend(item); item.querySelector('.remove-reply-btn').onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; item.querySelector('.reply-title').focus(); item.querySelector('.reply-title').select(); }; panel.querySelector('#restore-replies-btn').onclick = () => { if (confirm("Limpar TODAS as respostas?")) { CONFIG.QUICK_REPLIES = []; renderRepliesSettings(); UI.createNotification("Respostas limpas. Salve para confirmar.", "info", 4000); } }; const fileInput = panel.querySelector('#import-replies-input'); panel.querySelector('#export-replies-btn').onclick = () => { try { if (CONFIG.QUICK_REPLIES.length === 0) { UI.createNotification("Nada para exportar.", 'warn'); return; } const json = JSON.stringify(CONFIG.QUICK_REPLIES, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'respostas_rapidas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification(`Exportado (${CONFIG.QUICK_REPLIES.length})!`, 'success'); } catch (e) { log("Erro exportar:", e); UI.createNotification("Erro ao exportar.", 'error'); } }; panel.querySelector('#import-replies-btn').onclick = () => { fileInput.click(); }; fileInput.onchange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); if (!Array.isArray(imported) || (imported.length > 0 && (!imported[0].title || !imported[0].text))) { throw new Error('JSON inválido.'); } const msg = imported.length > 0 ? `Importar ${imported.length} respostas?` : "Arquivo vazio. Limpar atuais?"; if (confirm(`${msg}\n\nATENÇÃO: Substituirá as respostas atuais. Salve para confirmar.`)) { CONFIG.QUICK_REPLIES = imported.map(r => ({ title: r.title || "INVÁLIDO", text: r.text || "INVÁLIDO", isFavorite: r.isFavorite || false, requiredData: (Array.isArray(r.requiredData) ? r.requiredData : []).map(t => t.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase().replace(/[ÁÀÂÃÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÍÌÎÏ]/g, 'I').replace(/[ÓÒÔÕÖ]/g, 'O').replace(/[ÚÙÛÜ]/g, 'U').replace(/Ç/g, 'C').replace(/[^A-Z0-9_]/g, '')), hotkey: r.hotkey || null })); renderRepliesSettings(); UI.createNotification("Importado! Revise e Salve.", 'success', 4000); } } catch (err) { log("Erro importar:", err); UI.createNotification(err.message || "Erro ao ler JSON.", 'error'); } finally { event.target.value = null; } }; reader.readAsText(file, 'UTF-8'); }; panel.querySelector('#custom-action-example-btn').onclick = () => { exampleCustomFunction(); }; panel.querySelector('#reset-colors-btn').onclick = () => { if (confirm("Resetar as cores para o padrão Cyberpunk?")) { CONFIG.customThemeColors = { ...DEFAULT_CYBERPUNK_COLORS }; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors[key]) { input.value = CONFIG.customThemeColors[key]; } }); applyThemeColors(CONFIG.customThemeColors); UI.createNotification("Cores resetadas.", "info"); } }; panel.querySelector('#qr-save-settings-btn').onclick = () => { const newReplies = []; let hasError = false; const titles = new Set(); panel.querySelectorAll('#settings-quick-replies-list .reply-item').forEach(item => { const titleInput = item.querySelector('.reply-title'); const textInput = item.querySelector('.reply-text'); const hotkeyInput = item.querySelector('.reply-hotkey'); const title = titleInput.value.trim(); const text = textInput.value.trim(); const hotkey = hotkeyInput.value.trim() || null; const isFav = item.querySelector('.favorite-toggle').checked; const idx = parseInt(item.dataset.originalIndex, 10); titleInput.classList.remove('invalid-input'); titleInput.title = ''; textInput.classList.remove('invalid-input'); textInput.title = ''; let reqData = []; if (!isNaN(idx) && idx >= 0 && CONFIG.QUICK_REPLIES[idx]) { reqData = CONFIG.QUICK_REPLIES[idx].requiredData || []; } let titleError = ''; if (!title || !title.includes(' - ')) { titleError = 'Formato: CATEGORIA - Título'; } else if (titles.has(title.toLowerCase())) { titleError = 'Título duplicado.'; } if (titleError) { titleInput.classList.add('invalid-input'); titleInput.title = titleError; hasError = true; } else { titles.add(title.toLowerCase()); } if (!text) { textInput.classList.add('invalid-input'); textInput.title = 'Texto vazio.'; hasError = true; } if (!hasError) { newReplies.push({ title, text, isFavorite: isFav, requiredData: reqData, hotkey: hotkey }); } }); if (hasError) { UI.createNotification("Corrija os campos inválidos nas respostas.", 'error'); return; } CONFIG.QUICK_REPLIES = newReplies; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors.hasOwnProperty(key)) { CONFIG.customThemeColors[key] = input.value; } }); CONFIG.DARK_MODE = panel.querySelector('#dark-mode-toggle').checked; saveData(); UI.createNotification("Salvo!", "success"); panel.remove(); }; renderRepliesSettings();
+                    const tabs = panel.querySelectorAll('.tab-button'); const contents = panel.querySelectorAll('.settings-tab-content'); tabs.forEach(tab => { tab.addEventListener('click', () => { log(`Tab clicked: ${tab.dataset.tab}`); const targetId = `tab-content-${tab.dataset.tab}`; const targetContent = panel.querySelector(`#${targetId}`); tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); if (targetContent) { targetContent.classList.add('active'); log(`Activated tab content: #${targetId}`); } else { log(`Error: Target content not found for id #${targetId}`); } }); }); const getReplyDataTags = (title) => CONFIG.QUICK_REPLIES.find(r => r.title === title)?.requiredData || []; const renderRepliesSettings = () => { const list = panel.querySelector('#settings-quick-replies-list'); list.innerHTML = ''; const sorted = [...CONFIG.QUICK_REPLIES].sort((a, b) => a.title.localeCompare(b.title)); sorted.forEach((reply) => { const idx = CONFIG.QUICK_REPLIES.findIndex(r => r.title === reply.title && r.text === reply.text); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = idx; const tags = getReplyDataTags(reply.title); const tagsHtml = tags.map(t => `<span class="data-tag tag-${t.replace(/[^a-zA-Z0-9]/g, '_')}">${t.replace(/_/g, ' ')}</span>`).join(' '); item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito" ${reply.isFavorite ? 'checked' : ''}><input type="text" value="${window.AjaModularCatalogStore.escapeHTML(reply.title)}" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="${window.AjaModularCatalogStore.escapeHTML(reply.hotkey || '')}" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags">${tagsHtml}</div><textarea class="reply-text" rows="3" placeholder="Texto...">${window.AjaModularCatalogStore.escapeHTML(reply.text)}</textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.appendChild(item); }); list.querySelectorAll('.remove-reply-btn').forEach(btn => { btn.onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; }); }; panel.querySelector('#add-reply-btn').onclick = () => { const list = panel.querySelector('#settings-quick-replies-list'); const item = document.createElement('div'); item.className = 'reply-item'; item.dataset.originalIndex = '-1'; item.innerHTML = `<input type="checkbox" class="favorite-toggle" title="Favorito"><input type="text" value="NOVA - Título" class="reply-title" placeholder="CATEGORIA - Título"><input type="text" value="" class="reply-hotkey" placeholder="Atalho (ex: /i1)"><div class="data-tags"></div><textarea class="reply-text" rows="3" placeholder="Texto..."></textarea><button class="remove-reply-btn purecloud-script-button" title="Remover">${ICONS.DELETE}</button>`; list.prepend(item); item.querySelector('.remove-reply-btn').onclick = (e) => { if (confirm('Remover esta resposta?')) { e.target.closest('.reply-item').remove(); } }; item.querySelector('.reply-title').focus(); item.querySelector('.reply-title').select(); }; panel.querySelector('#restore-replies-btn').onclick = () => { if (confirm("Limpar TODAS as respostas?")) { CONFIG.QUICK_REPLIES = []; renderRepliesSettings(); UI.createNotification("Respostas limpas. Salve para confirmar.", "info", 4000); } }; const fileInput = panel.querySelector('#import-replies-input'); panel.querySelector('#export-replies-btn').onclick = () => { try { if (CONFIG.QUICK_REPLIES.length === 0) { UI.createNotification("Nada para exportar.", 'warn'); return; } const json = JSON.stringify(CONFIG.QUICK_REPLIES, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'respostas_rapidas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification(`Exportado (${CONFIG.QUICK_REPLIES.length})!`, 'success'); } catch (e) { log("Erro exportar:", e); UI.createNotification("Erro ao exportar.", 'error'); } }; panel.querySelector('#import-replies-btn').onclick = () => { fileInput.click(); }; fileInput.onchange = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const imported = JSON.parse(e.target.result); if (!Array.isArray(imported) || imported.some(r => !r || typeof r.title !== 'string' || !r.title.trim() || typeof r.text !== 'string' || !r.text.trim() || (r.requiredData != null && (!Array.isArray(r.requiredData) || r.requiredData.some(t => typeof t !== 'string'))))) { throw new Error('JSON inválido.'); } const msg = imported.length > 0 ? `Importar ${imported.length} respostas?` : "Arquivo vazio. Limpar atuais?"; if (confirm(`${msg}\n\nATENÇÃO: Substituirá as respostas atuais. Salve para confirmar.`)) { CONFIG.QUICK_REPLIES = imported.map(r => ({ title: r.title || "INVÁLIDO", text: r.text || "INVÁLIDO", isFavorite: r.isFavorite || false, requiredData: (Array.isArray(r.requiredData) ? r.requiredData : []).map(t => t.replace(/[{}]/g, '').replace(/ /g, '_').toUpperCase().replace(/[ÁÀÂÃÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E').replace(/[ÍÌÎÏ]/g, 'I').replace(/[ÓÒÔÕÖ]/g, 'O').replace(/[ÚÙÛÜ]/g, 'U').replace(/Ç/g, 'C').replace(/[^A-Z0-9_]/g, '')), hotkey: r.hotkey || null })); renderRepliesSettings(); UI.createNotification("Importado! Revise e Salve.", 'success', 4000); } } catch (err) { log("Erro importar:", err); UI.createNotification(err.message || "Erro ao ler JSON.", 'error'); } finally { event.target.value = null; } }; reader.readAsText(file, 'UTF-8'); }; panel.querySelector('#custom-action-example-btn').onclick = () => { exampleCustomFunction(); }; panel.querySelector('#reset-colors-btn').onclick = () => { if (confirm("Resetar as cores para o padrão Cyberpunk?")) { CONFIG.customThemeColors = { ...DEFAULT_CYBERPUNK_COLORS }; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors[key]) { input.value = CONFIG.customThemeColors[key]; } }); applyThemeColors(CONFIG.customThemeColors); UI.createNotification("Cores resetadas.", "info"); } }; panel.querySelector('#qr-save-settings-btn').onclick = () => { const newReplies = []; let hasError = false; const titles = new Set(); panel.querySelectorAll('#settings-quick-replies-list .reply-item').forEach(item => { const titleInput = item.querySelector('.reply-title'); const textInput = item.querySelector('.reply-text'); const hotkeyInput = item.querySelector('.reply-hotkey'); const title = titleInput.value.trim(); const text = textInput.value.trim(); const hotkey = hotkeyInput.value.trim() || null; const isFav = item.querySelector('.favorite-toggle').checked; const idx = parseInt(item.dataset.originalIndex, 10); titleInput.classList.remove('invalid-input'); titleInput.title = ''; textInput.classList.remove('invalid-input'); textInput.title = ''; let reqData = []; if (!isNaN(idx) && idx >= 0 && CONFIG.QUICK_REPLIES[idx]) { reqData = CONFIG.QUICK_REPLIES[idx].requiredData || []; } let titleError = ''; if (!title || !title.includes(' - ')) { titleError = 'Formato: CATEGORIA - Título'; } else if (titles.has(title.toLowerCase())) { titleError = 'Título duplicado.'; } if (titleError) { titleInput.classList.add('invalid-input'); titleInput.title = titleError; hasError = true; } else { titles.add(title.toLowerCase()); } if (!text) { textInput.classList.add('invalid-input'); textInput.title = 'Texto vazio.'; hasError = true; } if (!hasError) { newReplies.push({ title, text, isFavorite: isFav, requiredData: reqData, hotkey: hotkey }); } }); if (hasError) { UI.createNotification("Corrija os campos inválidos nas respostas.", 'error'); return; } CONFIG.QUICK_REPLIES = newReplies; panel.querySelectorAll('.color-picker-grid input[type="color"]').forEach(input => { const key = input.dataset.colorKey; if (key && CONFIG.customThemeColors.hasOwnProperty(key)) { CONFIG.customThemeColors[key] = input.value; } }); CONFIG.DARK_MODE = panel.querySelector('#dark-mode-toggle').checked; saveData(); UI.createNotification("Salvo!", "success"); panel.remove(); }; renderRepliesSettings();
                 },
                 createTriggerButton() { /* ... (igual v2.4.3 - usa ID #qr-trigger-button, já prefixado) ... */ let btn = document.getElementById('qr-trigger-button'); if (btn) return; btn = document.createElement('button'); btn.id = 'qr-trigger-button'; btn.innerHTML = ICONS.CHAT; btn.title = 'Abrir Respostas (Ctrl+Shift+Ç)'; document.body.appendChild(btn); let dragging = false, startX, startY, initialL, initialT; const saved = ctx.ajaStorage.getItem('qrTriggerButtonPos'); if (saved) { try { const pos = JSON.parse(saved); const w = 48, h = 48; const savedL = parseFloat(pos.left), savedT = parseFloat(pos.top); if (savedL >= 0 && savedL <= innerWidth - w && savedT >= 0 && savedT <= innerHeight - h) { btn.style.left = pos.left; btn.style.top = pos.top; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } else { throw new Error("Fora dos limites."); } } catch (e) { log("Posição salva inválida (botão).", e); btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; ctx.ajaStorage.removeItem('qrTriggerButtonPos'); } } else { btn.style.right = '20px'; btn.style.bottom = '20px'; btn.style.left = 'auto'; btn.style.top = 'auto'; } btn.onmousedown = (e) => { if (e.button !== 0) return; dragging = false; startX = e.clientX; startY = e.clientY; const rect = btn.getBoundingClientRect(); initialL = rect.left; initialT = rect.top; btn.style.cursor = 'grabbing'; e.preventDefault(); const threshold = 5; let moved = false; document.onmousemove = (me) => { const dX = me.clientX - startX; const dY = me.clientY - startY; if (!moved && (Math.abs(dX) > threshold || Math.abs(dY) > threshold)) { moved = true; dragging = true; } if (moved) { let nX = initialL + dX; let nY = initialT + dY; const bW = btn.offsetWidth, bH = btn.offsetHeight; nX = Math.max(5, Math.min(nX, innerWidth - bW - 5)); nY = Math.max(5, Math.min(nY, innerHeight - bH - 5)); btn.style.left = `${nX}px`; btn.style.top = `${nY}px`; btn.style.right = 'auto'; btn.style.bottom = 'auto'; } }; document.onmouseup = () => { btn.style.cursor = 'pointer'; if (moved) { ctx.ajaStorage.setItem('qrTriggerButtonPos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); } document.onmousemove = null; document.onmouseup = null; setTimeout(() => { dragging = false; }, 0); }; }; btn.onclick = () => { if (!dragging) { UI.createQuickReplyPopup(); } }; }
             };
@@ -4251,6 +4264,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                 { hora: "22:30", status: "Pausa auricular" }, { hora: "22:40", status: "Na fila" },
                 { hora: "00:00", status: "Logoff" }
             ];
+            const escapeMarkup = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
 
             let estadoAtual = { tipo: 'Disponível', inicio: new Date(), ativa: false };
             let historicoPausas = [];
@@ -4394,14 +4410,17 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
 
                 switch (status) {
                     case "na fila": iniciarNaFila(true); break;
+                    case "disponivel":
                     case "disponível": voltarDisponivel(true); break;
                     case "pausa out": iniciarPausaOut(true); break;
                     case "pausa auricular": // NOVO NOME V48.8
                     case "pausa pessoal":   // NOME ANTIGO (Compatibilidade)
                     case "descanso":        // NOME ANTIGO (Compatibilidade)
                         iniciarDescanso(true); break;
+                    case "refeicao":
                     case "refeição": iniciarRefeicao(true); break;
                     case "treinamento": iniciarTreinamento(true); break;
+                    case "reuniao":
                     case "reunião": iniciarReuniao(true); break;
                     case "logoff": realizarLogoff(true); break;
                     case "atividade backoffice":
@@ -4417,6 +4436,7 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
                         iniciarQuestoesSaude(true); break;
                     default:
                         console.warn(`[AGENDAMENTO V49.2] Status '${s}' não mapeado.`);
+                        window.AjaModularNotice?.(`Agendamento ignorado: status "${s}" não reconhecido.`);
                 }
             }
 
@@ -4922,9 +4942,9 @@ window.AjaModular.register("pausas", ["compatibility","relogio"], function(ctx) 
             }
 
             function toggleVisibilidadeConfig() { const c = document.getElementById('pausa-script-config-container'); if (!c) { console.error("UI Config não encontrada."); return } isConfigPainelAberto = !isConfigPainelAberto; c.style.display = isConfigPainelAberto ? 'block' : 'none'; if (isConfigPainelAberto) { renderizarAgendamentos(); renderizarHistoricoLog(); renderizarEstatisticas(); window.AjaModular.get('relogio').keepOnScreen(c); } }
-            function renderizarAgendamentos() { const l = document.getElementById('agendamento-lista'); if (!l) return; l.innerHTML = ''; if (PAUSAS_AGENDADAS.length === 0) { l.innerHTML = '<p style="color:#999;margin:5px 0;font-size:11px;text-align:center;">Nenhum horário agendado.</p>' } else { const r = document.createDocumentFragment(); PAUSAS_AGENDADAS.forEach((p, idx) => { const i = document.createElement('div'); i.style.cssText = `display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #ffffff15;padding:4px 2px;font-size:11px;`; const tD = document.createElement('div'); tD.style.flexGrow = '1'; tD.innerHTML = `<strong>${p.hora}</strong>: ${p.status}`; const bD = document.createElement('div'); bD.style.flexShrink = '0'; bD.style.marginLeft = '10px'; const bE = document.createElement('button'); bE.innerHTML = '✏️'; bE.title = `Editar ${p.hora} - ${p.status}`; bE.style.cssText = `background:0 0;border:none;color:#ffc107;cursor:pointer;font-size:14px;padding:0 4px;opacity:.7;transition:opacity .2s;`; bE.onmouseover = function () { this.style.opacity = '1' }; bE.onmouseout = function () { this.style.opacity = '.7' }; bE.onclick = () => carregarHorarioParaEdicao(idx); const bR = document.createElement('button'); bR.innerHTML = '❌'; bR.title = `Remover ${p.hora} - ${p.status}`; bR.style.cssText = `background:0 0;border:none;color:#ff6b6b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:5px;opacity:.7;transition:opacity .2s;`; bR.onmouseover = function () { this.style.opacity = '1' }; bE.onmouseout = function () { this.style.opacity = '.7' }; bR.onclick = () => removerHorario(idx); bD.appendChild(bE); bD.appendChild(bR); i.appendChild(tD); i.appendChild(bD); r.appendChild(i) }); l.appendChild(r) } }
-            function renderizarHistoricoLog() { const l = document.getElementById('historico-log'); if (!l) return; l.innerHTML = ''; if (historicoPausas.length === 0) { l.innerHTML = '<p style="color:#999;margin:5px 0;font-size:11px;">Nenhum registro.</p>'; return } const f = document.createDocumentFragment(); historicoPausas.slice().reverse().forEach(p => { const i = document.createElement('div'); i.style.cssText = `border-bottom:1px dashed #ffffff15;padding:4px 0;font-size:11px;line-height:1.4;`; i.innerHTML = `<strong>${p.tipo}</strong>: ${p.inicio} às ${p.fim} <span style="color:#00b0ff;">(Dur: ${p.duracao})</span>`; f.appendChild(i) }); l.appendChild(f); }
-            function renderizarEstatisticas() { const s = document.getElementById('estatisticas-pausas'); if (!s) return; s.innerHTML = ''; if (historicoPausas.length === 0) { s.innerHTML = '<p style="color:#999;font-style:italic;margin:5px 0;font-size:11px;">Sem estatísticas.</p>'; return } const r = {}; historicoPausas.forEach(p => { const t = p.tipo; if (!r[t]) r[t] = { c: 0, s: 0 }; r[t].c++; r[t].s += converterDuracaoParaSegundos(p.duracao) }); const d = document.createElement('details'); d.style.marginTop = '10px'; d.open = !0; const m = document.createElement('summary'); m.style.cssText = 'cursor:pointer;color:#00b0ff;font-weight:700;margin-bottom:5px;'; m.textContent = 'Estatísticas'; d.appendChild(m); const c = document.createElement('div'); c.style.cssText = `/*bg-removido*/;padding:8px;border-radius:8px;font-size:11px;`; const f = document.createDocumentFragment(); const k = Object.keys(r).sort(); k.forEach((t, x) => { const o = r[t]; const u = formatarDuracao(o.s); const i = document.createElement('div'); i.style.cssText = `display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #ffffff15;line-height:1.4;`; if (x === k.length - 1) i.style.borderBottom = 'none'; i.innerHTML = `<strong>${t} (x${o.c})</strong> <span style="color:#00b0ff;">${u}</span>`; f.appendChild(i) }); c.appendChild(f); d.appendChild(c); s.appendChild(d); }
+            function renderizarAgendamentos() { const l = document.getElementById('agendamento-lista'); if (!l) return; l.innerHTML = ''; if (PAUSAS_AGENDADAS.length === 0) { l.innerHTML = '<p style="color:#999;margin:5px 0;font-size:11px;text-align:center;">Nenhum horário agendado.</p>' } else { const r = document.createDocumentFragment(); PAUSAS_AGENDADAS.forEach((p, idx) => { const i = document.createElement('div'); i.style.cssText = `display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #ffffff15;padding:4px 2px;font-size:11px;`; const tD = document.createElement('div'); tD.style.flexGrow = '1'; tD.innerHTML = `<strong>${escapeMarkup(p.hora)}</strong>: ${escapeMarkup(p.status)}`; const bD = document.createElement('div'); bD.style.flexShrink = '0'; bD.style.marginLeft = '10px'; const bE = document.createElement('button'); bE.innerHTML = '✏️'; bE.title = `Editar ${p.hora} - ${p.status}`; bE.style.cssText = `background:0 0;border:none;color:#ffc107;cursor:pointer;font-size:14px;padding:0 4px;opacity:.7;transition:opacity .2s;`; bE.onmouseover = function () { this.style.opacity = '1' }; bE.onmouseout = function () { this.style.opacity = '.7' }; bE.onclick = () => carregarHorarioParaEdicao(idx); const bR = document.createElement('button'); bR.innerHTML = '❌'; bR.title = `Remover ${p.hora} - ${p.status}`; bR.style.cssText = `background:0 0;border:none;color:#ff6b6b;cursor:pointer;font-size:14px;padding:0 4px;margin-left:5px;opacity:.7;transition:opacity .2s;`; bR.onmouseover = function () { this.style.opacity = '1' }; bR.onmouseout = function () { this.style.opacity = '.7' }; bR.onclick = () => removerHorario(idx); bD.appendChild(bE); bD.appendChild(bR); i.appendChild(tD); i.appendChild(bD); r.appendChild(i) }); l.appendChild(r) } }
+            function renderizarHistoricoLog() { const l = document.getElementById('historico-log'); if (!l) return; l.innerHTML = ''; if (historicoPausas.length === 0) { l.innerHTML = '<p style="color:#999;margin:5px 0;font-size:11px;">Nenhum registro.</p>'; return } const f = document.createDocumentFragment(); historicoPausas.slice().reverse().forEach(p => { const i = document.createElement('div'); i.style.cssText = `border-bottom:1px dashed #ffffff15;padding:4px 0;font-size:11px;line-height:1.4;`; i.innerHTML = `<strong>${escapeMarkup(p.tipo)}</strong>: ${escapeMarkup(p.inicio)} às ${escapeMarkup(p.fim)} <span style="color:#00b0ff;">(Dur: ${escapeMarkup(p.duracao)})</span>`; f.appendChild(i) }); l.appendChild(f); }
+            function renderizarEstatisticas() { const s = document.getElementById('estatisticas-pausas'); if (!s) return; s.innerHTML = ''; if (historicoPausas.length === 0) { s.innerHTML = '<p style="color:#999;font-style:italic;margin:5px 0;font-size:11px;">Sem estatísticas.</p>'; return } const r = Object.create(null); historicoPausas.forEach(p => { const t = p.tipo; if (!r[t]) r[t] = { c: 0, s: 0 }; r[t].c++; r[t].s += converterDuracaoParaSegundos(p.duracao) }); const d = document.createElement('details'); d.style.marginTop = '10px'; d.open = !0; const m = document.createElement('summary'); m.style.cssText = 'cursor:pointer;color:#00b0ff;font-weight:700;margin-bottom:5px;'; m.textContent = 'Estatísticas'; d.appendChild(m); const c = document.createElement('div'); c.style.cssText = `/*bg-removido*/;padding:8px;border-radius:8px;font-size:11px;`; const f = document.createDocumentFragment(); const k = Object.keys(r).sort(); k.forEach((t, x) => { const o = r[t]; const u = formatarDuracao(o.s); const i = document.createElement('div'); i.style.cssText = `display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed #ffffff15;line-height:1.4;`; if (x === k.length - 1) i.style.borderBottom = 'none'; i.innerHTML = `<strong>${escapeMarkup(t)} (x${o.c})</strong> <span style="color:#00b0ff;">${escapeMarkup(u)}</span>`; f.appendChild(i) }); c.appendChild(f); d.appendChild(c); s.appendChild(d); }
             function criarUIRelogio() { /* Removido V44.0 */ }
             function verificarSeletoresEAtualizarUI() { const rD = document.getElementById('seletores-resultados'); if (!rD) { console.error("Div resultados não encontrado."); return } console.log("[Diagnóstico V49.2] Verificando..."); rD.innerHTML = '<p style="font-style:italic;color:#bbb;">Verificando...</p>'; let hR = '<ul style="list-style:none;padding:0;margin:5px 0 0 0;font-size:11px;">', tO = !0; setTimeout(() => { Object.keys(SELECTORES).forEach(k => { const s = SELECTORES[k]; if (k === 'CLOCK_CONTAINER_PARENT') return; const e = document.querySelector(s); const f = e !== null && (e.offsetParent !== null || e.tagName === 'DIV' || e.tagName === 'SPAN'); hR += `<li style="padding:3px 0;border-bottom:1px dashed #ffffff15;display:flex;justify-content:space-between;align-items:center;"><span style="color:#ccc; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${k}">${k}:</span><span><code style="font-size:10px;background-color:rgba(0,255,255,.1);border:1px solid rgba(0,255,255,.2);color:#9fefef;padding:1px 3px;border-radius:3px; max-width: 120px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${s}">${s}</code><span style="margin-left:8px;font-weight:700;color:${f ? '#50fa7b' : '#ff5555'};">${f ? '✔️ Ok' : '❌ Falha'}</span></span></li>`; if (!f) { tO = !1; console.warn(`[Diagnóstico V49.2] Falha ${k}: ${s}`) } }); hR += '</ul>'; if (tO) { hR = '<p style="color:#50fa7b;font-weight:700;margin:5px 0;">✔️ Todos OK!</p>' + hR; console.log("[Diagnóstico V49.2] OK.") } else { hR = '<p style="color:#ff5555;font-weight:700;margin:5px 0;">❌ Atenção: Falha em um ou mais seletores!</p>' + hR; console.warn("[Diagnóstico V49.2] Falha(s) encontrada(s).") } rD.innerHTML = hR }, 50) }
 
@@ -5504,6 +5524,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 "ex1": "Exemplo de texto expandido automaticamente.",
                 "ajuda": "Digite o atalho e aperte ESPAÇO para expandir."
             };
+            const isScriptMap = value => value !== null && typeof value === 'object' && !Array.isArray(value) &&
+                Object.entries(value).every(([key, text]) => key.length > 0 && typeof text === 'string');
 
             let scripts = {};
             let isDark = true;
@@ -5513,12 +5535,14 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 get: (callback) => {
                     if (isExtension) {
                         chrome.storage.local.get([STORAGE_KEY, THEME_KEY], (res) => {
-                            callback({ scripts: res[STORAGE_KEY] || defaultScripts, theme: res[THEME_KEY] || 'dark' });
+                            callback({ scripts: isScriptMap(res[STORAGE_KEY]) ? res[STORAGE_KEY] : defaultScripts, theme: res[THEME_KEY] || 'dark' });
                         });
                     } else {
                         const s = ctx.ajaStorage.getItem(STORAGE_KEY);
                         const t = ctx.ajaStorage.getItem(THEME_KEY);
-                        callback({ scripts: s ? JSON.parse(s) : defaultScripts, theme: t || 'dark' });
+                        let saved;
+                        try { saved = s ? JSON.parse(s) : null; } catch { saved = null; }
+                        callback({ scripts: isScriptMap(saved) ? saved : defaultScripts, theme: t || 'dark' });
                     }
                 },
                 set: (data) => {
@@ -5809,6 +5833,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     reader.onload = (ev) => {
                         try {
                             const imported = JSON.parse(ev.target.result);
+                            if (!isScriptMap(imported)) throw new Error('Backup de comandos inválido');
                             scripts = { ...scripts, ...imported };
                             Storage.set({ scripts: scripts });
                             updateVisualList();
@@ -5827,9 +5852,12 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     keys.forEach(key => {
                         const item = document.createElement('div'); item.className = 'car-item';
                         item.innerHTML = `
-                            <div class="item-content"><span class="item-key">${key}</span><span class="item-val" title="${scripts[key]}">${scripts[key]}</span></div>
+                            <div class="item-content"><span class="item-key"></span><span class="item-val"></span></div>
                             <div class="item-actions"><button class="btn-edit" title="Editar">✏️</button><button class="btn-del" title="Excluir">🗑️</button></div>
                         `;
+                        item.querySelector('.item-key').textContent = key;
+                        item.querySelector('.item-val').textContent = scripts[key];
+                        item.querySelector('.item-val').title = scripts[key];
                         item.querySelector('.btn-edit').onclick = () => { inpKey.value = key; inpVal.value = scripts[key]; inpVal.focus(); };
                         item.querySelector('.btn-del').onclick = () => {
                             if (confirm(`Apagar atalho "${key}"?`)) {
@@ -6519,7 +6547,7 @@ Telecine	Telecine filmes erros APP app.
                             getEl('input-setup-name').value = agentName;
 
                             const greeting = getBrazilGreeting();
-                            getEl('chat-welcome-msg').innerHTML = `${greeting} <b>${agentName}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?`;
+                            getEl('chat-welcome-msg').innerHTML = `${greeting} <b>${ctx.escapeHTML(String(agentName))}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?`;
 
                             getEl('logged-in-tools').style.display = 'flex';
                             getEl('ia-nav-tabs').style.display = 'flex';
@@ -6544,7 +6572,7 @@ Telecine	Telecine filmes erros APP app.
                 // --- HISTÓRICO ---
                 function saveToHistory(text) {
                     store.get(['geminiHistory'], (res) => {
-                        let hist = res.geminiHistory || [];
+                        let hist = Array.isArray(res.geminiHistory) ? res.geminiHistory : [];
                         hist.unshift({ id: Date.now(), date: new Date().toLocaleString(), text: text });
                         if (hist.length > 20) hist = hist.slice(0, 20);
                         store.set({ geminiHistory: hist });
@@ -6554,16 +6582,16 @@ Telecine	Telecine filmes erros APP app.
                 function renderHistory() {
                     const list = getEl('history-list');
                     store.get(['geminiHistory'], (res) => {
-                        const hist = res.geminiHistory || [];
+                        const hist = Array.isArray(res.geminiHistory) ? res.geminiHistory : [];
                         list.innerHTML = hist.length ? '' : '<p style="text-align:center; color:var(--ia-text-muted); margin-top:20px;">Nenhum histórico.</p>';
-                        hist.forEach(item => {
+                        hist.filter(item => item && typeof item.text === 'string').forEach(item => {
                             const div = document.createElement('div'); div.className = 'history-item';
                             div.innerHTML = `
-                        <div class="history-meta"><span>${item.date}</span></div>
-                        <div class="history-preview">${item.text}</div>
+                        <div class="history-meta"><span>${ctx.escapeHTML(String(item.date || ''))}</span></div>
+                        <div class="history-preview">${ctx.escapeHTML(item.text)}</div>
                         <div class="h-actions">
                              <button class="h-btn btn-primary h-copy purecloud-script-button" data-text="${encodeURIComponent(item.text)}">Copiar</button>
-                             <button class="h-btn btn-danger h-del purecloud-script-button" data-id="${item.id}">🗑️</button>
+                             <button class="h-btn btn-danger h-del purecloud-script-button" data-id="${Number(item.id) || 0}">🗑️</button>
                         </div>
                     `;
                             list.appendChild(div);
@@ -6575,7 +6603,7 @@ Telecine	Telecine filmes erros APP app.
                         list.querySelectorAll('.h-del').forEach(b => b.onclick = (e) => {
                             const id = parseInt(e.target.dataset.id);
                             store.get(['geminiHistory'], r => {
-                                store.set({ geminiHistory: (r.geminiHistory || []).filter(i => i.id !== id) }, renderHistory);
+                                store.set({ geminiHistory: (Array.isArray(r.geminiHistory) ? r.geminiHistory : []).filter(i => i && i.id !== id) }, renderHistory);
                             });
                         });
                     });
@@ -6765,7 +6793,7 @@ Telecine	Telecine filmes erros APP app.
                 getEl('input-chat').onkeypress = (e) => { if (e.key === 'Enter') sendChat(); };
                 getEl('btn-clear-chat').onclick = () => {
                     const greeting = getBrazilGreeting();
-                    getEl('chat-container').innerHTML = `<div id="chat-welcome-msg" class="chat-bubble chat-ai">${greeting} <b>${agentName}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?</div>`;
+                    getEl('chat-container').innerHTML = `<div id="chat-welcome-msg" class="chat-bubble chat-ai">${greeting} <b>${ctx.escapeHTML(String(agentName))}</b>!<br>Eu sou a <b>Aja</b>. Como posso ajudar?</div>`;
                     chatHistoryContext = [];
                 };
                 // --- ARRASTO LIVRE ---
@@ -6788,21 +6816,21 @@ Telecine	Telecine filmes erros APP app.
                     dragOffsetY = e.clientY - rect.top;
                 };
 
-                document.onmousemove = (e) => {
+                document.addEventListener('mousemove', (e) => {
                     if (!isDragging) return;
                     e.preventDefault();
                     const newLeft = e.clientX - dragOffsetX;
                     const newTop = e.clientY - dragOffsetY;
                     modal.style.left = newLeft + 'px';
                     modal.style.top = newTop + 'px';
-                };
+                });
 
-                document.onmouseup = () => {
+                document.addEventListener('mouseup', () => {
                     if (isDragging) {
                         isDragging = false;
                         handle.style.cursor = 'move';
                     }
-                };
+                });
 
                 loadState();
             }
@@ -7500,7 +7528,10 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                             const card = document.createElement('div'); card.className = 'panel-card';
                             const erroTexto = err.context.text.substr(err.context.offset, err.context.length) || "Ponto/Vírgula";
                             const sugTexto = err.replacements[0] ? err.replacements[0].value : "-";
-                            card.innerHTML = `<span class="card-category">${err.rule.category.name}</span><div class="card-change"><span class="card-wrong">${erroTexto}</span> ➔ <span class="card-right" title="Clique para aplicar">${sugTexto}</span></div>`;
+                            card.innerHTML = '<span class="card-category"></span><div class="card-change"><span class="card-wrong"></span> ➔ <span class="card-right" title="Clique para aplicar"></span></div>';
+                            card.querySelector('.card-category').textContent = err.rule?.category?.name || 'Revisão';
+                            card.querySelector('.card-wrong').textContent = erroTexto;
+                            card.querySelector('.card-right').textContent = sugTexto;
                             if (err.replacements[0]) { card.querySelector('.card-right').onclick = () => { this.aplicarCorrecao(err, sugTexto); }; }
                             area.appendChild(card);
                         });
@@ -7515,7 +7546,8 @@ window.AjaModular.register("corretor", ["compatibility"], function(ctx) {
                         this.dicionarioPessoal.forEach(word => {
                             const item = document.createElement('div');
                             item.style.cssText = "display:flex; justify-content:space-between; padding:8px 12px; background:#f8fafc; border-radius:6px; margin-bottom:5px; font-size:13px; color:#334155; border:1px solid #e2e8f0;";
-                            item.innerHTML = `<span>${word}</span> <button style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">×</button>`;
+                            item.innerHTML = '<span></span> <button style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">×</button>';
+                            item.querySelector('span').textContent = word;
                             item.querySelector('button').onclick = () => {
                                 this.dicionarioPessoal = this.dicionarioPessoal.filter(w => w !== word);
                                 ctx.ajaStorage.setItem('pcs_spell_dict', JSON.stringify(this.dicionarioPessoal));
@@ -8773,14 +8805,24 @@ return (function initCalc() {
                 curV.oninput = updateCur;
 
                 // Histórico
-                let hData = JSON.parse(ctx.ajaStorage.getItem('smart-ultimate-h')) || [];
+                let hData;
+                try { hData = JSON.parse(ctx.ajaStorage.getItem('smart-ultimate-h') || '[]'); } catch { hData = []; }
+                if (!Array.isArray(hData)) hData = [];
+                hData = hData.filter(x => x && typeof x.e === 'string' && (typeof x.r === 'number' || typeof x.r === 'string')).slice(0, 10);
                 const saveH = (e, r) => {
                     hData.unshift({e, r}); hData = hData.slice(0,10);
                     ctx.ajaStorage.setItem('smart-ultimate-h', JSON.stringify(hData));
                     renderH();
                 };
                 const renderH = () => {
-                    shadow.getElementById('hist-list').innerHTML = hData.map(x => `<div class="hist-item">${x.e} = <strong>${x.r}</strong></div>`).join('');
+                    const list = shadow.getElementById('hist-list');
+                    list.replaceChildren();
+                    hData.forEach(x => {
+                        const row = document.createElement('div'); row.className = 'hist-item';
+                        row.append(document.createTextNode(x.e + ' = '));
+                        const result = document.createElement('strong'); result.textContent = String(x.r);
+                        row.append(result); list.append(row);
+                    });
                 };
                 shadow.getElementById('btn-clear-h').onclick = () => { hData = []; ctx.ajaStorage.removeItem('smart-ultimate-h'); renderH(); };
                 renderH();
@@ -8889,7 +8931,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.31',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.32',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8900,7 +8942,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.31',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.32',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9311,7 +9353,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.31)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.32)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9333,7 +9375,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.31';
+    const SCRIPT_VERSION = 'AjaModular_1.6.32';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
