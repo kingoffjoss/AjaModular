@@ -288,10 +288,9 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 document.body.appendChild(container);
 
                 // Drag Logic
-                const header = container.querySelector('.car-header');
+                const header = container.querySelector('.car-title');
                 let isDragging = false, startX, startY, initialLeft, initialTop;
                 header.onmousedown = (e) => {
-                    if (e.target.tagName === 'BUTTON') return;
                     e.preventDefault(); isDragging = true;
                     startX = e.clientX; startY = e.clientY;
                     const rect = container.getBoundingClientRect();
