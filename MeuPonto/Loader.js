@@ -47,7 +47,8 @@
   <div class="row"><button id="toggle">Ativar agendamento</button></div>
   <label><input type="checkbox" id="activity"> Clique neutro a cada 5 minutos</label>
   <p class="small">Horários usam o relógio e o fuso do computador. Mantenha a página de ponto aberta e o computador acordado. Ao recarregar, o painel volta pausado. Confira o registro no Meu RH: um clique enviado não comprova a batida.</p>
-  <div class="log" id="log"></div></section><button class="fab" id="fab" aria-label="Meu ponto"><span class="orb">◷</span><span>Meu ponto<small>ABRIR PAINEL</small></span></button>`;
+  <style>.history{margin-top:14px;text-align:left}.history summary{cursor:pointer;list-style:none;text-align:center;color:#b4cbbd;font-size:11px;padding:10px;border:1px solid #a7c7b926;border-radius:12px;background:#a3c6b908}.history summary::-webkit-details-marker{display:none}.history summary::before{content:'◷ ';}.history[open] summary{margin-bottom:8px}.history .log{border-top:0;padding:4px 2px;margin:0}</style>
+  <details class="history"><summary>Histórico</summary><div class="log" id="log"></div></details></section><button class="fab" id="fab" aria-label="Meu ponto"><span class="orb">◷</span><span>Meu ponto<small>ABRIR PAINEL</small></span></button>`;
   document.body.append(host);
   const $ = id => root.getElementById(id);
   const save = () => localStorage.setItem(KEY, JSON.stringify(config));
