@@ -65,7 +65,7 @@
             ${scope} :is(.panel-content,.av-body,.car-body,.monitor-content,.central-grid,#pr-main-content,#qr-main-content) {
                 gap:var(--aja-model-gap);
             }
-            ${scope} :is(#pr-sidebar,#qr-sidebar,.central-sidebar,.bau-sidebar) {
+            ${scope} :where(#pr-sidebar,#qr-sidebar,.central-sidebar,.bau-sidebar) {
                 width:var(--aja-model-sidebar)!important;
             }
             ${scope} .bau-sidebar { flex-basis:var(--aja-model-sidebar)!important; }
