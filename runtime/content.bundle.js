@@ -8534,7 +8534,11 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             // Navigation uses module contracts rather than private trigger identifiers.
 const routes = { 'uni-btn-maintenance':'manutencao', 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'avaliacoes', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
 for (const [buttonId, moduleId] of Object.entries(routes)) {
-    document.getElementById(buttonId).onclick = () => window.AjaModular.open(moduleId);
+    document.getElementById(buttonId).onclick = () => {
+        container.classList.remove('active');
+        trigger.classList.remove('active');
+        window.AjaModular.open(moduleId);
+    };
 }
 /* Calculator registered separately. */
 
@@ -9061,7 +9065,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.41',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.42',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -9072,7 +9076,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.41',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.42',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9489,7 +9493,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.41)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.42)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9511,7 +9515,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.41';
+    const SCRIPT_VERSION = 'AjaModular_1.6.42';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -10132,12 +10136,21 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         if(groups.length<2)return null;
         const start=groups.indexOf(selected);
         if(start<0)return null;
+        let fallback=null;
         for(let step=1;step<groups.length;step++) {
             const candidate=groups[(start+step)%groups.length];
             const timer=timers.get(candidate);
-            if(candidate.isConnected && timer && !visited.has(candidate) && (timer.isPaused?timer.pausedAt:Date.now())-timer.startTime<threshold)return candidate;
+            if(!candidate.isConnected||!timer||visited.has(candidate))continue;
+            if((timer.isPaused?timer.pausedAt:Date.now())-timer.startTime<threshold)return candidate;
+            fallback??=candidate;
         }
-        return null;
+        return fallback;
+    }
+    function rotationIdentity(group) {
+        if(!group)return '';
+        const button=group.querySelector?.('button.acd-interaction-card-v2-container');
+        const id=[group,button].flatMap(node=>['data-interaction-id','data-conversation-id','data-id','id'].map(name=>node?.getAttribute?.(name))).find(Boolean);
+        return id||button?.textContent?.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g,'').replace(/\s+/g,' ').trim().slice(0,120)||'';
     }
     const autoRotation={
         enabled:false,visited:new WeakSet(),pending:null,
@@ -10147,7 +10160,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             if(!this.enabled)return;
             const selected=findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
             if(this.pending){
-                if(selected===this.pending.target){this.visited.add(this.pending.source);this.pending=null;}
+                if(selected===this.pending.target||(selected&&rotationIdentity(selected)&&rotationIdentity(selected)===this.pending.targetId)){this.visited.add(this.pending.source);this.pending=null;}
                 else if(Date.now()-this.pending.at>3000){this.enabled=false;this.pending=null;this.updateButton();UI.createNotification('A plataforma não confirmou a troca de conversa. Troca automática desligada.','warn',5000);}
                 return;
             }
@@ -10156,7 +10169,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             const groups=[...document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', '))].sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
             const target=nextConversationForRotation(groups,selected,conversationTimers,this.visited,CONFIG.CHECKMARK_THRESHOLD_MS);
             if(!target)return;
-            this.pending={source:selected,target,at:Date.now()};
+            this.pending={source:selected,target,targetId:rotationIdentity(target),at:Date.now()};
             try{
                 const action=target.querySelector('button.acd-interaction-card-v2-container');
                 if(!action)throw new Error('Botão de abrir interação não encontrado');
@@ -10247,23 +10260,46 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     const channelIcon={
         instagram:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor" stroke="none"/></svg>',
+        facebook:'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M13.4 21v-8h2.7l.4-3.1h-3.1V8c0-.9.3-1.5 1.6-1.5h1.7V3.7c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.1H7.5V13h2.7v8h3.2Z"/></svg>',
         whatsapp:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.4 7.5L3 20l1.2-4.6A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8.2 8.5c.4 3 3 5.6 6.1 6.1l1.4-1.3-1.7-1-1.1 1c-1.1-.5-2-1.4-2.5-2.5l1-1.1-1-1.7-1.3 1.5Z"/></svg>',
         site:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18"/></svg>',
         app:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg>'
     };
-    function interactionChannel(conv) {
+    const knownChannels=new Map();
+    function channelFromText(text) {
+        if(/instagram/i.test(text))return 'instagram';
+        if(/whats(?:app)?/i.test(text))return 'whatsapp';
+        if(/facebook|messenger/i.test(text))return 'facebook';
+        if(/\b(?:website|webchat|site|web)\b/i.test(text))return 'site';
+        if(/\b(?:aplicativo|mobileapp|app)\b/i.test(text))return 'app';
+        return null;
+    }
+    function selectedChannelFromDetails() {
+        for(const frame of [null,...document.querySelectorAll('iframe')]) {
+            let doc;try{doc=frame?.contentDocument||document;}catch{continue;}
+            if(!doc?.body)continue;
+            const label=doc.body.textContent?.match(/\b(?:canal|channel)\s*[:\-]\s*(instagram|whatsapp|facebook|messenger|site|webchat|website|aplicativo|app)\b/i);
+            if(label)return channelFromText(label[1]);
+        }
+        return null;
+    }
+    function interactionChannel(conv,isSelected=false) {
         if(conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CALL))return 'call';
-        const metadata=[conv,...conv.querySelectorAll('gux-icon, [data-channel], [data-qa-id*="channel" i], [class*="channel" i], [aria-label], [title], img, svg use')];
+        const metadata=[conv,...conv.querySelectorAll('gux-icon, [data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i], [aria-label], [title], img, svg use')];
         const text=metadata.filter(el=>!el.closest?.('.injected-bubbles-container')).map(el=>{
-            const attributes=['data-channel','data-qa-id','icon-name','aria-label','title','alt','src','href','xlink:href'].map(name=>el.getAttribute?.(name)||'').join(' ');
-            const label=el.matches?.('[data-qa-id*="channel" i], [class*="channel" i]')?el.textContent||'':'';
+            const attributes=['data-channel','data-qa-id','data-testid','icon-name','aria-label','title','alt','src','href','xlink:href'].map(name=>el.getAttribute?.(name)||'').join(' ');
+            const label=el.matches?.('[data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i]')?el.textContent||'':'';
             return attributes+' '+label;
         }).join(' ').toLowerCase();
         if(/instagram|insta(?:gram)?[_-]?(?:dm|message)/.test(text))return 'instagram';
         if(/whats(?:app)?/.test(text))return 'whatsapp';
+        if(/facebook|messenger|fb[_-]?(?:dm|message)/.test(text))return 'facebook';
         if(/(?:^|[^a-z])(?:webchat|website|site|web)(?:$|[^a-z])/.test(text))return 'site';
         if(/(?:^|[^a-z])(?:app|aplicativo|mobileapp)(?:$|[^a-z])/.test(text))return 'app';
-        return 'chat';
+        const key=rotationIdentity(conv);
+        const channel=isSelected?selectedChannelFromDetails():null;
+        if(channel&&key)knownChannels.set(key,channel);
+        return channel||knownChannels.get(key)||'chat';
     }
     function mainLoop() {
         const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }
@@ -10272,8 +10308,8 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         sortedConversationsArray.forEach((conv, index) => {
             const nativeTimeElementsInConv = conv.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.NATIVE_TIMER_SELECTORS.join(', ')); nativeTimeElementsInConv.forEach(el => { if (el.classList.contains('injected-element') || el.classList.contains('injected-bubbles-container')) { return; } if (el.textContent.match(/\d+\s*(min|hr|seg|now|agora)/i) || el.matches('.duration, .message-timestamp')) { el.style.display = 'none'; } });
             const tData = timerManager.initTimer(conv, index, sortedConversationsArray.length);
-            if (tData.iconDiv) { const channel=interactionChannel(conv); tData.iconDiv.innerHTML=channelIcon[channel]||(channel==='call'?'📞':'💬'); tData.iconDiv.title=({instagram:'Instagram',whatsapp:'WhatsApp',site:'Site',app:'Aplicativo',call:'Ligação',chat:'Mensagem'})[channel]; tData.interactionType=channel; }
             const isSelected = conv === selectedConvEl; timerManager.updateState(tData, isSelected); conversationListenerManager.initState(conv); if (isSelected) { observeCurrentChatMessages(tData); conversationListenerManager.updateListeners(conv); }
+            if (tData.iconDiv) { const channel=interactionChannel(conv,isSelected); tData.iconDiv.innerHTML=channelIcon[channel]||(channel==='call'?'📞':'💬'); tData.iconDiv.title=({instagram:'Instagram',whatsapp:'WhatsApp',facebook:'Facebook',site:'Site',app:'Aplicativo',call:'Ligação',chat:'Mensagem'})[channel]; tData.interactionType=channel; }
         });
         if (!selectedConvEl) { const pepperButton = document.getElementById('purecloud-script-btn-endCustomer'); if (pepperButton) pepperButton.title = 'Selecione uma conversa para encerrar'; }
         if (CONFIG.MINI_DASHBOARD_VISIBLE) { UI.createMiniDashboard(); }
