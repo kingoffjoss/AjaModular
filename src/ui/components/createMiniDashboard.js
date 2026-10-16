@@ -31,8 +31,23 @@ const implementation = {createMiniDashboard() {
                             <div class="stat-item-original"><span class="stat-label">${iconZap} TME</span><strong id="dashboard-tme">--:--</strong></div>
                             <div class="stat-item-original" title="Cliques no botão 'Mensagens de Término' (Balão)"><span class="stat-label">${iconBaloon} Balão</span><strong id="dashboard-balao-clicks">--</strong></div>
                         </div>
+                        <nav class="mini-dashboard-quick-actions" aria-label="Atalhos do dashboard">
+                            <button type="button" data-quick-action="menu">Menu</button>
+                            <button type="button" data-quick-action="timers">Cronômetros</button>
+                            <button type="button" data-quick-action="reviews">Avaliações</button>
+                            <button type="button" data-quick-action="tools">Ferramentas</button>
+                        </nav>
                     </div>
                 `;
+                dashboard.querySelector('.mini-dashboard-quick-actions').onclick = event => {
+                    const action = event.target.closest('button[data-quick-action]');
+                    if (!action) return;
+                    event.stopPropagation();
+                    if (action.dataset.quickAction === 'timers') ctx.UI.createSettingsPanel();
+                    else if (action.dataset.quickAction === 'tools') dashboard.querySelector('#mini-dashboard-tools-btn')?.click();
+                    else if (action.dataset.quickAction === 'reviews') document.getElementById('uni-btn-tools')?.click();
+                    else if (action.dataset.quickAction === 'menu') document.getElementById('uni-fab-trigger')?.click();
+                };
                 const dashboardHeader = dashboard.querySelector('.mini-dashboard-header'); ctx.makeDraggable(dashboard, dashboardHeader, 'miniDashboard');
                 const autoRotateButton=dashboard.querySelector('#mini-dashboard-auto-rotate-btn');
                 autoRotateButton.onclick=e=>{e.stopPropagation();window.AjaModularAutoRotation?.toggle();autoRotateButton.setAttribute('aria-pressed',String(!!window.AjaModularAutoRotation?.enabled));autoRotateButton.title=window.AjaModularAutoRotation?.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';autoRotateButton.textContent=window.AjaModularAutoRotation?.enabled?'🔄':'⇄';};
