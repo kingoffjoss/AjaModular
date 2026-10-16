@@ -751,6 +751,8 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         ensureStyle();
         syncThemeDefaults();
         document.documentElement.dataset.ajaTheme = activeTheme;
+        const calculator = document.getElementById('calc-ultimate-host');
+        if (calculator) calculator.dataset.ajaTheme = activeTheme;
         const menuIcons = {
             'uni-btn-maintenance':'⚙','uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-ia':'✦','uni-btn-central':'?','uni-btn-mon':'▤','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-tools':'▥','uni-btn-pr':'≡','uni-btn-qr':'✉','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷','uni-btn-spell':'✓'
         };
