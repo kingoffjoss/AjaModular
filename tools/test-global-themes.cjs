@@ -1,0 +1,33 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+module.exports = function testGlobalThemes() {
+    const values = new Map();
+    const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)) };
+    const nodes = new Map();
+    const root = { dataset: {}, appendChild(node) { nodes.set(node.id, node); } };
+    const document = { documentElement: root, getElementById: id => nodes.get(id) || null, createElement: () => ({ id: '', textContent: '' }), querySelectorAll: () => [] };
+    const window = { localStorage: storage, sessionStorage: storage, AjaModularData: { adapter: value => value }, dispatchEvent() {} };
+    const context = { window, document, MutationObserver: class { observe() {} }, requestAnimationFrame: callback => callback(), CustomEvent: class { constructor(name, options) { this.type = name; this.detail = options.detail; } }, console: { log() {}, warn() {} } };
+    vm.createContext(context);
+    const source = fs.readFileSync(path.join(__dirname, '../src/ui/theme.js'), 'utf8');
+    vm.runInContext(source, context);
+    const api = window.AjaModularThemes;
+    assert.deepEqual(Array.from(api.list(), item => item.id), ['brisanet', 'atlantico', 'aurora', 'solar']);
+    assert.equal(api.current(), 'brisanet');
+    assert.equal(api.set('aurora'), true);
+    assert.equal(values.get('aja_global_theme_v1'), 'aurora');
+    assert.equal(root.dataset.ajaTheme, 'aurora');
+    assert.match(nodes.get('aja-brisanet-theme-patch').textContent, /--aja-blue: #6D28D9/);
+    assert.equal(api.set('invalid'), false);
+    assert.equal(api.current(), 'aurora');
+    assert.equal(api.next(), 'solar');
+    assert.match(nodes.get('aja-brisanet-theme-patch').textContent, /--aja-blue: #A3440B/);
+    vm.runInContext(source, context);
+    assert.equal(window.AjaModularThemes.current(), 'solar');
+    assert.ok(fs.readFileSync(path.join(__dirname, '../src/tools/menu-preferencias.js'), 'utf8').includes('aja-theme-gallery'));
+    assert.ok(fs.readFileSync(path.join(__dirname, '../src/ui/components/createMiniDashboard.js'), 'utf8').includes('AjaModularThemes?.next()'));
+};
