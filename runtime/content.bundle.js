@@ -8931,7 +8931,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.32',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.33',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8942,7 +8942,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.32',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.33',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9353,7 +9353,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.32)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.33)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9375,7 +9375,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.32';
+    const SCRIPT_VERSION = 'AjaModular_1.6.33';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -9914,6 +9914,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         toggleDarkMode: () => {
             CONFIG.DARK_MODE = !CONFIG.DARK_MODE;
             saveData();
+            timerManager.refreshAll();
         },
         quickGreeting: () => { const chatInputField = getChatInput(); if (chatInputField) { chatInputField.value = templateProcessor.process(CONFIG.QUICK_REPLIES[0] ? CONFIG.QUICK_REPLIES[0].text : "Olá!"); chatInputField.dispatchEvent(new Event('input', { bubbles: true })); chatInputField.focus(); } else { UI.createNotification("Campo de chat não encontrado.", "warn"); } },
         exportData: () => { const dataToExport = analyticsManager.getData().conversations; if (!dataToExport || dataToExport.length === 0) { UI.createNotification("Não há dados para exportar.", "warn"); return; } const filename = `purecloud_script_attendances_${getBrazilTime(new Date()).toISOString().split('T')[0]}.json`; const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); UI.createNotification("Download iniciado!", "success"); },
@@ -9953,6 +9954,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     function updateTimerDisplay(timerData) {
         if (!timerData.div?.isConnected || !timerData.numDiv?.isConnected || !timerData.bubblesContainer?.isConnected) { return; }
+        timerData.bubblesContainer.classList.toggle('gcp-tema-escuro', CONFIG.DARK_MODE);
         let currentElapsed; if (timerData.isPaused) { currentElapsed = timerData.pausedAt - timerData.startTime; } else { currentElapsed = Date.now() - timerData.startTime; }
         currentElapsed = Math.max(0, currentElapsed);
         const secs = Math.floor(currentElapsed / 1000); timerData.div.textContent = `${formatTime(Math.floor(secs / 60))}:${formatTime(secs % 60)}`;
@@ -10167,9 +10169,11 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     const CONFIG_CSS = {
         VARIAVEIS: `
-            :root { 
-                --purecloud-script-bg-primary: ${theme.bgPrimary}; --purecloud-script-bg-secondary: ${theme.bgSecondary}
-            .gcp-tema-escuro { 
+            :root {
+                --purecloud-script-bg-primary: ${theme.bgPrimary}; --purecloud-script-bg-secondary: ${theme.bgSecondary};
+                --purecloud-script-text-primary: ${theme.textPrimary}; --purecloud-script-text-secondary: ${theme.textSecondary}; --purecloud-script-border-color: ${theme.borderColor}; --purecloud-script-accent-color: ${theme.accent}; --purecloud-script-accent-text: ${theme.accentText}; --purecloud-script-success-color: ${theme.success}; --purecloud-script-error-color: ${theme.error}; --purecloud-script-warn-color: ${theme.warn}; --purecloud-script-info-color: ${theme.info}; --purecloud-script-bubble-bg-normal: ${theme.timerBg}; --purecloud-script-bubble-bg-selected: ${theme.accent}; --purecloud-script-bubble-text-normal: ${theme.timerNormalText}; --purecloud-script-bubble-text-active: ${theme.timerActiveText}; --purecloud-script-bubble-text-paused: ${theme.timerPausedText}; --purecloud-script-bubble-text-timer-inactive: ${theme.timerInactiveClientText}; --purecloud-script-shadow-color: rgba(0,0,0,0.08); --mini-dashboard-progress-color: ${theme.miniDashboardProgress}; --font-family-modern: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            }
+            .gcp-tema-escuro {
                 --purecloud-script-bg-primary: #121212 !important; 
                 --purecloud-script-bg-secondary: #1e1e1e !important; 
                 --purecloud-script-text-primary: #e2e8f0 !important; 
@@ -10179,8 +10183,6 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
                 --purecloud-script-bubble-bg-normal: #1e1e1e !important; 
                 --purecloud-script-bubble-text-normal: #ffffff !important; 
                 --purecloud-script-shadow-color: rgba(0,0,0,0.8) !important;
-            }
-            ; --purecloud-script-text-primary: ${theme.textPrimary}; --purecloud-script-text-secondary: ${theme.textSecondary}; --purecloud-script-border-color: ${theme.borderColor}; --purecloud-script-accent-color: ${theme.accent}; --purecloud-script-accent-text: ${theme.accentText}; --purecloud-script-success-color: ${theme.success}; --purecloud-script-error-color: ${theme.error}; --purecloud-script-warn-color: ${theme.warn}; --purecloud-script-info-color: ${theme.info}; --purecloud-script-bubble-bg-normal: ${theme.timerBg}; --purecloud-script-bubble-bg-selected: ${theme.accent}; --purecloud-script-bubble-text-normal: ${theme.timerNormalText}; --purecloud-script-bubble-text-active: ${theme.timerActiveText}; --purecloud-script-bubble-text-paused: ${theme.timerPausedText}; --purecloud-script-bubble-text-timer-inactive: ${theme.timerInactiveClientText}; --purecloud-script-shadow-color: rgba(0,0,0,0.08); --mini-dashboard-progress-color: ${theme.miniDashboardProgress}; --font-family-modern: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             }
             .hide-scrollbar::-webkit-scrollbar { display: none; }
             .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
