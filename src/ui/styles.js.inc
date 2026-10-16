@@ -1,8 +1,10 @@
     const CONFIG_CSS = {
         VARIAVEIS: `
-            :root { 
-                --purecloud-script-bg-primary: ${theme.bgPrimary}; --purecloud-script-bg-secondary: ${theme.bgSecondary}
-            .gcp-tema-escuro { 
+            :root {
+                --purecloud-script-bg-primary: ${theme.bgPrimary}; --purecloud-script-bg-secondary: ${theme.bgSecondary};
+                --purecloud-script-text-primary: ${theme.textPrimary}; --purecloud-script-text-secondary: ${theme.textSecondary}; --purecloud-script-border-color: ${theme.borderColor}; --purecloud-script-accent-color: ${theme.accent}; --purecloud-script-accent-text: ${theme.accentText}; --purecloud-script-success-color: ${theme.success}; --purecloud-script-error-color: ${theme.error}; --purecloud-script-warn-color: ${theme.warn}; --purecloud-script-info-color: ${theme.info}; --purecloud-script-bubble-bg-normal: ${theme.timerBg}; --purecloud-script-bubble-bg-selected: ${theme.accent}; --purecloud-script-bubble-text-normal: ${theme.timerNormalText}; --purecloud-script-bubble-text-active: ${theme.timerActiveText}; --purecloud-script-bubble-text-paused: ${theme.timerPausedText}; --purecloud-script-bubble-text-timer-inactive: ${theme.timerInactiveClientText}; --purecloud-script-shadow-color: rgba(0,0,0,0.08); --mini-dashboard-progress-color: ${theme.miniDashboardProgress}; --font-family-modern: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            }
+            .gcp-tema-escuro {
                 --purecloud-script-bg-primary: #121212 !important; 
                 --purecloud-script-bg-secondary: #1e1e1e !important; 
                 --purecloud-script-text-primary: #e2e8f0 !important; 
@@ -12,8 +14,6 @@
                 --purecloud-script-bubble-bg-normal: #1e1e1e !important; 
                 --purecloud-script-bubble-text-normal: #ffffff !important; 
                 --purecloud-script-shadow-color: rgba(0,0,0,0.8) !important;
-            }
-            ; --purecloud-script-text-primary: ${theme.textPrimary}; --purecloud-script-text-secondary: ${theme.textSecondary}; --purecloud-script-border-color: ${theme.borderColor}; --purecloud-script-accent-color: ${theme.accent}; --purecloud-script-accent-text: ${theme.accentText}; --purecloud-script-success-color: ${theme.success}; --purecloud-script-error-color: ${theme.error}; --purecloud-script-warn-color: ${theme.warn}; --purecloud-script-info-color: ${theme.info}; --purecloud-script-bubble-bg-normal: ${theme.timerBg}; --purecloud-script-bubble-bg-selected: ${theme.accent}; --purecloud-script-bubble-text-normal: ${theme.timerNormalText}; --purecloud-script-bubble-text-active: ${theme.timerActiveText}; --purecloud-script-bubble-text-paused: ${theme.timerPausedText}; --purecloud-script-bubble-text-timer-inactive: ${theme.timerInactiveClientText}; --purecloud-script-shadow-color: rgba(0,0,0,0.08); --mini-dashboard-progress-color: ${theme.miniDashboardProgress}; --font-family-modern: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             }
             .hide-scrollbar::-webkit-scrollbar { display: none; }
             .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
