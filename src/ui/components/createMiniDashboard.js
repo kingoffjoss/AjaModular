@@ -17,7 +17,7 @@ const implementation = {createMiniDashboard() {
                     <div class="mini-dashboard-header">
                         <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><button id="mini-dashboard-auto-rotate-btn" class="compact-btn" type="button" aria-label="Troca automática de conversas" aria-pressed="false" title="Ligar troca automática de conversas após 1:10">⇄</button><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
                         <div class="mini-dashboard-controls">
-                            <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar Tema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🌗</button>
+                            <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar tema do sistema" aria-label="Mudar tema do sistema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🎨</button>
                             <button id="mini-dashboard-tools-btn" class="compact-btn" title="Ferramentas do Agente">${iconTools}</button>
                             <button id="mini-dashboard-adjust-attended-btn" class="compact-btn adjust-btn" title="Ajustar Contagem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                             <button class="compact-btn toggle-expand-btn" title="Expandir/Recolher"><svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg><svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; display: none;"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg></button>
@@ -37,39 +37,11 @@ const implementation = {createMiniDashboard() {
                 const autoRotateButton=dashboard.querySelector('#mini-dashboard-auto-rotate-btn');
                 autoRotateButton.onclick=e=>{e.stopPropagation();window.AjaModularAutoRotation?.toggle();autoRotateButton.setAttribute('aria-pressed',String(!!window.AjaModularAutoRotation?.enabled));autoRotateButton.title=window.AjaModularAutoRotation?.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';autoRotateButton.textContent=window.AjaModularAutoRotation?.enabled?'🔄':'⇄';};
 
-                const themeBtnDash = dashboard.querySelector('#mini-dashboard-btn-theme');
-                const savedThemeDash = ctx.ajaStorage.getItem('DASHBOARD_THEME');
-                if (savedThemeDash === 'light') {
-                    dashboard.classList.add('local-light-mode');
-                    themeBtnDash.innerText = '☀️';
-                } else if (savedThemeDash === 'dark') {
-                    dashboard.classList.add('cc-escurinho');
-                    themeBtnDash.innerText = '🌗';
-                }
-                themeBtnDash.onclick = () => {
-                    const isLight = dashboard.classList.contains('local-light-mode');
-                    if (isLight) {
-                        dashboard.classList.remove('local-light-mode');
-                        dashboard.classList.add('cc-escurinho');
-                        ctx.ajaStorage.setItem('DASHBOARD_THEME', 'dark');
-                        themeBtnDash.innerText = '🌗';
-                    } else {
-                        dashboard.classList.remove('cc-escurinho');
-                        dashboard.classList.add('local-light-mode');
-                        ctx.ajaStorage.setItem('DASHBOARD_THEME', 'light');
-                        themeBtnDash.innerText = '☀️';
-                    }
+                dashboard.querySelector('#mini-dashboard-btn-theme').onclick = event => {
+                    event.stopPropagation();
+                    const id = window.AjaModularThemes?.next();
+                    if (id) ctx.UI.createNotification('Tema ' + window.AjaModularThemes.list().find(theme => theme.id === id).name + ' aplicado.', 'info', 2500);
                 };
-
-                // Estilos locais inseridos diretamente no documento se já não existirem
-                if (!document.getElementById('dash-local-styles')) {
-                    const st = document.createElement('style'); st.id = 'dash-local-styles';
-                    st.innerHTML = `
-                        #purecloud-script-mini-dashboard.cc-escurinho { --purecloud-script-bg-primary: #0f172a; --purecloud-script-bg-secondary: #1e293b; --purecloud-script-text-primary: #f8fafc; --purecloud-script-text-secondary: #cbd5e1; --purecloud-script-border-color: #334155; }
-                        #purecloud-script-mini-dashboard.local-light-mode { --purecloud-script-bg-primary: #ffffff; --purecloud-script-bg-secondary: #f1f5f9; --purecloud-script-text-primary: #0f172a; --purecloud-script-text-secondary: #475569; --purecloud-script-border-color: #e2e8f0; }
-                    `;
-                    document.head.appendChild(st);
-                }
 
                 dashboard._lastRenderedStats = {};
                 dashboard._updateStatsInternal = () => {
