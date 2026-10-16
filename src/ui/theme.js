@@ -6,6 +6,17 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     const STYLE_ID = 'aja-brisanet-theme-patch';
     const VERSION = 'brisanet-global-force-v1';
+    const THEME_KEY = 'aja_global_theme_v1';
+    const paletteKeys = ['#0057B8','#0072CE','#003B7A','#FF8200','#D96B00','#0F2742','#173B63','#214D7E','#F8FBFF','#EAF4FF','#D6E4F2','#2B5F93','#52667A'];
+    const profiles = {
+        brisanet: { name: 'Brisanet', description: 'Azul e laranja', icon: '🔵', mode: 'dark', colors: paletteKeys },
+        atlantico: { name: 'Atlântico', description: 'Verde petróleo e âmbar', icon: '🌊', mode: 'dark', colors: ['#087E8B','#0B99A8','#075A65','#B45309','#92400E','#0B2932','#153F49','#205761','#F5FCFC','#E4F6F7','#C8E7E9','#316B73','#49676C'] },
+        aurora: { name: 'Aurora', description: 'Violeta e rosa', icon: '🟣', mode: 'dark', colors: ['#6D28D9','#7C3AED','#4C1D95','#BE185D','#9D174D','#251437','#382151','#4B3067','#FCF9FF','#F3E8FF','#E9D5FF','#745490','#61536D'] },
+        solar: { name: 'Solar', description: 'Creme e terracota', icon: '☀️', mode: 'light', colors: ['#A3440B','#B45309','#78350F','#C2410C','#9A3412','#422006','#713F12','#854D0E','#FFFBEB','#FEF3C7','#FDE68A','#A16207','#6B4F2A'] }
+    };
+    function selectedTheme() { try { const id = ajaStorage.getItem(THEME_KEY); return Object.hasOwn(profiles, id) ? id : 'brisanet'; } catch { return 'brisanet'; } }
+    let activeTheme = selectedTheme();
+    function paletteFor(id) { return Object.fromEntries(paletteKeys.map((key, index) => [key, profiles[id].colors[index]])); }
     const themeColors = {
         bgPrimary: '#FFFFFF',
         bgSecondary: '#EAF4FF',
@@ -39,6 +50,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     }
 
     function ensureStyle() {
+        const palette = paletteFor(activeTheme);
         let style = document.getElementById(STYLE_ID);
         if (!style) {
             style = document.createElement('style');
@@ -620,6 +632,15 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             #bau-rede .command-block p {
                 color: #D6E4F2 !important;
             }
+        `.replace(/#[0-9a-fA-F]{6}\b/g, color => palette[color.toUpperCase()] || color) + `
+            :root { --purecloud-script-bubble-bg-normal: ${profiles[activeTheme].colors[5]} !important; }
+            .injected-bubbles-container.gcp-tema-escuro { --purecloud-script-bubble-bg-normal: ${profiles[activeTheme].colors[5]} !important; }
+            #aja-menu-options { background: var(--aja-dark) !important; color: var(--aja-white) !important; border-color: var(--aja-border-dark) !important; }
+            #aja-menu-options header { background: var(--aja-gradient) !important; }
+            #aja-menu-options button:not(.aja-theme-choice) { background: var(--aja-dark-2) !important; color: var(--aja-white) !important; border-color: var(--aja-border-dark) !important; }
+            #uni-menu-container .uni-fab-actions { background: var(--aja-dark) !important; border-color: var(--aja-border-dark) !important; }
+            #purecloud-script-mini-dashboard.expanded .stat-item-original { border-radius: ${activeTheme === 'aurora' ? '16px' : activeTheme === 'atlantico' ? '5px' : activeTheme === 'solar' ? '12px' : '10px'} !important; }
+            #purecloud-script-mini-dashboard.expanded { border-radius: ${activeTheme === 'aurora' ? '22px' : activeTheme === 'atlantico' ? '8px' : activeTheme === 'solar' ? '18px' : '16px'} !important; }
         `;
 
         if (style.textContent !== css) {
@@ -630,7 +651,6 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     function syncThemeDefaults() {
         const targets = [
             { selector: '#purecloud-script-tools-panel', key: 'TOOLS_THEME', button: '#tools-btn-theme' },
-            { selector: '#purecloud-script-mini-dashboard', key: 'DASHBOARD_THEME', button: '#mini-dashboard-btn-theme' },
             { selector: '.pr-script-popup', key: 'PR_THEME', button: '#pr-btn-theme' },
             { selector: '.pr-script-settings-panel', key: 'PR_THEME' },
             { selector: '.qr-script-popup', key: 'QR_THEME', button: '#qr-btn-theme' },
@@ -694,7 +714,22 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     function applyPatch() {
         ensureStyle();
         syncThemeDefaults();
+        document.documentElement.dataset.ajaTheme = activeTheme;
+        const dashboard = document.getElementById('purecloud-script-mini-dashboard');
+        if (dashboard) {
+            dashboard.classList.toggle('local-light-mode', profiles[activeTheme].mode === 'light');
+            dashboard.classList.toggle('cc-escurinho', profiles[activeTheme].mode === 'dark');
+            const button = dashboard.querySelector('#mini-dashboard-btn-theme');
+            if (button) { button.textContent = profiles[activeTheme].icon; button.title = 'Tema global: ' + profiles[activeTheme].name + '. Clique para mudar.'; button.setAttribute('aria-label', button.title); }
+        }
     }
+
+    window.AjaModularThemes = {
+        list: () => Object.entries(profiles).map(([id, value]) => ({ id, name: value.name, description: value.description, icon: value.icon, colors: [...value.colors] })),
+        current: () => activeTheme,
+        set(id) { if (!Object.hasOwn(profiles, id)) return false; activeTheme = id; try { ajaStorage.setItem(THEME_KEY, id); } catch {} applyPatch(); window.dispatchEvent(new CustomEvent('aja-theme-change', { detail: { theme: id } })); return true; },
+        next() { const ids = Object.keys(profiles); this.set(ids[(ids.indexOf(activeTheme) + 1) % ids.length]); return activeTheme; }
+    };
 
     applyPatch();
 
@@ -709,5 +744,5 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     });
 
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    console.log('[AjaModular] Tema Brisanet global aplicado:', VERSION);
+    console.log('[AjaModular] Tema global aplicado:', activeTheme);
 })();
