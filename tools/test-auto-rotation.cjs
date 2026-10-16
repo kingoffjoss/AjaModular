@@ -20,11 +20,14 @@ const groups=[0,1,2].map(top=>{const group={isConnected:true,getBoundingClientRe
     timers.get(groups[1]).isPaused=false;
     now=120000;vm.runInContext('autoRotation.tick()',context);assert.equal(clicks,2);assert.equal(selected,groups[2]);
     vm.runInContext('autoRotation.tick()',context);
-    now=170000;timers.get(groups[2]).isPaused=false;vm.runInContext('autoRotation.tick()',context);assert.equal(clicks,2); // No eligible conversation remains.
+    now=170000;timers.get(groups[2]).isPaused=false;vm.runInContext('autoRotation.tick()',context);assert.equal(clicks,2); // The pending switch is confirmed first.
+    vm.runInContext('autoRotation.tick()',context);assert.equal(clicks,2); // All other conversations were visited.
     context.window.AjaModularAutoRotation.toggle();assert.equal(button.attrs['aria-pressed'],'false');
     context.window.AjaModularAutoRotation.toggle();selected=groups[0];timers.get(groups[0]).isPaused=false;timers.get(groups[0]).startTime=now-70000;timers.get(groups[1]).startTime=now-1000;timers.get(groups[1]).pausedAt=now;timers.get(groups[1]).isPaused=true;confirmSelection=false;
     vm.runInContext('autoRotation.tick()',context);assert.equal(clicks,3);
     now+=3501;vm.runInContext('autoRotation.tick()',context);assert.equal(context.window.AjaModularAutoRotation.enabled,false);assert.equal(button.attrs['aria-pressed'],'false');assert.ok(notices.some(n=>String(n[0]).includes('não confirmou')));
+    confirmSelection=true;context.window.AjaModularAutoRotation.toggle();selected=groups[0];timers.get(groups[0]).startTime=now-80000;timers.get(groups[1]).startTime=now-90000;timers.get(groups[1]).pausedAt=now;timers.get(groups[1]).isPaused=true;timers.get(groups[2]).startTime=now-90000;timers.get(groups[2]).pausedAt=now;timers.get(groups[2]).isPaused=true;
+    vm.runInContext('autoRotation.tick()',context);assert.equal(clicks,4);assert.equal(selected,groups[1]); // Fall back to an older unvisited conversation.
     assert.match(fs.readFileSync(path.join(__dirname,'../src/ui/components/createMiniDashboard.js'),'utf8'),/mini-dashboard-auto-rotate-btn/);
     return ['Automatic conversation rotation stays off by default, switches once after 70 seconds, skips completed conversations and stops when the platform does not confirm selection'];
 };

@@ -168,7 +168,11 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             // Navigation uses module contracts rather than private trigger identifiers.
 const routes = { 'uni-btn-maintenance':'manutencao', 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'avaliacoes', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
 for (const [buttonId, moduleId] of Object.entries(routes)) {
-    document.getElementById(buttonId).onclick = () => window.AjaModular.open(moduleId);
+    document.getElementById(buttonId).onclick = () => {
+        container.classList.remove('active');
+        trigger.classList.remove('active');
+        window.AjaModular.open(moduleId);
+    };
 }
 /* Calculator registered separately. */
 
