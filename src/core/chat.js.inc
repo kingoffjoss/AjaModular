@@ -12,15 +12,15 @@
             const { participantName, phoneNumber, formattedPhoneNumber } = documentExtractor.getNameAndNumber(selectedConvEl);
             if (participantName === 'N/A' || !findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON)) { UI.createNotification(CONFIG.MESSAGES.NOT_FOUND_INTERACTION_DATA, 'error'); return; }
             const url = await getNativeInteractionUrl();
-            if (url && (url.includes('interactions/') || url.includes('conversations/'))) {
+            if (url) {
                 const tData = conversationTimers.get(selectedConvEl);
                 if (tData) { tData.interactionUrl = url; tData.participantName = participantName; tData.phoneNumber = phoneNumber; UI.createNotification("Link salvo!", 'info', 1500); }
-                const nameAndPhone = formattedPhoneNumber !== 'N/A' ? `${participantName} | ${formattedPhoneNumber}` : (participantName !== 'N/A' ? participantName : 'Nome Indisponível');
+                const safeName = participantName.slice(0, 200);
+                const nameAndPhone = formattedPhoneNumber !== 'N/A' ? `${safeName} | ${formattedPhoneNumber}` : safeName;
                 const finalCopyText = `${nameAndPhone}\n${url}`;
                 if (await copyTextToClipboard(finalCopyText)) { UI.createNotification(CONFIG.MESSAGES.INTERACTION_COPIED, 'success'); } else { UI.createNotification(CONFIG.MESSAGES.COPY_ERROR, 'error'); }
             } else {
-                UI.createNotification("Link não encontrado.", 'warn');
-                if (participantName !== 'N/A' && await copyTextToClipboard(participantName)) { UI.createNotification(`Nome (${participantName}) copiado.`, 'info'); }
+                UI.createNotification('Link da interação não encontrado. Nada foi copiado.', 'warn');
             }
         },
         openSettings: () => UI.createSettingsPanel(),

@@ -47,5 +47,34 @@
     };
 
     async function copyTextToClipboard(text) { try { await navigator.clipboard.writeText(text); return true; } catch (err) { return false; } }
-    async function getNativeInteractionUrl() { const btn = findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON); if (!btn) return null; let originalClipboard = ''; try { originalClipboard = await navigator.clipboard.readText(); } catch (e) { } btn.click(); return new Promise(resolve => { setTimeout(async () => { let url = null; try { url = await navigator.clipboard.readText(); if (!url || !(url.includes('interactions/') || url.includes('conversations/'))) { url = null; } } catch (e) { url = null; } if (originalClipboard && url) { try { await navigator.clipboard.writeText(originalClipboard); } catch (e) { } } resolve(url); }, 200); }); }
+    function parseInteractionUrl(value) {
+        if (typeof value !== 'string' || value.length > 4096) return null;
+        const match = value.trim().match(/https:\/\/[^\s<>"']+/i);
+        if (!match) return null;
+        try {
+            const url = new URL(match[0].replace(/[),.;]+$/, ''));
+            if (url.protocol !== 'https:' || !/(^|\.)pure\.cloud$|(^|\.)mypurecloud\.com$/.test(url.hostname)) return null;
+            if (!/\/(?:interactions|conversations)\/[a-f\d-]{10,}(?:[/?#]|$)/i.test(url.pathname + url.hash)) return null;
+            return url.href.length <= 2048 ? url.href : null;
+        } catch { return null; }
+    }
+    async function getNativeInteractionUrl() {
+        const btn = findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON);
+        if (!btn) return null;
+        let original = null;
+        try { original = await navigator.clipboard.readText(); } catch { /* leitura indisponível */ }
+        btn.click();
+        let copied = null, url = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 150));
+            try { copied = await navigator.clipboard.readText(); } catch { break; }
+            if (copied === original) continue;
+            url = parseInteractionUrl(copied);
+            break;
+        }
+        if (copied !== original && original !== null) {
+            try { await navigator.clipboard.writeText(original); } catch { /* preservação indisponível */ }
+        }
+        return url;
+    }
 
