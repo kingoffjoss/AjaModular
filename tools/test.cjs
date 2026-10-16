@@ -98,6 +98,7 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...require('./test-bau.cjs')());
  checks.push(...require('./test-productivity.cjs')());
  checks.push(...require('./test-auto-rotation.cjs')());
+ checks.push(...require('./test-car-github.cjs')());
 checks.push(...require('./test-module-audit.cjs')());
  checks.push(...require('./test-tool-visibility.cjs')());
  const report={passed:true,checks,sourceCommit:JSON.parse(read('source-inventory.json')).commit,liveGenesysTest:false,liveGeminiTest:false};fs.writeFileSync(path.join(root,'validation.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

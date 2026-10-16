@@ -12,6 +12,9 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
 
             const STORAGE_KEY = 'car_data_v8_master';
             const THEME_KEY = 'car_theme_v8';
+            const SYNC_CONFIG_KEY = 'car_github_sync_v1';
+            const SYNC_TOKEN_KEY = 'car_github_token_v1';
+            const SYNC_BASE_KEY = 'car_github_base_v1';
 
             // DETECTOR DE AMBIENTE
             const isExtension = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id;
@@ -26,6 +29,77 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
 
             let scripts = {};
             let isDark = true;
+            let syncTimer, syncing = false, revision = 0;
+            const readJSON = (key, fallback) => { try { return JSON.parse(ctx.ajaStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; } };
+            const syncConfig = () => readJSON(SYNC_CONFIG_KEY, null);
+            const syncToken = () => { try { return sessionStorage.getItem(SYNC_TOKEN_KEY) || ctx.ajaStorage.getItem(SYNC_TOKEN_KEY) || ''; } catch { return ctx.ajaStorage.getItem(SYNC_TOKEN_KEY) || ''; } };
+            const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+            function mergeScriptMaps(base, local, remote) {
+                const merged = {};
+                for (const key of new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)])) {
+                    const value = local[key] !== base[key] ? local[key] : remote[key];
+                    if (value !== undefined) merged[key] = value;
+                }
+                return merged;
+            }
+            const utf8Base64 = text => { const bytes = new TextEncoder().encode(text); let binary = ''; for (const byte of bytes) binary += String.fromCharCode(byte); return btoa(binary); };
+            const fromBase64 = text => new TextDecoder().decode(Uint8Array.from(atob(text.replace(/\s/g, '')), char => char.charCodeAt(0)));
+            function syncStatus(message, error = false) {
+                const node = document.getElementById('car-sync-status');
+                if (node) { node.textContent = message; node.style.color = error ? '#f87171' : 'var(--box-text)'; }
+            }
+            function scheduleSync(delay = 500) {
+                if (window.self !== window.top) return;
+                if (!syncConfig()?.repository || !syncToken()) return;
+                clearTimeout(syncTimer);
+                syncStatus('Alterações locais salvas. Sincronizando…');
+                syncTimer = setTimeout(syncGitHub, delay);
+            }
+            async function syncGitHub() {
+                if (syncing) { scheduleSync(1000); return; }
+                const config = syncConfig(), token = syncToken();
+                if (!config?.repository || !token) return;
+                syncing = true;
+                const startedAt = revision;
+                const local = { ...scripts };
+                const base = readJSON(SYNC_BASE_KEY, null) || (ctx.ajaStorage.getItem(STORAGE_KEY) ? {} : defaultScripts);
+                const headers = { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+                try {
+                    const repositoryResponse = await fetch(`https://api.github.com/repos/${config.repository}`, { headers, cache: 'no-store' });
+                    if (!repositoryResponse.ok) throw Error(`Não foi possível acessar o repositório (${repositoryResponse.status})`);
+                    const repository = await repositoryResponse.json();
+                    if (!repository.private) throw Error('Use um repositório privado para não publicar os textos de atendimento');
+                    const branch = repository.default_branch;
+                    const url = `https://api.github.com/repos/${config.repository}/contents/${config.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(branch)}`;
+                    let merged, sha, remote;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        const get = await fetch(url, { headers, cache: 'no-store' });
+                        if (get.status === 404) { remote = {}; sha = undefined; }
+                        else {
+                            if (!get.ok) throw Error(`GitHub respondeu ${get.status} ao ler os comandos`);
+                            const file = await get.json();
+                            sha = file.sha;
+                            remote = JSON.parse(fromBase64(file.content || ''));
+                            if (!isScriptMap(remote)) throw Error('O arquivo remoto não contém um mapa de comandos válido');
+                        }
+                        merged = mergeScriptMaps(base, local, remote);
+                        if (same(merged, remote)) break;
+                        const put = await fetch(url.split('?')[0], { method: 'PUT', headers, body: JSON.stringify({ message: 'Atualizar atalhos do CAR', branch, content: utf8Base64(JSON.stringify(merged, null, 2) + '\n'), ...(sha ? { sha } : {}) }) });
+                        if (put.status === 409 && attempt < 2) continue;
+                        if (!put.ok) throw Error(`GitHub respondeu ${put.status} ao salvar os comandos`);
+                        break;
+                    }
+                    ctx.ajaStorage.setItem(SYNC_BASE_KEY, JSON.stringify(merged));
+                    if (revision === startedAt) {
+                        scripts = merged;
+                        Storage.set({ scripts: merged }, false);
+                        if (document.getElementById('car-panel')) window.updateVisualList?.();
+                    } else scheduleSync(1000);
+                    syncStatus('Sincronizado com GitHub agora.');
+                } catch (error) {
+                    syncStatus('Falha na sincronização: ' + error.message + '. Seus comandos continuam salvos neste navegador.', true);
+                } finally { syncing = false; }
+            }
 
             // --- ARMAZENAMENTO HÍBRIDO ---
             const Storage = {
@@ -42,7 +116,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                         callback({ scripts: isScriptMap(saved) ? saved : defaultScripts, theme: t || 'dark' });
                     }
                 },
-                set: (data) => {
+                set: (data, sync = true) => {
                     if (isExtension) {
                         let saveObj = {};
                         if (data.scripts) saveObj[STORAGE_KEY] = data.scripts;
@@ -52,7 +126,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                         if (data.scripts) ctx.ajaStorage.setItem(STORAGE_KEY, JSON.stringify(data.scripts));
                         if (data.theme) ctx.ajaStorage.setItem(THEME_KEY, data.theme);
                     }
-                    if (data.scripts) scripts = data.scripts;
+                    if (data.scripts) { scripts = data.scripts; if (sync) { revision++; scheduleSync(); } }
                     if (data.theme) isDark = (data.theme === 'dark');
                 }
             };
@@ -62,6 +136,7 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     scripts = data.scripts;
                     isDark = (data.theme === 'dark');
                     if (isExtension && !data.scripts) Storage.set({ scripts: defaultScripts });
+                    scheduleSync(1500);
                 });
             }
 
@@ -139,6 +214,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 }
                 .btn-settings-action { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid var(--box-border); background: var(--bg-item); cursor: pointer; color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
                 .btn-settings-action:hover { background: var(--box-bg); }
+                #car-settings-box { max-height: min(390px, 55vh); overflow-y: auto; }
+                #car-settings-box .car-input { display: block; width: 100%; margin: 6px 0; }
         
                 #car-panel ::-webkit-scrollbar { width: 5px; }
                 #car-panel ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
@@ -172,6 +249,16 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                             <button id="car-btn-export" class="btn-settings-action">⬇️ Exportar JSON</button>
                             <button id="car-btn-restore" class="btn-settings-action">⬆️ Importar JSON</button>
                             <input type="file" id="car-file-restore" style="display:none" accept=".json">
+                            <strong style="display:block; margin:12px 0 5px;">Sincronização com GitHub</strong>
+                            <input id="car-sync-repo" class="car-input" type="text" placeholder="usuario/repositorio-privado" aria-label="Repositório GitHub">
+                            <input id="car-sync-path" class="car-input" type="text" placeholder="car-comandos.json" aria-label="Arquivo de comandos no repositório">
+                            <input id="car-sync-token" class="car-input" type="password" autocomplete="off" placeholder="Token de acesso do GitHub" aria-label="Token de acesso do GitHub">
+                            <label style="display:block;margin:6px 0;"><input id="car-sync-remember" type="checkbox"> Lembrar token neste navegador</label>
+                            <small>Use um repositório privado e um token limitado a ele, com permissão Contents: Read and write. O token nunca entra no arquivo de comandos.</small>
+                            <button id="car-sync-connect" class="btn-settings-action">Conectar e sincronizar</button>
+                            <button id="car-sync-now" class="btn-settings-action">Sincronizar agora</button>
+                            <button id="car-sync-disconnect" class="btn-settings-action">Desconectar GitHub</button>
+                            <div id="car-sync-status" role="status" aria-live="polite" style="margin-top:6px;font-size:12px;"></div>
                         </div>
         
                         <div id="car-help-box" class="info-box">
@@ -230,6 +317,40 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 const settingsBox = container.querySelector('#car-settings-box');
                 const helpBox = container.querySelector('#car-help-box');
                 const importArea = container.querySelector('#import-area');
+                const config = syncConfig();
+                if (config) {
+                    container.querySelector('#car-sync-repo').value = config.repository;
+                    container.querySelector('#car-sync-path').value = config.path;
+                    container.querySelector('#car-sync-remember').checked = !!ctx.ajaStorage.getItem(SYNC_TOKEN_KEY);
+                    syncStatus(syncToken() ? 'Conectado. Novas alterações serão enviadas automaticamente.' : 'Informe o token para continuar a sincronização.');
+                }
+                container.querySelector('#car-sync-connect').onclick = () => {
+                    const repository = container.querySelector('#car-sync-repo').value.trim();
+                    const path = container.querySelector('#car-sync-path').value.trim() || 'car-comandos.json';
+                    const token = container.querySelector('#car-sync-token').value.trim() || syncToken();
+                    if (!/^[\w.-]+\/[\w.-]+$/.test(repository) || !/^[\w.\-/]+\.json$/.test(path) || path.includes('..') || !token) {
+                        syncStatus('Informe repositório (usuário/nome), caminho .json e token válidos.', true); return;
+                    }
+                    if (config?.repository !== repository || config?.path !== path) ctx.ajaStorage.removeItem(SYNC_BASE_KEY);
+                    ctx.ajaStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify({ repository, path }));
+                    try { sessionStorage.setItem(SYNC_TOKEN_KEY, token); } catch { /* token persistente abaixo */ }
+                    if (container.querySelector('#car-sync-remember').checked) ctx.ajaStorage.setItem(SYNC_TOKEN_KEY, token);
+                    else ctx.ajaStorage.removeItem(SYNC_TOKEN_KEY);
+                    container.querySelector('#car-sync-token').value = '';
+                    syncStatus('Conectando…'); scheduleSync(0);
+                };
+                container.querySelector('#car-sync-now').onclick = () => {
+                    if (!syncConfig()?.repository || !syncToken()) { syncStatus('Conecte o GitHub antes de sincronizar.', true); return; }
+                    scheduleSync(0);
+                };
+                container.querySelector('#car-sync-disconnect').onclick = () => {
+                    clearTimeout(syncTimer);
+                    ctx.ajaStorage.removeItem(SYNC_CONFIG_KEY);
+                    ctx.ajaStorage.removeItem(SYNC_TOKEN_KEY);
+                    ctx.ajaStorage.removeItem(SYNC_BASE_KEY);
+                    try { sessionStorage.removeItem(SYNC_TOKEN_KEY); } catch { /* sem sessão */ }
+                    syncStatus('GitHub desconectado. Os comandos locais foram mantidos.');
+                };
 
                 // Tema
                 container.querySelector('#car-theme-btn').onclick = () => {
