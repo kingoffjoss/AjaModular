@@ -12856,7 +12856,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         syncThemeDefaults();
         document.documentElement.dataset.ajaTheme = activeTheme;
         const menuIcons = {
-            'uni-btn-maintenance':'⚙','uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-ia':'✦','uni-btn-central':'?','uni-btn-mon':'▤','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-tools':'▥','uni-btn-pr':'≡','uni-btn-qr':'✉','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷'
+            'uni-btn-maintenance':'⚙','uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-ia':'✦','uni-btn-central':'?','uni-btn-mon':'▤','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-tools':'▥','uni-btn-pr':'≡','uni-btn-qr':'✉','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷','uni-btn-spell':'✓'
         };
         document.querySelectorAll('#uni-menu-container .uni-fab-btn').forEach(button => {
             if (activeTheme === 'brisanet') button.removeAttribute('data-aja-theme-icon');
@@ -12884,6 +12884,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     };
 
     applyPatch();
+    window.dispatchEvent(new CustomEvent('aja-theme-change', { detail: { theme: activeTheme } }));
 
     let patchScheduled = false;
     const observer = new MutationObserver(() => {
