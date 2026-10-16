@@ -668,7 +668,7 @@ const implementation = {createMiniDashboard() {
                     <div class="mini-dashboard-header">
                         <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><button id="mini-dashboard-auto-rotate-btn" class="compact-btn" type="button" aria-label="Troca automática de conversas" aria-pressed="false" title="Ligar troca automática de conversas após 1:10">⇄</button><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
                         <div class="mini-dashboard-controls">
-                            <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar Tema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🌗</button>
+                            <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar tema do sistema" aria-label="Mudar tema do sistema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🎨</button>
                             <button id="mini-dashboard-tools-btn" class="compact-btn" title="Ferramentas do Agente">${iconTools}</button>
                             <button id="mini-dashboard-adjust-attended-btn" class="compact-btn adjust-btn" title="Ajustar Contagem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                             <button class="compact-btn toggle-expand-btn" title="Expandir/Recolher"><svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg><svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; display: none;"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg></button>
@@ -688,39 +688,11 @@ const implementation = {createMiniDashboard() {
                 const autoRotateButton=dashboard.querySelector('#mini-dashboard-auto-rotate-btn');
                 autoRotateButton.onclick=e=>{e.stopPropagation();window.AjaModularAutoRotation?.toggle();autoRotateButton.setAttribute('aria-pressed',String(!!window.AjaModularAutoRotation?.enabled));autoRotateButton.title=window.AjaModularAutoRotation?.enabled?'Desligar troca automática de conversas':'Ligar troca automática de conversas após 1:10';autoRotateButton.textContent=window.AjaModularAutoRotation?.enabled?'🔄':'⇄';};
 
-                const themeBtnDash = dashboard.querySelector('#mini-dashboard-btn-theme');
-                const savedThemeDash = ctx.ajaStorage.getItem('DASHBOARD_THEME');
-                if (savedThemeDash === 'light') {
-                    dashboard.classList.add('local-light-mode');
-                    themeBtnDash.innerText = '☀️';
-                } else if (savedThemeDash === 'dark') {
-                    dashboard.classList.add('cc-escurinho');
-                    themeBtnDash.innerText = '🌗';
-                }
-                themeBtnDash.onclick = () => {
-                    const isLight = dashboard.classList.contains('local-light-mode');
-                    if (isLight) {
-                        dashboard.classList.remove('local-light-mode');
-                        dashboard.classList.add('cc-escurinho');
-                        ctx.ajaStorage.setItem('DASHBOARD_THEME', 'dark');
-                        themeBtnDash.innerText = '🌗';
-                    } else {
-                        dashboard.classList.remove('cc-escurinho');
-                        dashboard.classList.add('local-light-mode');
-                        ctx.ajaStorage.setItem('DASHBOARD_THEME', 'light');
-                        themeBtnDash.innerText = '☀️';
-                    }
+                dashboard.querySelector('#mini-dashboard-btn-theme').onclick = event => {
+                    event.stopPropagation();
+                    const id = window.AjaModularThemes?.next();
+                    if (id) ctx.UI.createNotification('Tema ' + window.AjaModularThemes.list().find(theme => theme.id === id).name + ' aplicado.', 'info', 2500);
                 };
-
-                // Estilos locais inseridos diretamente no documento se já não existirem
-                if (!document.getElementById('dash-local-styles')) {
-                    const st = document.createElement('style'); st.id = 'dash-local-styles';
-                    st.innerHTML = `
-                        #purecloud-script-mini-dashboard.cc-escurinho { --purecloud-script-bg-primary: #0f172a; --purecloud-script-bg-secondary: #1e293b; --purecloud-script-text-primary: #f8fafc; --purecloud-script-text-secondary: #cbd5e1; --purecloud-script-border-color: #334155; }
-                        #purecloud-script-mini-dashboard.local-light-mode { --purecloud-script-bg-primary: #ffffff; --purecloud-script-bg-secondary: #f1f5f9; --purecloud-script-text-primary: #0f172a; --purecloud-script-text-secondary: #475569; --purecloud-script-border-color: #e2e8f0; }
-                    `;
-                    document.head.appendChild(st);
-                }
 
                 dashboard._lastRenderedStats = {};
                 dashboard._updateStatsInternal = () => {
@@ -8931,7 +8903,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.33',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.34',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -8942,7 +8914,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.33',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.34',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -8958,7 +8930,8 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  }
  function place(){const rect=root.getBoundingClientRect(),above=rect.top-12,below=innerHeight-rect.bottom-12,up=above>=below,width=Math.min(138,innerWidth-16);actions.style.setProperty('width',width+'px','important');actions.style.left=(Math.max(8,Math.min(rect.right-width+8,innerWidth-width-8))-rect.left)+'px';actions.style.right='auto';actions.style.setProperty('max-height',Math.max(80,up?above:below)+'px','important');actions.style.bottom=up?'72px':'auto';actions.style.top=up?'auto':'72px';}
  function save(){ctx.ajaStorage.setItem('menu_favorites_v1',JSON.stringify(favorites));ctx.ajaStorage.setItem('menu_order_v1',JSON.stringify(order));arrange();render();}
- function render(){if(!panel)return;const list=panel.querySelector('#aja-menu-order');list.replaceChildren();const current=buttons();for(const item of current){const row=document.createElement('div');row.className='aja-menu-row';const star=document.createElement('button');star.textContent=favorites.includes(item.id)?'★':'☆';star.setAttribute('aria-label','Favoritar '+item.title);star.setAttribute('aria-pressed',String(favorites.includes(item.id)));star.onclick=()=>{favorites=favorites.includes(item.id)?favorites.filter(x=>x!==item.id):[...favorites,item.id];save();};const label=document.createElement('span');label.textContent=item.title;row.append(star,label);for(const [delta,text] of [[-1,'↑'],[1,'↓']]){const move=document.createElement('button');move.textContent=text;move.setAttribute('aria-label',(delta<0?'Subir ':'Descer ')+item.title);const group=current.filter(b=>favorites.includes(b.id)===favorites.includes(item.id)),i=group.indexOf(item),other=group[i+delta];move.disabled=!other;move.onclick=()=>{const a=order.indexOf(item.id),b=order.indexOf(other.id);[order[a],order[b]]=[order[b],order[a]];save();};row.appendChild(move);}list.appendChild(row);}panel.querySelector('#aja-timer-shortcut').textContent='Configurações dos cronômetros: '+(ctx.CONFIG.HOTKEYS.openSettings||'Control+Shift+S').replace('Control','Ctrl')+'. Use fora de campos de texto.';}
+ function renderThemes(){const gallery=panel?.querySelector('#aja-theme-gallery'),api=window.AjaModularThemes;if(!gallery||!api)return;gallery.replaceChildren();for(const theme of api.list()){const choice=document.createElement('button');choice.type='button';choice.className='aja-theme-choice';choice.setAttribute('aria-pressed',String(theme.id===api.current()));choice.setAttribute('aria-label','Aplicar tema '+theme.name);const swatch=document.createElement('span');swatch.className='aja-theme-swatch';swatch.style.background=`linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[3]})`;const label=document.createElement('span');label.textContent=theme.icon+' '+theme.name;const detail=document.createElement('small');detail.textContent=theme.description;choice.append(swatch,label,detail);choice.onclick=()=>{api.set(theme.id);renderThemes();};gallery.appendChild(choice);}}
+ function render(){if(!panel)return;const list=panel.querySelector('#aja-menu-order');list.replaceChildren();const current=buttons();for(const item of current){const row=document.createElement('div');row.className='aja-menu-row';const star=document.createElement('button');star.textContent=favorites.includes(item.id)?'★':'☆';star.setAttribute('aria-label','Favoritar '+item.title);star.setAttribute('aria-pressed',String(favorites.includes(item.id)));star.onclick=()=>{favorites=favorites.includes(item.id)?favorites.filter(x=>x!==item.id):[...favorites,item.id];save();};const label=document.createElement('span');label.textContent=item.title;row.append(star,label);for(const [delta,text] of [[-1,'↑'],[1,'↓']]){const move=document.createElement('button');move.textContent=text;move.setAttribute('aria-label',(delta<0?'Subir ':'Descer ')+item.title);const group=current.filter(b=>favorites.includes(b.id)===favorites.includes(item.id)),i=group.indexOf(item),other=group[i+delta];move.disabled=!other;move.onclick=()=>{const a=order.indexOf(item.id),b=order.indexOf(other.id);[order[a],order[b]]=[order[b],order[a]];save();};row.appendChild(move);}list.appendChild(row);}panel.querySelector('#aja-timer-shortcut').textContent='Configurações dos cronômetros: '+(ctx.CONFIG.HOTKEYS.openSettings||'Control+Shift+S').replace('Control','Ctrl')+'. Use fora de campos de texto.';renderThemes();}
  function compare(a,b){const x=a.split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i]?1:-1;return 0;}
  async function check(){if(checking)return;checking=true;const label=panel.querySelector('#aja-version-status'),btn=panel.querySelector('#aja-version-check');label.textContent='Consultando atualização…';btn.disabled=true;let timer;try{
   const result=await Promise.race([ctx.safeFetch('https://kingoffjoss.github.io/AjaModular/manifest.json?check='+Date.now()).then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Tempo de consulta excedido')),10000);})]);
@@ -8966,7 +8939,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
   label.textContent=compare(result.version,version)>0?'Atualização disponível: '+result.version+'. Atualize o favorito pelo site, ou recarregue a pasta atualizada da extensão. Depois recarregue a plataforma.':compare(result.version,version)===0?'Você está na versão publicada mais recente ('+version+').':'Versão instalada '+version+'; a publicação ainda informa '+result.version+'.';lastCheck=Date.now();
  }catch(error){label.textContent='Não foi possível conferir a atualização: '+error.message+'. Versão instalada: '+version+'.';}finally{clearTimeout(timer);checking=false;btn.disabled=false;}}
  function open(){
-  if(!panel){panel=document.createElement('dialog');panel.id='aja-menu-options';panel.innerHTML='<header><strong>Organizar ferramentas</strong><button data-close aria-label="Fechar organização">×</button></header><main><p>Marque ★ para manter no topo. As setas ordenam os itens dentro do grupo de favoritos ou das demais ferramentas.</p><div id="aja-menu-order"></div><h3>Janelas</h3><button id="aja-reset-windows">Trazer janelas para a tela</button><p>Restaura janelas minimizadas e reposiciona as abertas. Tamanho e posição são lembrados neste navegador.</p><h3>Cronômetros</h3><p id="aja-timer-shortcut"></p><button id="aja-open-timer-settings">Abrir configurações dos cronômetros</button><h3>Atualização</h3><p>Versão instalada: <strong>'+version+'</strong></p><p id="aja-version-status" role="status" aria-live="polite">Clique para conferir a versão publicada.</p><button id="aja-version-check">Verificar atualização</button> <a href="https://kingoffjoss.github.io/AjaModular/" target="_blank" rel="noopener noreferrer">Abrir site de atualização</a></main>';document.body.appendChild(panel);panel.querySelector('[data-close]').onclick=()=>panel.close();panel.querySelector('#aja-reset-windows').onclick=()=>{window.AjaModularWindows.reset();window.AjaModularNotice?.('Janelas reposicionadas.');};panel.querySelector('#aja-open-timer-settings').onclick=()=>{panel.close();ctx.UI.createSettingsPanel();};panel.querySelector('#aja-version-check').onclick=check;}
+  if(!panel){panel=document.createElement('dialog');panel.id='aja-menu-options';panel.innerHTML='<header><strong>Organizar ferramentas</strong><button data-close aria-label="Fechar organização">×</button></header><main><h3>Tema do sistema</h3><p>Escolha um visual para o dashboard e todas as ferramentas.</p><div id="aja-theme-gallery" role="group" aria-label="Temas do sistema"></div><p>Marque ★ para manter no topo. As setas ordenam os itens dentro do grupo de favoritos ou das demais ferramentas.</p><div id="aja-menu-order"></div><h3>Janelas</h3><button id="aja-reset-windows">Trazer janelas para a tela</button><p>Restaura janelas minimizadas e reposiciona as abertas. Tamanho e posição são lembrados neste navegador.</p><h3>Cronômetros</h3><p id="aja-timer-shortcut"></p><button id="aja-open-timer-settings">Abrir configurações dos cronômetros</button><h3>Atualização</h3><p>Versão instalada: <strong>'+version+'</strong></p><p id="aja-version-status" role="status" aria-live="polite">Clique para conferir a versão publicada.</p><button id="aja-version-check">Verificar atualização</button> <a href="https://kingoffjoss.github.io/AjaModular/" target="_blank" rel="noopener noreferrer">Abrir site de atualização</a></main>';document.body.appendChild(panel);panel.querySelector('[data-close]').onclick=()=>panel.close();panel.querySelector('#aja-reset-windows').onclick=()=>{window.AjaModularWindows.reset();window.AjaModularNotice?.('Janelas reposicionadas.');};panel.querySelector('#aja-open-timer-settings').onclick=()=>{panel.close();ctx.UI.createSettingsPanel();};panel.querySelector('#aja-version-check').onclick=check;}
   render();panel.showModal();if(Date.now()-lastCheck>1800000)check();
  }
  const style=document.createElement('style');style.textContent=`
@@ -8980,6 +8953,11 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  #aja-menu-options header{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#0057b8} #aja-menu-options main{padding:16px;overflow:auto;max-height:calc(100vh - 100px)}
  #aja-menu-options button{padding:7px 10px;border:1px solid #428cc1;border-radius:6px;background:#173b63;color:white;cursor:pointer;font:inherit} #aja-menu-options button:disabled{opacity:.4;cursor:default} #aja-menu-options a{color:#8edaff}
  #aja-menu-options .aja-menu-row{display:grid;grid-template-columns:34px 1fr 34px 34px;align-items:center;gap:6px;margin:6px 0}
+ #aja-theme-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 18px}
+ #aja-menu-options .aja-theme-choice{display:grid;grid-template-columns:38px 1fr;grid-template-rows:1fr 1fr;align-items:center;gap:0 9px;padding:8px;text-align:left;border:2px solid var(--aja-border-dark);background:var(--aja-dark-2);color:#fff;border-radius:10px;min-height:60px}
+ #aja-menu-options .aja-theme-choice[aria-pressed="true"]{border-color:var(--aja-orange);box-shadow:0 0 0 2px var(--aja-orange)}
+ #aja-menu-options .aja-theme-choice small{grid-column:2;font-size:11px;opacity:.8}
+ #aja-menu-options .aja-theme-swatch{grid-row:1/3;width:36px;height:36px;border-radius:9px;border:1px solid #fff8}
  `;document.head.appendChild(style);
  arrange();new MutationObserver(arrange).observe(actions,{childList:true});new MutationObserver(place).observe(root,{attributes:true,attributeFilter:['class']});window.addEventListener('resize',place);document.addEventListener('pointerup',place);
  return {open,compareVersions:compare};
@@ -9353,7 +9331,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.33)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.34)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9375,7 +9353,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.33';
+    const SCRIPT_VERSION = 'AjaModular_1.6.34';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -12117,6 +12095,17 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     const STYLE_ID = 'aja-brisanet-theme-patch';
     const VERSION = 'brisanet-global-force-v1';
+    const THEME_KEY = 'aja_global_theme_v1';
+    const paletteKeys = ['#0057B8','#0072CE','#003B7A','#FF8200','#D96B00','#0F2742','#173B63','#214D7E','#F8FBFF','#EAF4FF','#D6E4F2','#2B5F93','#52667A'];
+    const profiles = {
+        brisanet: { name: 'Brisanet', description: 'Azul e laranja', icon: '🔵', mode: 'dark', colors: paletteKeys },
+        atlantico: { name: 'Atlântico', description: 'Verde petróleo e âmbar', icon: '🌊', mode: 'dark', colors: ['#087E8B','#0B99A8','#075A65','#B45309','#92400E','#0B2932','#153F49','#205761','#F5FCFC','#E4F6F7','#C8E7E9','#316B73','#49676C'] },
+        aurora: { name: 'Aurora', description: 'Violeta e rosa', icon: '🟣', mode: 'dark', colors: ['#6D28D9','#7C3AED','#4C1D95','#BE185D','#9D174D','#251437','#382151','#4B3067','#FCF9FF','#F3E8FF','#E9D5FF','#745490','#61536D'] },
+        solar: { name: 'Solar', description: 'Creme e terracota', icon: '☀️', mode: 'light', colors: ['#A3440B','#B45309','#78350F','#C2410C','#9A3412','#422006','#713F12','#854D0E','#FFFBEB','#FEF3C7','#FDE68A','#A16207','#6B4F2A'] }
+    };
+    function selectedTheme() { try { const id = ajaStorage.getItem(THEME_KEY); return Object.hasOwn(profiles, id) ? id : 'brisanet'; } catch { return 'brisanet'; } }
+    let activeTheme = selectedTheme();
+    function paletteFor(id) { return Object.fromEntries(paletteKeys.map((key, index) => [key, profiles[id].colors[index]])); }
     const themeColors = {
         bgPrimary: '#FFFFFF',
         bgSecondary: '#EAF4FF',
@@ -12150,6 +12139,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     }
 
     function ensureStyle() {
+        const palette = paletteFor(activeTheme);
         let style = document.getElementById(STYLE_ID);
         if (!style) {
             style = document.createElement('style');
@@ -12731,6 +12721,15 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             #bau-rede .command-block p {
                 color: #D6E4F2 !important;
             }
+        `.replace(/#[0-9a-fA-F]{6}\b/g, color => palette[color.toUpperCase()] || color) + `
+            :root { --purecloud-script-bubble-bg-normal: ${profiles[activeTheme].colors[5]} !important; }
+            .injected-bubbles-container.gcp-tema-escuro { --purecloud-script-bubble-bg-normal: ${profiles[activeTheme].colors[5]} !important; }
+            #aja-menu-options { background: var(--aja-dark) !important; color: var(--aja-white) !important; border-color: var(--aja-border-dark) !important; }
+            #aja-menu-options header { background: var(--aja-gradient) !important; }
+            #aja-menu-options button:not(.aja-theme-choice) { background: var(--aja-dark-2) !important; color: var(--aja-white) !important; border-color: var(--aja-border-dark) !important; }
+            #uni-menu-container .uni-fab-actions { background: var(--aja-dark) !important; border-color: var(--aja-border-dark) !important; }
+            #purecloud-script-mini-dashboard.expanded .stat-item-original { border-radius: ${activeTheme === 'aurora' ? '16px' : activeTheme === 'atlantico' ? '5px' : activeTheme === 'solar' ? '12px' : '10px'} !important; }
+            #purecloud-script-mini-dashboard.expanded { border-radius: ${activeTheme === 'aurora' ? '22px' : activeTheme === 'atlantico' ? '8px' : activeTheme === 'solar' ? '18px' : '16px'} !important; }
         `;
 
         if (style.textContent !== css) {
@@ -12741,7 +12740,6 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     function syncThemeDefaults() {
         const targets = [
             { selector: '#purecloud-script-tools-panel', key: 'TOOLS_THEME', button: '#tools-btn-theme' },
-            { selector: '#purecloud-script-mini-dashboard', key: 'DASHBOARD_THEME', button: '#mini-dashboard-btn-theme' },
             { selector: '.pr-script-popup', key: 'PR_THEME', button: '#pr-btn-theme' },
             { selector: '.pr-script-settings-panel', key: 'PR_THEME' },
             { selector: '.qr-script-popup', key: 'QR_THEME', button: '#qr-btn-theme' },
@@ -12805,7 +12803,22 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     function applyPatch() {
         ensureStyle();
         syncThemeDefaults();
+        document.documentElement.dataset.ajaTheme = activeTheme;
+        const dashboard = document.getElementById('purecloud-script-mini-dashboard');
+        if (dashboard) {
+            dashboard.classList.toggle('local-light-mode', profiles[activeTheme].mode === 'light');
+            dashboard.classList.toggle('cc-escurinho', profiles[activeTheme].mode === 'dark');
+            const button = dashboard.querySelector('#mini-dashboard-btn-theme');
+            if (button) { button.textContent = profiles[activeTheme].icon; button.title = 'Tema global: ' + profiles[activeTheme].name + '. Clique para mudar.'; button.setAttribute('aria-label', button.title); }
+        }
     }
+
+    window.AjaModularThemes = {
+        list: () => Object.entries(profiles).map(([id, value]) => ({ id, name: value.name, description: value.description, icon: value.icon, colors: [...value.colors] })),
+        current: () => activeTheme,
+        set(id) { if (!Object.hasOwn(profiles, id)) return false; activeTheme = id; try { ajaStorage.setItem(THEME_KEY, id); } catch {} applyPatch(); window.dispatchEvent(new CustomEvent('aja-theme-change', { detail: { theme: id } })); return true; },
+        next() { const ids = Object.keys(profiles); this.set(ids[(ids.indexOf(activeTheme) + 1) % ids.length]); return activeTheme; }
+    };
 
     applyPatch();
 
@@ -12820,8 +12833,9 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     });
 
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    console.log('[AjaModular] Tema Brisanet global aplicado:', VERSION);
+    console.log('[AjaModular] Tema global aplicado:', activeTheme);
 })();
+
 (function(){
     const style=document.createElement('style');style.id='ajamodular-layout';
     style.textContent=`
