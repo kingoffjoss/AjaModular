@@ -53,6 +53,7 @@
     "Window controls keep close and minimize grouped",
     "Mini dashboard drag is distinguished from click",
     "Conversation timers inherit and refresh dark mode",
+    "Four global themes persist and update the dashboard palette",
     "Timer theme CSS keeps root and dark rules separate",
     "Conversation channel icons recognize native metadata and unknown messages",
     "Queue action is idempotent and only records a successful platform action",
