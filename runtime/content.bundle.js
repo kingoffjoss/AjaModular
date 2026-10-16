@@ -9065,7 +9065,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.42',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.43',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -9076,7 +9076,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.42',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.43',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9493,7 +9493,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.42)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.43)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9515,7 +9515,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.42';
+    const SCRIPT_VERSION = 'AjaModular_1.6.43';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -10021,7 +10021,36 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     };
 
     async function copyTextToClipboard(text) { try { await navigator.clipboard.writeText(text); return true; } catch (err) { return false; } }
-    async function getNativeInteractionUrl() { const btn = findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON); if (!btn) return null; let originalClipboard = ''; try { originalClipboard = await navigator.clipboard.readText(); } catch (e) { } btn.click(); return new Promise(resolve => { setTimeout(async () => { let url = null; try { url = await navigator.clipboard.readText(); if (!url || !(url.includes('interactions/') || url.includes('conversations/'))) { url = null; } } catch (e) { url = null; } if (originalClipboard && url) { try { await navigator.clipboard.writeText(originalClipboard); } catch (e) { } } resolve(url); }, 200); }); }
+    function parseInteractionUrl(value) {
+        if (typeof value !== 'string' || value.length > 4096) return null;
+        const match = value.trim().match(/https:\/\/[^\s<>"']+/i);
+        if (!match) return null;
+        try {
+            const url = new URL(match[0].replace(/[),.;]+$/, ''));
+            if (url.protocol !== 'https:' || !/(^|\.)pure\.cloud$|(^|\.)mypurecloud\.com$/.test(url.hostname)) return null;
+            if (!/\/(?:interactions|conversations)\/[a-f\d-]{10,}(?:[/?#]|$)/i.test(url.pathname + url.hash)) return null;
+            return url.href.length <= 2048 ? url.href : null;
+        } catch { return null; }
+    }
+    async function getNativeInteractionUrl() {
+        const btn = findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON);
+        if (!btn) return null;
+        let original = null;
+        try { original = await navigator.clipboard.readText(); } catch { /* leitura indisponível */ }
+        btn.click();
+        let copied = null, url = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 150));
+            try { copied = await navigator.clipboard.readText(); } catch { break; }
+            if (copied === original) continue;
+            url = parseInteractionUrl(copied);
+            break;
+        }
+        if (copied !== original && original !== null) {
+            try { await navigator.clipboard.writeText(original); } catch { /* preservação indisponível */ }
+        }
+        return url;
+    }
 
 
     // --- ENCONTRAR O CAMPO DE CHAT RAPIDAMENTE ---
@@ -10038,15 +10067,15 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
             const { participantName, phoneNumber, formattedPhoneNumber } = documentExtractor.getNameAndNumber(selectedConvEl);
             if (participantName === 'N/A' || !findEl(CONFIG.PURECLOUD_SELECTORS.NATIVE_COPY_BUTTON)) { UI.createNotification(CONFIG.MESSAGES.NOT_FOUND_INTERACTION_DATA, 'error'); return; }
             const url = await getNativeInteractionUrl();
-            if (url && (url.includes('interactions/') || url.includes('conversations/'))) {
+            if (url) {
                 const tData = conversationTimers.get(selectedConvEl);
                 if (tData) { tData.interactionUrl = url; tData.participantName = participantName; tData.phoneNumber = phoneNumber; UI.createNotification("Link salvo!", 'info', 1500); }
-                const nameAndPhone = formattedPhoneNumber !== 'N/A' ? `${participantName} | ${formattedPhoneNumber}` : (participantName !== 'N/A' ? participantName : 'Nome Indisponível');
+                const safeName = participantName.slice(0, 200);
+                const nameAndPhone = formattedPhoneNumber !== 'N/A' ? `${safeName} | ${formattedPhoneNumber}` : safeName;
                 const finalCopyText = `${nameAndPhone}\n${url}`;
                 if (await copyTextToClipboard(finalCopyText)) { UI.createNotification(CONFIG.MESSAGES.INTERACTION_COPIED, 'success'); } else { UI.createNotification(CONFIG.MESSAGES.COPY_ERROR, 'error'); }
             } else {
-                UI.createNotification("Link não encontrado.", 'warn');
-                if (participantName !== 'N/A' && await copyTextToClipboard(participantName)) { UI.createNotification(`Nome (${participantName}) copiado.`, 'info'); }
+                UI.createNotification('Link da interação não encontrado. Nada foi copiado.', 'warn');
             }
         },
         openSettings: () => UI.createSettingsPanel(),
