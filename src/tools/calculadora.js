@@ -78,6 +78,29 @@ return (function initCalc() {
                     ::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
                 `;
                 shadow.appendChild(style);
+                const modelStyle = document.createElement('style');
+                modelStyle.textContent = `
+                    :host([data-aja-theme="brisanet"]) { --calc-bg:#0f2742;--calc-surface:#173b63;--calc-text:#fff;--calc-border:#2b5f93;--calc-accent:#ff8200;--calc-radius:12px;--calc-tab:6px;--calc-gap:8px; }
+                    :host([data-aja-theme="atlantico"]) { --calc-bg:#0b2932;--calc-surface:#153f49;--calc-text:#fff;--calc-border:#316b73;--calc-accent:#b45309;--calc-radius:5px;--calc-tab:3px;--calc-gap:5px; }
+                    :host([data-aja-theme="aurora"]) { --calc-bg:#251437;--calc-surface:#382151;--calc-text:#fff;--calc-border:#745490;--calc-accent:#be185d;--calc-radius:21px;--calc-tab:999px;--calc-gap:10px; }
+                    :host([data-aja-theme="solar"]) { --calc-bg:#fffbeb;--calc-surface:#fef3c7;--calc-text:#422006;--calc-border:#a16207;--calc-accent:#c2410c;--calc-radius:14px;--calc-tab:9px;--calc-gap:7px; }
+                    :host([data-aja-theme]) #modal { background:var(--calc-bg)!important;color:var(--calc-text)!important;border-color:var(--calc-border)!important;border-radius:var(--calc-radius)!important; }
+                    :host([data-aja-theme]) .header, :host([data-aja-theme]) .tabs { background:var(--calc-surface)!important;border-color:var(--calc-border)!important; }
+                    :host([data-aja-theme]) .header { min-height:35px;padding:9px 13px!important; }
+                    :host([data-aja-theme]) .header-title { color:var(--calc-text)!important;font-size:12px; }
+                    :host([data-aja-theme]) .header-title::before { content:'⌗';display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;margin-right:8px;background:var(--calc-accent);color:#fff;border-radius:var(--calc-tab); }
+                    :host([data-aja-theme]) .tab { border-radius:var(--calc-tab)!important;color:var(--calc-text)!important;margin:3px; }
+                    :host([data-aja-theme]) .tab.active { background:var(--calc-accent)!important;color:#fff!important;border-bottom-color:transparent!important; }
+                    :host([data-aja-theme]) .body, :host([data-aja-theme]) #display-container { background:var(--calc-bg)!important; }
+                    :host([data-aja-theme]) .grid { gap:var(--calc-gap)!important; }
+                    :host([data-aja-theme]) .btn, :host([data-aja-theme]) .res-box, :host([data-aja-theme]) #calc-display, :host([data-aja-theme]) .input-group input, :host([data-aja-theme]) .input-group select { border-radius:var(--calc-tab)!important;background:var(--calc-surface)!important;color:var(--calc-text)!important;border:1px solid var(--calc-border)!important; }
+                    :host([data-aja-theme]) .btn.action { background:var(--calc-accent)!important;color:#fff!important; }
+                    :host([data-aja-theme]) .res-box { color:var(--calc-accent)!important; }
+                    :host([data-aja-theme="aurora"]) .tabs { padding:5px;gap:3px; }
+                    :host([data-aja-theme="solar"]) .tab { flex:1 1 20%; }
+                    :host([data-aja-theme="atlantico"]) .tab { flex:1 1 20%;text-align:left;padding-left:9px; }
+                `;
+                shadow.appendChild(modelStyle);
 
                 const main = document.createElement('div');
                 main.innerHTML = `
