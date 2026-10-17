@@ -1,4 +1,4 @@
-// Copies the current ticket URL from the visible platform link.
+// Opens the current ticket URL from the visible platform link.
 window.AjaModular.register('chamado-yoda', [], function () {
     const normalize = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
     const visible = element => element.getClientRects().length > 0 && element.ownerDocument.defaultView.getComputedStyle(element).visibility !== 'hidden';
@@ -23,7 +23,7 @@ window.AjaModular.register('chamado-yoda', [], function () {
             if (host.shadowRoot && visible(host)) collect(host.shadowRoot, found);
         }
     }
-    async function open() {
+    function open() {
         const links = []; collect(document, links);
         const unique = [...new Set(links)];
         if (unique.length !== 1) {
@@ -38,12 +38,7 @@ window.AjaModular.register('chamado-yoda', [], function () {
             window.AjaModularNotice?.('O link do Yoda não está disponível neste atendimento.', 'warn');
             return;
         }
-        try {
-            await navigator.clipboard.writeText(url.href);
-            window.AjaModularNotice?.('Link do Chamado Yoda copiado.', 'success');
-        } catch {
-            window.AjaModularNotice?.('Não foi possível copiar o link do Yoda.', 'error');
-        }
+        window.open(url.href, '_blank', 'noopener,noreferrer');
     }
     return {open};
 });
