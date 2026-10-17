@@ -10359,6 +10359,133 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     const keyboardEventHandler = (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) { return; } const currentCombo = getHotkeyCombo(e); if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) { return; } for (const actionName in CONFIG.HOTKEYS) { if (CONFIG.HOTKEYS[actionName] === currentCombo) { e.preventDefault(); if (actions[actionName]) { actions[actionName](); UI.createNotification(featureDescriptions[actionName]?.title || actionName, 'info', 1000); return; } } } };
 
 
+    function runOriginalEndCode() {
+void (function(){
+(function criarBotaoNinja() {
+    // Evita criar botões duplicados na tela
+    if (document.getElementById("btn-ninja-encerrar")) {
+        return alert("O botão já está na sua tela! Olhe no canto inferior esquerdo.");
+    }
+
+    // 1. Interceptador Master: Rouba o Token silenciosamente das requisições
+    if (!window.stolenGenesysToken) {
+        // Intercepta XMLHttpRequest
+        const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
+        XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
+            if (header.toLowerCase() === 'authorization' && value.includes('Bearer')) {
+                window.stolenGenesysToken = value;
+            }
+            return originalSetRequestHeader.apply(this, arguments);
+        };
+
+        // Intercepta Fetch
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let options = args[1];
+            if (options && options.headers) {
+                let auth = options.headers.Authorization || options.headers.authorization;
+                if (auth && auth.includes("Bearer")) window.stolenGenesysToken = auth;
+            }
+            return originalFetch.apply(this, args);
+        };
+    }
+
+    // 2. Cria o Botão Visual flutuante
+    let btn = document.createElement("button");
+    btn.id = "btn-ninja-encerrar";
+    btn.innerText = "💀";
+    btn.style.cssText = "position:fixed; bottom:20px; left:20px; z-index:999999; background-color:#d93b3b; color:white; border:none; padding:15px 20px; font-weight:bold; border-radius:8px; cursor:pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); font-size:14px; font-family:sans-serif;";
+    
+    btn.title = "Encerrar sem Avaliação";
+    btn.setAttribute("aria-label", "Encerrar sem Avaliação");
+    // Efeito de passar o mouse
+    btn.onmouseover = () => btn.style.backgroundColor = "#b02a2a";
+    btn.onmouseout = () => btn.style.backgroundColor = "#d93b3b";
+
+    // 3. A mágica ao clicar no botão
+    btn.onclick = async function() {
+        // TENTATIVA 1: O botão original ainda existe? (Mesmo invisível)
+        let btnOriginal = document.getElementById("call-control-end-sms-button");
+        if (btnOriginal) {
+            btnOriginal.click();
+            console.log("Encerrado usando o gatilho original do Genesys.");
+            return;
+        }
+
+        // TENTATIVA 2: Botão não existe mais. Vamos usar a API Interna com o Token roubado!
+        if (!window.stolenGenesysToken) {
+            return alert("O Rastreador ainda não pegou a chave de segurança.\n\nPor favor, CLIQUE EM QUALQUER OUTRA ABA do Genesys (ex: clique no nome de outro cliente ou no menu) para forçar o sistema a se comunicar com a internet. Depois, clique aqui neste botão vermelho de novo.");
+        }
+
+        let authHeader = { "Authorization": window.stolenGenesysToken, "Content-Type": "application/json" };
+        
+        try {
+            btn.innerText = "Buscando...";
+            
+            // Busca clientes ativos
+            let convResponse = await window.fetch(`https://api.sae1.pure.cloud/api/v2/conversations/messages`, { headers: authHeader });
+            let convData = await convResponse.json();
+            let activeConvs = [];
+
+            if (convData.entities) {
+                for (let conv of convData.entities) {
+                    let agent = conv.participants.find(p => p.purpose === "agent" && p.state === "connected");
+                    if (agent) {
+                        let customer = conv.participants.find(p => p.purpose === "customer" || p.purpose === "external");
+                        let name = customer ? (customer.name || "Desconhecido") : "Desconhecido";
+                        activeConvs.push({ id: conv.id, participantId: agent.id, name: name });
+                    }
+                }
+            }
+
+            if (activeConvs.length === 0) {
+                btn.innerText = "💀";
+                return alert("Nenhum cliente ativo encontrado no servidor.");
+            }
+
+            let target = null;
+            if (activeConvs.length === 1) {
+                target = activeConvs[0];
+            } else {
+                let msg = "Qual cliente ENCERRAR SEM AVALIAÇÃO?\n\n";
+                for (let i = 0; i < activeConvs.length; i++) msg += `${i + 1} - ${activeConvs[i].name}\n`;
+                let escolha = prompt(msg + "\nDigite o número:");
+                if (!escolha) { btn.innerText = "💀"; return; }
+                
+                let idx = parseInt(escolha) - 1;
+                if (idx >= 0 && idx < activeConvs.length) target = activeConvs[idx];
+                else {
+                    btn.innerText = "💀";
+                    return alert("Número inválido!");
+                }
+            }
+
+            // Manda o comando final
+            btn.innerText = "Encerrando...";
+            let endResponse = await window.fetch(`https://api.sae1.pure.cloud/api/v2/conversations/messages/${target.id}/participants/${target.participantId}`, {
+                method: "PATCH",
+                headers: authHeader,
+                body: JSON.stringify({ state: "disconnected" })
+            });
+
+            if (endResponse.ok) alert(`✅ '${target.name}' encerrado internamente!`);
+            else alert("❌ A empresa bloqueou essa ação pela API.");
+            
+            btn.innerText = "💀";
+        } catch (err) {
+            alert("Erro de conexão ao tentar encerrar internamente.");
+            btn.innerText = "💀";
+            console.error(err);
+        }
+    };
+
+    // Coloca o botão na tela
+    document.body.appendChild(btn);
+    console.log("✅ Botão Ninja criado no canto inferior esquerdo!");
+})();
+})();
+    }
+
     function createToolbarUI(toolbar) {
         if (toolbar.dataset.scriptVersion === SCRIPT_VERSION) { return; } toolbar.querySelectorAll('.purecloud-script-custom-btn, #purecloud-script-toolbar-counter, .purecloud-script-menu-container').forEach(el => el.remove()); toolbar.dataset.scriptVersion = SCRIPT_VERSION;
         const createMainToolbarBtn = (id, title, svg, onClick) => { const btn = document.createElement("button"); btn.id = id; btn.className = 'purecloud-script-custom-btn'; btn.title = title; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${svg}</svg>`; btn.onclick = onClick; btn; toolbar.appendChild(btn); return btn; };
@@ -10366,8 +10493,18 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         createMainToolbarBtn('purecloud-script-btn-openSettings', featureDescriptions.openSettings.title, '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2 2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>', actions.openSettings);
         const yodaButton = createMainToolbarBtn('purecloud-script-btn-yoda', 'Copiar link do Chamado Yoda', '<path d="M14 3h7v7M21 3l-9 9"/><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/>', () => window.AjaModular.open('chamado-yoda'));
         yodaButton.setAttribute('aria-label', 'Copiar link do Chamado Yoda');
-        const endButton = createMainToolbarBtn('purecloud-script-btn-endCustomer', 'Encerrar sem avaliação (demonstração)', '<circle cx="12" cy="12" r="10"/><path d="M7 7l10 10M17 7L7 17"/>', () => {});
-        endButton.setAttribute('aria-label', 'Encerrar sem avaliação (demonstração)');
+        const endButton = createMainToolbarBtn('purecloud-script-btn-endCustomer', 'Encerrar sem avaliação', '<circle cx="12" cy="12" r="10"/><path d="M7 7l10 10M17 7L7 17"/>', () => {
+            let originalButton = document.getElementById('btn-ninja-encerrar');
+            if (!originalButton) {
+                runOriginalEndCode();
+                originalButton = document.getElementById('btn-ninja-encerrar');
+            }
+            if (originalButton) {
+                originalButton.style.display = 'none';
+                originalButton.click();
+            }
+        });
+        endButton.setAttribute('aria-label', 'Encerrar sem avaliação');
     }
 
 
