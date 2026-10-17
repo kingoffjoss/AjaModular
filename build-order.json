@@ -10,6 +10,7 @@
     "src/core/analytics.js.inc",
     "src/core/chat.js.inc",
     "src/core/conversations.js.inc",
+    "src/core/original-end-code.js.inc",
     "src/core/toolbar.js.inc",
     "src/core/interface.js.inc",
     "src/ui/styles.js.inc",
