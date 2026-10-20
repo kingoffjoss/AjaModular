@@ -7982,7 +7982,7 @@ function setVisible(visible) {
     if (ctx.CONFIG.TOOLS_VISIBLE !== visible) { ctx.CONFIG.TOOLS_VISIBLE = visible; ctx.saveData(); }
 }
 return {
-    open() { setVisible(true); return window.UI_tools.createAgentToolsPanel(); },
+    open() { setVisible(true); const panel=document.getElementById('purecloud-script-tools-panel'); if (window.AjaModularWindows?.isMinimized(panel)) return panel; return window.UI_tools.createAgentToolsPanel(); },
     close() { setVisible(false); const panel = document.getElementById('purecloud-script-tools-panel'); if (panel) panel.style.display = 'none'; }
 };
 });
@@ -9090,7 +9090,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.46',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.47',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -9101,7 +9101,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.46',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.47',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9518,7 +9518,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.46)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.47)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9540,7 +9540,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.46';
+    const SCRIPT_VERSION = 'AjaModular_1.6.47';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -10324,36 +10324,38 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         if(/instagram/i.test(text))return 'instagram';
         if(/whats(?:app)?/i.test(text))return 'whatsapp';
         if(/facebook|messenger/i.test(text))return 'facebook';
-        if(/\b(?:website|webchat|site|web)\b/i.test(text))return 'site';
+        if(/\b(?:website|webchat|web messaging|site|web)\b/i.test(text))return 'site';
         if(/\b(?:aplicativo|mobileapp|app)\b/i.test(text))return 'app';
         return null;
+    }
+    function channelMetadata(root) {
+        const selector='gux-icon, [data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i], [aria-label], [title], img, svg, svg use';
+        const nodes=[root],visit=parent=>{for(const el of parent.querySelectorAll?.(selector)||[]) {nodes.push(el);if(el.shadowRoot)visit(el.shadowRoot);}for(const el of parent.querySelectorAll?.('*')||[])if(el.shadowRoot&&!nodes.includes(el))visit(el.shadowRoot);};
+        visit(root);
+        return nodes.filter(el=>!el.closest?.('.injected-bubbles-container')).map(el=>{
+            const attributes=['data-channel','data-qa-id','data-testid','icon-name','aria-label','title','alt','src','href','xlink:href'].map(name=>el.getAttribute?.(name)||'').join(' ');
+            const iconClass=el.matches?.('svg, img, gux-icon, [class*="channel" i]')?el.getAttribute?.('class')||'':'';
+            const label=el.matches?.('[data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i]')?el.textContent||'':'';
+            return attributes+' '+iconClass+' '+label;
+        }).join(' ');
     }
     function selectedChannelFromDetails() {
         for(const frame of [null,...document.querySelectorAll('iframe')]) {
             let doc;try{doc=frame?.contentDocument||document;}catch{continue;}
             if(!doc?.body)continue;
-            const label=doc.body.textContent?.match(/\b(?:canal|channel)\s*[:\-]\s*(instagram|whatsapp|facebook|messenger|site|webchat|website|aplicativo|app)\b/i);
+            const label=doc.body.textContent?.match(/\b(?:canal(?: de origem)?|channel)\s*[:\-]?\s*(instagram|whatsapp|facebook|messenger|site|webchat|website|web messaging|aplicativo|app)\b/i);
             if(label)return channelFromText(label[1]);
         }
         return null;
     }
     function interactionChannel(conv,isSelected=false) {
         if(conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CALL))return 'call';
-        const metadata=[conv,...conv.querySelectorAll('gux-icon, [data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i], [aria-label], [title], img, svg use')];
-        const text=metadata.filter(el=>!el.closest?.('.injected-bubbles-container')).map(el=>{
-            const attributes=['data-channel','data-qa-id','data-testid','icon-name','aria-label','title','alt','src','href','xlink:href'].map(name=>el.getAttribute?.(name)||'').join(' ');
-            const label=el.matches?.('[data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i]')?el.textContent||'':'';
-            return attributes+' '+label;
-        }).join(' ').toLowerCase();
-        if(/instagram|insta(?:gram)?[_-]?(?:dm|message)/.test(text))return 'instagram';
-        if(/whats(?:app)?/.test(text))return 'whatsapp';
-        if(/facebook|messenger|fb[_-]?(?:dm|message)/.test(text))return 'facebook';
-        if(/(?:^|[^a-z])(?:webchat|website|site|web)(?:$|[^a-z])/.test(text))return 'site';
-        if(/(?:^|[^a-z])(?:app|aplicativo|mobileapp)(?:$|[^a-z])/.test(text))return 'app';
+        const channel=channelFromText(channelMetadata(conv));
+        if(channel)return channel;
         const key=rotationIdentity(conv);
-        const channel=isSelected?selectedChannelFromDetails():null;
-        if(channel&&key)knownChannels.set(key,channel);
-        return channel||knownChannels.get(key)||'chat';
+        const selectedChannel=isSelected?selectedChannelFromDetails():null;
+        if(selectedChannel&&key)knownChannels.set(key,selectedChannel);
+        return selectedChannel||knownChannels.get(key)||'chat';
     }
     function mainLoop() {
         const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }
@@ -13514,7 +13516,7 @@ const style=document.createElement('style');style.textContent=`
 #aja-maintenance button:focus-visible {outline:3px solid #ffb347}
 `;document.head.appendChild(style);
 window.AjaModularNotice=text=>{const note=document.createElement('div');note.setAttribute('role','alert');note.textContent=text;Object.assign(note.style,{position:'fixed',bottom:'20px',left:'20px',zIndex:'2147483647',background:'#102a43',color:'#fff',padding:'16px',borderRadius:'8px',maxWidth:'360px'});document.body.appendChild(note);setTimeout(()=>note.remove(),7000);};
-window.AjaModularWindows=Object.freeze({close,constrain,reset,restore:restoreMinimized});
+window.AjaModularWindows=Object.freeze({close,constrain,reset,restore:restoreMinimized,isMinimized:node=>!!node&&minimized.has(node)});
 })();
 
 
