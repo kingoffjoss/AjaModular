@@ -2735,26 +2735,75 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                 }
                 return null;
             }
+            function documentoDesteQuadro() {
+                if(/\/messaging-gadget\//i.test(location.pathname))return buscarNasMensagensRecebidas(document).documento;
+                if(/\/scripter\//i.test(location.pathname)){
+                    const texto=document.body?.innerText||'';
+                    const campo=texto.match(/\bDocumento\s*:\s*(?:CPF|CNPJ)?\s*([\d.\-/\s]{11,22})/i);
+                    if(campo)return buscarNoTexto(campo[1]);
+                }
+                return null;
+            }
+            window.addEventListener('message',event=>{
+                if(event.origin!==location.origin||event.data?.tipo!=='aja-documento-pedir'||!event.data.id)return;
+                event.source?.postMessage({tipo:'aja-documento-resposta',id:event.data.id,documento:documentoDesteQuadro()},event.origin);
+            });
+            function quadrosVisiveis() {
+                const encontrados=[];
+                function visitar(raiz) {
+                    for(const quadro of raiz.querySelectorAll('iframe'))if(quadro.getClientRects().length&&/\/(?:messaging-gadget|scripter)\//i.test(quadro.src))encontrados.push(quadro);
+                    for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot)visitar(elemento.shadowRoot);
+                }
+                visitar(document);
+                return encontrados.sort((a,b)=>/messaging-gadget/i.test(a.src)?-1:/messaging-gadget/i.test(b.src)?1:0);
+            }
+            function pedirAoQuadro(quadro) {
+                return new Promise(resolve=>{
+                    const alvo=quadro.contentWindow;
+                    if(!alvo)return resolve(null);
+                    const id='aja-doc-'+Math.random().toString(36).slice(2);
+                    let encerrado=false;
+                    const concluir=valor=>{if(encerrado)return;encerrado=true;clearTimeout(timer);window.removeEventListener('message',receber);resolve(valor)};
+                    const receber=event=>{if(event.source===alvo&&event.origin===location.origin&&event.data?.tipo==='aja-documento-resposta'&&event.data.id===id)concluir(event.data.documento||null)};
+                    window.addEventListener('message',receber);
+                    const timer=setTimeout(()=>concluir(null),900);
+                    try{alvo.postMessage({tipo:'aja-documento-pedir',id},location.origin)}catch{concluir(null)}
+                });
+            }
+            async function buscarDocumentoNosQuadros() {
+                for(const quadro of quadrosVisiveis()){
+                    const documento=await pedirAoQuadro(quadro);
+                    if(documento)return documento;
+                }
+                return null;
+            }
+            async function copiarDocumento(documento) {
+                try { await navigator.clipboard.writeText(documento); return true; } catch {}
+                const campo=document.createElement('textarea');
+                campo.value=documento;
+                campo.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';
+                document.body.appendChild(campo);
+                campo.select();
+                let copiado=false;
+                try { copiado=document.execCommand('copy'); } catch {}
+                campo.remove();
+                if(copiado)return true;
+                if(typeof GM_setClipboard!=='undefined') { GM_setClipboard(documento); return true; }
+                return false;
+            }
 
             // --- 4. EXECUTAR E VISUALIZAR ---
-            window.executarExtracaoDocumento = function () {
-                const documento = buscarMelhorDocumento();
+            window.executarExtracaoDocumento = async function () {
+                const quadros=quadrosVisiveis();
+                const documento = quadros.length ? await buscarDocumentoNosQuadros() : buscarMelhorDocumento();
 
                 if (documento) {
                     const feedbackText = documento.length === 11 ? `CPF: ${documento}` : `CNPJ: ${documento}`;
 
-                    navigator.clipboard.writeText(documento).then(() => {
+                    if(await copiarDocumento(documento)) {
                         window.AjaModular.get('historico-documentos').record(documento);
                         mostrarFeedback(`Copiado! ${feedbackText}`, 'sucesso');
-                    }).catch(() => {
-                        if (typeof GM_setClipboard !== 'undefined') {
-                            GM_setClipboard(documento);
-                            window.AjaModular.get('historico-documentos').record(documento);
-                            mostrarFeedback(`Copiado (GM)! ${feedbackText}`, 'sucesso');
-                        } else {
-                            mostrarFeedback("Erro de Clipboard.", 'erro');
-                        }
-                    });
+                    } else mostrarFeedback("Erro de Clipboard.", 'erro');
                 } else {
                     mostrarFeedback("Nenhum CPF/CNPJ válido encontrado.", 'erro');
                 }
@@ -9117,7 +9166,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.48',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.49',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -9128,7 +9177,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.48',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.49',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9545,7 +9594,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.48)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.49)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9567,7 +9616,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.48';
+    const SCRIPT_VERSION = 'AjaModular_1.6.49';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -10347,6 +10396,68 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         app:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg>'
     };
     const knownChannels=new Map();
+    if(typeof window!=='undefined'&&typeof XMLHttpRequest!=='undefined'&&!window.__ajaChannelTokenObserver) {
+        window.__ajaChannelTokenObserver=true;
+        const originalFetch=window.fetch;
+        window.fetch=function(...args) {
+            const url=typeof args[0]==='string'?args[0]:args[0]?.url||'';
+            if(/api\.sae1\.pure\.cloud/i.test(url)) {
+                try {
+                    const headers=new Headers(args[1]?.headers||args[0]?.headers||{});
+                    const auth=headers.get('authorization');
+                    if(/^Bearer\s+\S+/i.test(auth||''))window.stolenGenesysToken=auth;
+                } catch {}
+            }
+            return originalFetch.apply(this,args);
+        };
+        const originalOpen=XMLHttpRequest.prototype.open;
+        const originalSetHeader=XMLHttpRequest.prototype.setRequestHeader;
+        XMLHttpRequest.prototype.open=function(method,url,...rest) {this.__ajaChannelApi=/api\.sae1\.pure\.cloud/i.test(String(url));return originalOpen.call(this,method,url,...rest);};
+        XMLHttpRequest.prototype.setRequestHeader=function(name,value) {
+            if(this.__ajaChannelApi&&String(name).toLowerCase()==='authorization'&&/^Bearer\s+\S+/i.test(value||''))window.stolenGenesysToken=value;
+            return originalSetHeader.apply(this,arguments);
+        };
+    }
+    let lastChannelLookup=0,channelLookupRunning=false;
+    function channelFromConversationEntity(entity) {
+        // O tipo "message" do Genesys inclui WhatsApp, webchat e outros canais.
+        // Apenas metadados explícitos podem escolher o ícone de uma plataforma.
+        const media=[entity?.participants,entity?.messages].flat().filter(Boolean);
+        for(const item of media) {
+            const fields=[item?.messageType,item?.integrationType,item?.channelType,item?.fromAddress,item?.toAddress,item?.address,item?.provider,item?.platform].filter(value=>typeof value==='string');
+            const channel=channelFromText(fields.join(' '));
+            if(channel)return channel;
+            for(const message of item?.messages||[]) {
+                const nested=channelFromText([message?.messageType,message?.fromAddress,message?.toAddress,message?.channelType].filter(value=>typeof value==='string').join(' '));
+                if(nested)return nested;
+            }
+        }
+        return null;
+    }
+    async function refreshKnownChannelsFromApi(groups) {
+        const token=window.stolenGenesysToken;
+        if(!/^Bearer\s+\S+/i.test(token||'')||channelLookupRunning||Date.now()-lastChannelLookup<60000)return;
+        lastChannelLookup=Date.now();channelLookupRunning=true;
+        try {
+            const response=await fetch('https://api.sae1.pure.cloud/api/v2/conversations/messages',{headers:{Authorization:token}});
+            if(!response.ok)return;
+            const data=await response.json();
+            for(const group of groups) {
+                const heading=group.querySelector('[id="interactionGroupHeading"]')?.textContent?.trim()||'';
+                const phone=(heading.match(/\b\d{11,15}\b/)||[])[0];
+                const selected=group.matches(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP.join(', '));
+                const selectedId=selected?document.querySelector('[data-group-id*="open:contextual"]')?.getAttribute('data-group-id')?.match(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/i)?.[0]:null;
+                const matches=(data.entities||[]).filter(entity=>{
+                    if(selectedId&&entity.id===selectedId)return true;
+                    if(!phone)return false;
+                    return (entity.participants||[]).some(participant=>[participant.address,participant.fromAddress,participant.toAddress].some(value=>typeof value==='string'&&value.replace(/\D/g,'').endsWith(phone)));
+                });
+                if(matches.length!==1)continue;
+                const channel=channelFromConversationEntity(matches[0]);
+                if(channel)knownChannels.set(rotationIdentity(group),channel);
+            }
+        } catch {} finally {channelLookupRunning=false;}
+    }
     function channelFromText(text) {
         if(/instagram/i.test(text))return 'instagram';
         if(/whats(?:app)?/i.test(text))return 'whatsapp';
@@ -10380,13 +10491,16 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         const channel=channelFromText(channelMetadata(conv));
         if(channel)return channel;
         const key=rotationIdentity(conv);
+        const known=knownChannels.get(key);
+        if(known)return known;
         const selectedChannel=isSelected?selectedChannelFromDetails():null;
         if(selectedChannel&&key)knownChannels.set(key,selectedChannel);
-        return selectedChannel||knownChannels.get(key)||'chat';
+        return selectedChannel||'chat';
     }
     function mainLoop() {
         const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }
         let conversationsNodeList = document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', ')); const sortedConversationsArray = Array.from(conversationsNodeList).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+        refreshKnownChannelsFromApi(sortedConversationsArray);
         const activeConversationElements = new Set(sortedConversationsArray); timerManager.cleanupTimers(activeConversationElements); const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
         sortedConversationsArray.forEach((conv, index) => {
             const nativeTimeElementsInConv = conv.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.NATIVE_TIMER_SELECTORS.join(', ')); nativeTimeElementsInConv.forEach(el => { if (el.classList.contains('injected-element') || el.classList.contains('injected-bubbles-container')) { return; } if (el.textContent.match(/\d+\s*(min|hr|seg|now|agora)/i) || el.matches('.duration, .message-timestamp')) { el.style.display = 'none'; } });
