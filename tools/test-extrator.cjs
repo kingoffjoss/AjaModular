@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 module.exports=function(){
  const source=fs.readFileSync(path.join(__dirname,'../src/tools/extrator.js'),'utf8');
  const scan=source.slice(source.indexOf('            function coletarTextos()'),source.indexOf('            // --- 4. EXECUTAR'));
- const leaf=(url,text)=>({URL:url,body:{innerText:text},querySelectorAll(){return []}});
+ const leaf=(url,text)=>({URL:url,body:{innerText:text},querySelectorAll(selector){return selector==='[data-automation-id="message-group"]'?this.groups||[]:[]}});
  const chat=leaf('https://apps.sae1.pure.cloud/messaging-gadget/messaging-gadget.html','Cliente: CPF 111.444.777-35');
  const nested={URL:'https://apps.sae1.pure.cloud/conversations',body:{innerText:''},querySelectorAll(selector){return selector==='iframe'?[{contentDocument:chat,getAttribute:()=>''}]:[]}};
  const shadow={children:[],querySelectorAll(selector){return selector==='iframe'?[{contentDocument:nested,getAttribute:()=>''}]:[]}};
@@ -15,6 +15,10 @@ module.exports=function(){
  assert.equal(context.buscarMelhorDocumento(),'11144477735');
  chat.body.innerText='CNPJ: 11.222.333/0001-81';
  assert.equal(context.buscarMelhorDocumento(),'11222333000181');
- chat.body.innerText='Sem documento';assert.equal(context.buscarMelhorDocumento(),'52998224725');
- return ['CPF/CNPJ copy searches nested conversation frames, accepts spaced documents and prefers the latest valid occurrence'];
+ chat.body.innerText='Sem documento';assert.equal(context.buscarMelhorDocumento(),null);
+ const group=(outbound,text)=>({querySelector:()=>({className:outbound?'_outbound_x':'_inbound_x'}),querySelectorAll:()=>[{innerText:text}]});
+ chat.groups=[group(true,'CPF de exemplo: 111.444.777-35'),group(false,'111.444.777-35'),group(true,'Cpf para atendimento?'),group(false,'12345678901')];
+ assert.equal(context.buscarMelhorDocumento(),null,'invalid recent reply must not copy an older document');
+ chat.groups[3]=group(false,'111.444.777-35');assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ return ['CPF/CNPJ copy reads the active conversation and latest received message without falling back to other chats or old numbers'];
 };

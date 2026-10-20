@@ -26,9 +26,9 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     const ehConversa=conversa||/\/messaging-gadget\//i.test(origem);
                     const selecionada=doc.querySelector?.('.interaction-content-wrapper, .interaction-content');
                     const textoSelecionado=selecionada?.innerText||selecionada?.textContent||'';
-                    if(textoSelecionado.trim())fontes.push({texto:textoSelecionado,prioridade:3});
+                    if(textoSelecionado.trim())fontes.push({texto:textoSelecionado,prioridade:3,conversa:ehConversa,doc});
                     const texto=doc.body.innerText||doc.body.textContent||'';
-                    if(texto.trim())fontes.push({texto,prioridade:ehConversa?2:0});
+                    if(texto.trim())fontes.push({texto,prioridade:ehConversa?2:0,conversa:ehConversa,doc});
                     visitarRaiz(doc,ehConversa);
                 }
                 function visitarRaiz(raiz,conversa) {
@@ -40,7 +40,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     }
                     for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot){
                         const texto=[...elemento.shadowRoot.children].map(filho=>filho.innerText||filho.textContent||'').join(' ');
-                        if(texto.trim())fontes.push({texto,prioridade:conversa?2:1});
+                        if(texto.trim())fontes.push({texto,prioridade:conversa?2:1,conversa});
                         visitarRaiz(elemento.shadowRoot,conversa);
                     }
                 }
@@ -100,8 +100,8 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
             }
 
             // --- 3. SISTEMA DE BUSCA INTELIGENTE ---
+            const regexDoc = /(?<!\d)(?:\d{2}[\s.]?\d{3}[\s.]?\d{3}[\s/]?\d{4}[\s-]?\d{2}|\d{3}[\s.]?\d{3}[\s.]?\d{3}[\s-]?\d{2})(?!\d)/g;
             function buscarNoTexto(textoTotal) {
-                const regexDoc = /(?<!\d)(?:\d{2}[\s.]?\d{3}[\s.]?\d{3}[\s/]?\d{4}[\s-]?\d{2}|\d{3}[\s.]?\d{3}[\s.]?\d{3}[\s-]?\d{2})(?!\d)/g;
                 const encontrados = [...textoTotal.matchAll(regexDoc)];
                 if (!encontrados.length) return null;
 
@@ -143,8 +143,35 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                 }
                 return null;
             }
+            function buscarNasMensagensRecebidas(doc) {
+                const grupos=[...doc.querySelectorAll('[data-automation-id="message-group"]')];
+                if(!grupos.length)return {encontrouGrupos:false,documento:null};
+                const mensagem=grupo=>[...grupo.querySelectorAll('[data-automation-id="messaging-gadget-message-textbody"]')].map(el=>el.innerText||el.textContent||'').join(' ');
+                const saiu=grupo=>/outbound/i.test(grupo.querySelector('[data-automation-id="message-group-header"]')?.className||'');
+                let ultimoPedido=-1;
+                grupos.forEach((grupo,i)=>{if(saiu(grupo)&&/\b(?:cpf|cnpj)\b/i.test(mensagem(grupo)))ultimoPedido=i;});
+                for(let i=grupos.length-1;i>ultimoPedido;i--){
+                    if(saiu(grupos[i]))continue;
+                    const texto=mensagem(grupos[i]);
+                    if(![...texto.matchAll(regexDoc)].length)continue;
+                    // Um número recente inválido não autoriza copiar um CPF antigo ou de outra conversa.
+                    return {encontrouGrupos:true,documento:buscarNoTexto(texto)};
+                }
+                return {encontrouGrupos:true,documento:null};
+            }
             function buscarMelhorDocumento() {
-                for(const fonte of coletarTextos()) {
+                const fontes=coletarTextos();
+                const conversas=fontes.filter(fonte=>fonte.conversa);
+                if(conversas.length){
+                    const docs=[...new Set(conversas.map(fonte=>fonte.doc).filter(Boolean))];
+                    for(const doc of docs){
+                        const resultado=buscarNasMensagensRecebidas(doc);
+                        if(resultado.encontrouGrupos)return resultado.documento;
+                    }
+                    for(const fonte of conversas){const documento=buscarNoTexto(fonte.texto);if(documento)return documento;}
+                    return null;
+                }
+                for(const fonte of fontes) {
                     const documento=buscarNoTexto(fonte.texto);
                     if(documento)return documento;
                 }
