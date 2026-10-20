@@ -197,7 +197,9 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot)visitar(elemento.shadowRoot);
                 }
                 visitar(document);
-                return encontrados.sort((a,b)=>/messaging-gadget/i.test(a.src)?-1:/messaging-gadget/i.test(b.src)?1:0);
+                // O documento exibido pelo script do atendimento é a fonte principal;
+                // a conversa serve de alternativa quando esse campo não estiver aberto.
+                return encontrados.sort((a,b)=>/\/scripter\//i.test(a.src)?-1:/\/scripter\//i.test(b.src)?1:0);
             }
             function pedirAoQuadro(quadro) {
                 return new Promise(resolve=>{

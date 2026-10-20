@@ -20,6 +20,9 @@ module.exports=function(){
  chat.groups=[group(true,'CPF de exemplo: 111.444.777-35'),group(false,'111.444.777-35'),group(true,'Cpf para atendimento?'),group(false,'12345678901')];
  assert.equal(context.buscarMelhorDocumento(),null,'invalid recent reply must not copy an older document');
  chat.groups[3]=group(false,'111.444.777-35');assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ const frame=src=>({src,getClientRects:()=>[{}]});
+ context.document={querySelectorAll:selector=>selector==='iframe'?[frame('https://apps.sae1.pure.cloud/messaging-gadget/messaging-gadget.html'),frame('https://apps.sae1.pure.cloud/scripter/')]:[]};
+ assert.match(context.quadrosVisiveis()[0].src,/scripter/,'the active script document must be checked before the chat');
  assert.ok(source.includes("tipo:'aja-documento-pedir'"));assert.ok(source.includes("tipo:'aja-documento-resposta'"));
  return ['CPF/CNPJ copy reads the active conversation and latest received message without falling back to other chats or old numbers'];
 };
