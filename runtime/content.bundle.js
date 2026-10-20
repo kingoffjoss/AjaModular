@@ -10324,7 +10324,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         if(/instagram/i.test(text))return 'instagram';
         if(/whats(?:app)?/i.test(text))return 'whatsapp';
         if(/facebook|messenger/i.test(text))return 'facebook';
-        if(/\b(?:website|webchat|web messaging|site|web)\b/i.test(text))return 'site';
+        if(/\b(?:website|site)\b/i.test(text))return 'site';
         if(/\b(?:aplicativo|mobileapp|app)\b/i.test(text))return 'app';
         return null;
     }
@@ -10343,7 +10343,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         for(const frame of [null,...document.querySelectorAll('iframe')]) {
             let doc;try{doc=frame?.contentDocument||document;}catch{continue;}
             if(!doc?.body)continue;
-            const label=doc.body.textContent?.match(/\b(?:canal(?: de origem)?|channel)\s*[:\-]?\s*(instagram|whatsapp|facebook|messenger|site|webchat|website|web messaging|aplicativo|app)\b/i);
+            const label=doc.body.textContent?.match(/\b(?:canal(?: de origem)?|channel)\s*[:\-]?\s*(instagram|whatsapp|facebook|messenger|site|website|aplicativo|app)\b/i);
             if(label)return channelFromText(label[1]);
         }
         return null;
