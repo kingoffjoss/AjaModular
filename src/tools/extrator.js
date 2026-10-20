@@ -24,8 +24,11 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     vistos.add(doc);
                     const origem=String(doc.URL||'');
                     const ehConversa=conversa||/\/messaging-gadget\//i.test(origem);
-                    const texto=doc.body.innerText||'';
-                    if(texto.trim())fontes.push({texto,conversa:ehConversa});
+                    const selecionada=doc.querySelector?.('.interaction-content-wrapper, .interaction-content');
+                    const textoSelecionado=selecionada?.innerText||selecionada?.textContent||'';
+                    if(textoSelecionado.trim())fontes.push({texto:textoSelecionado,prioridade:3});
+                    const texto=doc.body.innerText||doc.body.textContent||'';
+                    if(texto.trim())fontes.push({texto,prioridade:ehConversa?2:0});
                     visitarRaiz(doc,ehConversa);
                 }
                 function visitarRaiz(raiz,conversa) {
@@ -36,13 +39,13 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                         catch{} // Quadros de outra origem não podem ser lidos pelo navegador.
                     }
                     for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot){
-                        const texto=[...elemento.shadowRoot.children].map(filho=>filho.innerText||'').join(' ');
-                        if(texto.trim())fontes.push({texto,conversa});
+                        const texto=[...elemento.shadowRoot.children].map(filho=>filho.innerText||filho.textContent||'').join(' ');
+                        if(texto.trim())fontes.push({texto,prioridade:conversa?2:1});
                         visitarRaiz(elemento.shadowRoot,conversa);
                     }
                 }
                 visitarDocumento(document);
-                return fontes.sort((a,b)=>Number(b.conversa)-Number(a.conversa));
+                return fontes.sort((a,b)=>b.prioridade-a.prioridade);
             }
 
             // --- 2. VALIDADORES MATEMÁTICOS ---
@@ -98,15 +101,15 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
             // --- 3. SISTEMA DE BUSCA INTELIGENTE ---
             function buscarNoTexto(textoTotal) {
-                const regexDoc = /(?<!\d)(\d{3}\.?\d{3}\.?\d{3}-?\d{2})(?!\d)|(?<!\d)(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})(?!\d)/g;
-
-                const encontrados = textoTotal.match(regexDoc);
-                if (!encontrados) return null;
+                const regexDoc = /(?<!\d)(?:\d{2}[\s.]?\d{3}[\s.]?\d{3}[\s/]?\d{4}[\s-]?\d{2}|\d{3}[\s.]?\d{3}[\s.]?\d{3}[\s-]?\d{2})(?!\d)/g;
+                const encontrados = [...textoTotal.matchAll(regexDoc)];
+                if (!encontrados.length) return null;
 
                 let melhorCandidato = null;
                 let maiorPontuacao = -1000;
 
-                encontrados.forEach(rawDoc => {
+                encontrados.forEach(encontrado => {
+                    const rawDoc = encontrado[0];
                     const docLimpo = rawDoc.replace(/\D/g, '');
                     let ehValido = false;
 
@@ -116,7 +119,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     if (!ehValido) return;
 
                     let pontos = 0;
-                    const index = textoTotal.indexOf(rawDoc);
+                    const index = encontrado.index;
                     const contexto = textoTotal.substring(Math.max(0, index - 60), index + rawDoc.length + 60).toLowerCase();
 
                     if (contexto.includes('cpf') || contexto.includes('cnpj') || contexto.includes('documento')) pontos += 200;
@@ -129,7 +132,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
                     pontos += 5;
 
-                    if (pontos > maiorPontuacao) {
+                    if (pontos >= maiorPontuacao) {
                         maiorPontuacao = pontos;
                         melhorCandidato = docLimpo;
                     }

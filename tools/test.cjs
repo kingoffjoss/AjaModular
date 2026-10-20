@@ -100,6 +100,7 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...require('./test-productivity.cjs')());
  checks.push(...require('./test-auto-rotation.cjs')());
  checks.push(...require('./test-car-github.cjs')());
+ checks.push(...require('./test-car-editor.cjs')());
  checks.push(...await require('./test-copy-link.cjs')());
 checks.push(...require('./test-module-audit.cjs')());
  checks.push(...require('./test-tool-visibility.cjs')());

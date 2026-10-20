@@ -489,14 +489,16 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
             }
 
             // Expand only the command immediately before the caret.
-            document.addEventListener('keydown', (e) => {
+            function expandShortcut(e) {
                 if (e.key !== ' ' || e.isComposing || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
-                const active = (e.composedPath?.() || [e.target]).find(el => el?.matches?.('textarea, input, [contenteditable="true"], [contenteditable=""]'));
+                const active = (e.composedPath?.() || [e.target]).find(el =>
+                    el?.nodeType === 1 && (el.matches?.('textarea, input') || (el.hasAttribute?.('contenteditable') && el.isContentEditable)));
                 if (!active || active.disabled || active.readOnly || active.closest('#car-panel')) return;
                 if (active.tagName === 'INPUT' && !['text','search','url','tel'].includes(active.type)) return;
                 const doc = active.ownerDocument;
                 let before, selection, range;
-                if (active.isContentEditable) {
+                const editable = active.isContentEditable && active.tagName !== 'TEXTAREA' && active.tagName !== 'INPUT';
+                if (editable) {
                     selection = active.getRootNode().getSelection?.() || doc.getSelection();
                     if (!selection?.rangeCount || !selection.isCollapsed) return;
                     range = selection.getRangeAt(0);
@@ -511,7 +513,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 // Bookmarklet storage is synchronous and shared by same-origin editor frames.
                 if (!isExtension) Storage.get(data => { scripts = data.scripts; });
                 if (!trigger || !Object.prototype.hasOwnProperty.call(scripts, trigger)) return;
-                if (active.isContentEditable) {
+                let insertionStart, insertionEnd;
+                if (editable) {
                     const start = before.length - trigger.length;
                     const walker = doc.createTreeWalker(active, 4);
                     let node, offset = 0, found = false;
@@ -521,10 +524,29 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     }
                     if (!found) return;
                     selection.removeAllRanges(); selection.addRange(range);
-                } else active.setSelectionRange(active.selectionStart-trigger.length, active.selectionEnd);
+                } else {
+                    insertionStart = active.selectionStart-trigger.length;
+                    insertionEnd = active.selectionEnd;
+                    active.setSelectionRange(insertionStart, insertionEnd);
+                }
                 e.preventDefault();
-                doc.execCommand('insertText', false, scripts[trigger]);
-            }, true);
+                const replacement = scripts[trigger];
+                const previous = editable ? active.textContent : active.value;
+                doc.execCommand('insertText', false, replacement);
+                // Some Genesys editors ignore execCommand. Use their native editable surface then notify the framework.
+                if ((editable ? active.textContent : active.value) === previous) {
+                    if (editable) {
+                        range.deleteContents();
+                        const textNode = doc.createTextNode(replacement);
+                        range.insertNode(textNode);
+                        range.setStartAfter(textNode);
+                        range.collapse(true);
+                        selection.removeAllRanges(); selection.addRange(range);
+                    } else active.setRangeText(replacement, insertionStart, insertionEnd, 'end');
+                    active.dispatchEvent(new (doc.defaultView?.InputEvent || Event)('input', { bubbles: true, inputType: 'insertText', data: replacement }));
+                }
+            }
+            document.addEventListener('keydown', expandShortcut, true);
             if (isExtension) chrome.storage.onChanged?.addListener(loadData);
 
             window.toggleCAR = function () {

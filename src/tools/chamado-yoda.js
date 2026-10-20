@@ -1,4 +1,4 @@
-// Opens the current ticket URL from the visible platform link.
+// Opens the existing platform action; never caches a customer's ticket link.
 window.AjaModular.register('chamado-yoda', [], function () {
     const normalize = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
     const visible = element => element.getClientRects().length > 0 && element.ownerDocument.defaultView.getComputedStyle(element).visibility !== 'hidden';
@@ -32,13 +32,8 @@ window.AjaModular.register('chamado-yoda', [], function () {
         }
         const link = unique[0];
         if (link.getAttribute('aria-disabled') === 'true') return;
-        let url;
-        try { url = new URL(link.getAttribute('href') || '', link.ownerDocument.baseURI); } catch { /* link inválido */ }
-        if (!url || url.protocol !== 'https:' || url.hostname !== 'revan-atendimento.brisanet.net.br' || !/^#\/yoda\/attendance\/\d+(?:[/?#]|$)/.test(url.hash)) {
-            window.AjaModularNotice?.('O link do Yoda não está disponível neste atendimento.', 'warn');
-            return;
-        }
-        window.open(url.href, '_blank', 'noopener,noreferrer');
+        // The Scripts link may use a platform handler instead of a plain href.
+        link.click();
     }
     return {open};
 });

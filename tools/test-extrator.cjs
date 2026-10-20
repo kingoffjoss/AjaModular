@@ -9,6 +9,12 @@ module.exports=function(){
  const main={URL:'https://apps.sae1.pure.cloud/directory/',body:{innerText:'CPF antigo: 529.982.247-25'},querySelectorAll(selector){return selector==='*'?[{shadowRoot:shadow}]:[]}};
  const context={document:main,Set,Number,String};vm.createContext(context);vm.runInContext(scan,context);
  assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ chat.body.innerText='Cliente informou CPF 111 444 777 35';
+ assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ chat.body.innerText='CPF antigo 529.982.247-25. CPF atual 111.444.777-35';
+ assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ chat.body.innerText='CNPJ: 11.222.333/0001-81';
+ assert.equal(context.buscarMelhorDocumento(),'11222333000181');
  chat.body.innerText='Sem documento';assert.equal(context.buscarMelhorDocumento(),'52998224725');
- return ['CPF copy searches nested conversation frames inside open shadow roots before older page data'];
+ return ['CPF/CNPJ copy searches nested conversation frames, accepts spaced documents and prefers the latest valid occurrence'];
 };
