@@ -104,9 +104,6 @@
     $('next').textContent = upcoming ? upcoming.toLocaleTimeString('pt-BR') : '--:--:--';
     $('nextDay').textContent = upcoming ? upcoming.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}) + ' · +5 segundos' : 'Configure seus horários';
     $('clock').textContent = now.toLocaleTimeString('pt-BR') + ' · ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (active && timestamp - lastTick > 15000) {
-      active = false; log('Pausado: navegador ou computador ficou suspenso. Confira os horários antes de reativar.');
-    }
     lastTick = timestamp;
     const onPage = location.hash.includes('/timesheet/clockingsGeo/register');
     if (activity && onPage && timestamp - lastActivity >= 300000) {
