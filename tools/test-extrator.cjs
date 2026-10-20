@@ -7,7 +7,7 @@ module.exports=function(){
  const nested={URL:'https://apps.sae1.pure.cloud/conversations',body:{innerText:''},querySelectorAll(selector){return selector==='iframe'?[{contentDocument:chat,getAttribute:()=>''}]:[]}};
  const shadow={children:[],querySelectorAll(selector){return selector==='iframe'?[{contentDocument:nested,getAttribute:()=>''}]:[]}};
  const main={URL:'https://apps.sae1.pure.cloud/directory/',body:{innerText:'CPF antigo: 529.982.247-25'},querySelectorAll(selector){return selector==='*'?[{shadowRoot:shadow}]:[]}};
- const context={document:main,Set,Number,String};vm.createContext(context);vm.runInContext(scan,context);
+ const context={document:main,window:{addEventListener(){}},location:{pathname:'/directory/',origin:'https://apps.sae1.pure.cloud'},Set,Number,String};vm.createContext(context);vm.runInContext(scan,context);
  assert.equal(context.buscarMelhorDocumento(),'11144477735');
  chat.body.innerText='Cliente informou CPF 111 444 777 35';
  assert.equal(context.buscarMelhorDocumento(),'11144477735');
@@ -20,5 +20,6 @@ module.exports=function(){
  chat.groups=[group(true,'CPF de exemplo: 111.444.777-35'),group(false,'111.444.777-35'),group(true,'Cpf para atendimento?'),group(false,'12345678901')];
  assert.equal(context.buscarMelhorDocumento(),null,'invalid recent reply must not copy an older document');
  chat.groups[3]=group(false,'111.444.777-35');assert.equal(context.buscarMelhorDocumento(),'11144477735');
+ assert.ok(source.includes("tipo:'aja-documento-pedir'"));assert.ok(source.includes("tipo:'aja-documento-resposta'"));
  return ['CPF/CNPJ copy reads the active conversation and latest received message without falling back to other chats or old numbers'];
 };

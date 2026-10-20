@@ -177,26 +177,75 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                 }
                 return null;
             }
+            function documentoDesteQuadro() {
+                if(/\/messaging-gadget\//i.test(location.pathname))return buscarNasMensagensRecebidas(document).documento;
+                if(/\/scripter\//i.test(location.pathname)){
+                    const texto=document.body?.innerText||'';
+                    const campo=texto.match(/\bDocumento\s*:\s*(?:CPF|CNPJ)?\s*([\d.\-/\s]{11,22})/i);
+                    if(campo)return buscarNoTexto(campo[1]);
+                }
+                return null;
+            }
+            window.addEventListener('message',event=>{
+                if(event.origin!==location.origin||event.data?.tipo!=='aja-documento-pedir'||!event.data.id)return;
+                event.source?.postMessage({tipo:'aja-documento-resposta',id:event.data.id,documento:documentoDesteQuadro()},event.origin);
+            });
+            function quadrosVisiveis() {
+                const encontrados=[];
+                function visitar(raiz) {
+                    for(const quadro of raiz.querySelectorAll('iframe'))if(quadro.getClientRects().length&&/\/(?:messaging-gadget|scripter)\//i.test(quadro.src))encontrados.push(quadro);
+                    for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot)visitar(elemento.shadowRoot);
+                }
+                visitar(document);
+                return encontrados.sort((a,b)=>/messaging-gadget/i.test(a.src)?-1:/messaging-gadget/i.test(b.src)?1:0);
+            }
+            function pedirAoQuadro(quadro) {
+                return new Promise(resolve=>{
+                    const alvo=quadro.contentWindow;
+                    if(!alvo)return resolve(null);
+                    const id='aja-doc-'+Math.random().toString(36).slice(2);
+                    let encerrado=false;
+                    const concluir=valor=>{if(encerrado)return;encerrado=true;clearTimeout(timer);window.removeEventListener('message',receber);resolve(valor)};
+                    const receber=event=>{if(event.source===alvo&&event.origin===location.origin&&event.data?.tipo==='aja-documento-resposta'&&event.data.id===id)concluir(event.data.documento||null)};
+                    window.addEventListener('message',receber);
+                    const timer=setTimeout(()=>concluir(null),900);
+                    try{alvo.postMessage({tipo:'aja-documento-pedir',id},location.origin)}catch{concluir(null)}
+                });
+            }
+            async function buscarDocumentoNosQuadros() {
+                for(const quadro of quadrosVisiveis()){
+                    const documento=await pedirAoQuadro(quadro);
+                    if(documento)return documento;
+                }
+                return null;
+            }
+            async function copiarDocumento(documento) {
+                try { await navigator.clipboard.writeText(documento); return true; } catch {}
+                const campo=document.createElement('textarea');
+                campo.value=documento;
+                campo.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';
+                document.body.appendChild(campo);
+                campo.select();
+                let copiado=false;
+                try { copiado=document.execCommand('copy'); } catch {}
+                campo.remove();
+                if(copiado)return true;
+                if(typeof GM_setClipboard!=='undefined') { GM_setClipboard(documento); return true; }
+                return false;
+            }
 
             // --- 4. EXECUTAR E VISUALIZAR ---
-            window.executarExtracaoDocumento = function () {
-                const documento = buscarMelhorDocumento();
+            window.executarExtracaoDocumento = async function () {
+                const quadros=quadrosVisiveis();
+                const documento = quadros.length ? await buscarDocumentoNosQuadros() : buscarMelhorDocumento();
 
                 if (documento) {
                     const feedbackText = documento.length === 11 ? `CPF: ${documento}` : `CNPJ: ${documento}`;
 
-                    navigator.clipboard.writeText(documento).then(() => {
+                    if(await copiarDocumento(documento)) {
                         window.AjaModular.get('historico-documentos').record(documento);
                         mostrarFeedback(`Copiado! ${feedbackText}`, 'sucesso');
-                    }).catch(() => {
-                        if (typeof GM_setClipboard !== 'undefined') {
-                            GM_setClipboard(documento);
-                            window.AjaModular.get('historico-documentos').record(documento);
-                            mostrarFeedback(`Copiado (GM)! ${feedbackText}`, 'sucesso');
-                        } else {
-                            mostrarFeedback("Erro de Clipboard.", 'erro');
-                        }
-                    });
+                    } else mostrarFeedback("Erro de Clipboard.", 'erro');
                 } else {
                     mostrarFeedback("Nenhum CPF/CNPJ válido encontrado.", 'erro');
                 }

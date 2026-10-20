@@ -184,6 +184,68 @@
         app:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg>'
     };
     const knownChannels=new Map();
+    if(typeof window!=='undefined'&&typeof XMLHttpRequest!=='undefined'&&!window.__ajaChannelTokenObserver) {
+        window.__ajaChannelTokenObserver=true;
+        const originalFetch=window.fetch;
+        window.fetch=function(...args) {
+            const url=typeof args[0]==='string'?args[0]:args[0]?.url||'';
+            if(/api\.sae1\.pure\.cloud/i.test(url)) {
+                try {
+                    const headers=new Headers(args[1]?.headers||args[0]?.headers||{});
+                    const auth=headers.get('authorization');
+                    if(/^Bearer\s+\S+/i.test(auth||''))window.stolenGenesysToken=auth;
+                } catch {}
+            }
+            return originalFetch.apply(this,args);
+        };
+        const originalOpen=XMLHttpRequest.prototype.open;
+        const originalSetHeader=XMLHttpRequest.prototype.setRequestHeader;
+        XMLHttpRequest.prototype.open=function(method,url,...rest) {this.__ajaChannelApi=/api\.sae1\.pure\.cloud/i.test(String(url));return originalOpen.call(this,method,url,...rest);};
+        XMLHttpRequest.prototype.setRequestHeader=function(name,value) {
+            if(this.__ajaChannelApi&&String(name).toLowerCase()==='authorization'&&/^Bearer\s+\S+/i.test(value||''))window.stolenGenesysToken=value;
+            return originalSetHeader.apply(this,arguments);
+        };
+    }
+    let lastChannelLookup=0,channelLookupRunning=false;
+    function channelFromConversationEntity(entity) {
+        // O tipo "message" do Genesys inclui WhatsApp, webchat e outros canais.
+        // Apenas metadados explícitos podem escolher o ícone de uma plataforma.
+        const media=[entity?.participants,entity?.messages].flat().filter(Boolean);
+        for(const item of media) {
+            const fields=[item?.messageType,item?.integrationType,item?.channelType,item?.fromAddress,item?.toAddress,item?.address,item?.provider,item?.platform].filter(value=>typeof value==='string');
+            const channel=channelFromText(fields.join(' '));
+            if(channel)return channel;
+            for(const message of item?.messages||[]) {
+                const nested=channelFromText([message?.messageType,message?.fromAddress,message?.toAddress,message?.channelType].filter(value=>typeof value==='string').join(' '));
+                if(nested)return nested;
+            }
+        }
+        return null;
+    }
+    async function refreshKnownChannelsFromApi(groups) {
+        const token=window.stolenGenesysToken;
+        if(!/^Bearer\s+\S+/i.test(token||'')||channelLookupRunning||Date.now()-lastChannelLookup<60000)return;
+        lastChannelLookup=Date.now();channelLookupRunning=true;
+        try {
+            const response=await fetch('https://api.sae1.pure.cloud/api/v2/conversations/messages',{headers:{Authorization:token}});
+            if(!response.ok)return;
+            const data=await response.json();
+            for(const group of groups) {
+                const heading=group.querySelector('[id="interactionGroupHeading"]')?.textContent?.trim()||'';
+                const phone=(heading.match(/\b\d{11,15}\b/)||[])[0];
+                const selected=group.matches(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP.join(', '));
+                const selectedId=selected?document.querySelector('[data-group-id*="open:contextual"]')?.getAttribute('data-group-id')?.match(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/i)?.[0]:null;
+                const matches=(data.entities||[]).filter(entity=>{
+                    if(selectedId&&entity.id===selectedId)return true;
+                    if(!phone)return false;
+                    return (entity.participants||[]).some(participant=>[participant.address,participant.fromAddress,participant.toAddress].some(value=>typeof value==='string'&&value.replace(/\D/g,'').endsWith(phone)));
+                });
+                if(matches.length!==1)continue;
+                const channel=channelFromConversationEntity(matches[0]);
+                if(channel)knownChannels.set(rotationIdentity(group),channel);
+            }
+        } catch {} finally {channelLookupRunning=false;}
+    }
     function channelFromText(text) {
         if(/instagram/i.test(text))return 'instagram';
         if(/whats(?:app)?/i.test(text))return 'whatsapp';
@@ -217,13 +279,16 @@
         const channel=channelFromText(channelMetadata(conv));
         if(channel)return channel;
         const key=rotationIdentity(conv);
+        const known=knownChannels.get(key);
+        if(known)return known;
         const selectedChannel=isSelected?selectedChannelFromDetails():null;
         if(selectedChannel&&key)knownChannels.set(key,selectedChannel);
-        return selectedChannel||knownChannels.get(key)||'chat';
+        return selectedChannel||'chat';
     }
     function mainLoop() {
         const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }
         let conversationsNodeList = document.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.INTERACTION_GROUP.join(', ')); const sortedConversationsArray = Array.from(conversationsNodeList).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+        refreshKnownChannelsFromApi(sortedConversationsArray);
         const activeConversationElements = new Set(sortedConversationsArray); timerManager.cleanupTimers(activeConversationElements); const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
         sortedConversationsArray.forEach((conv, index) => {
             const nativeTimeElementsInConv = conv.querySelectorAll(CONFIG.PURECLOUD_SELECTORS.NATIVE_TIMER_SELECTORS.join(', ')); nativeTimeElementsInConv.forEach(el => { if (el.classList.contains('injected-element') || el.classList.contains('injected-bubbles-container')) { return; } if (el.textContent.match(/\d+\s*(min|hr|seg|now|agora)/i) || el.matches('.duration, .message-timestamp')) { el.style.display = 'none'; } });
