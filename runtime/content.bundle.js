@@ -2582,8 +2582,11 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     vistos.add(doc);
                     const origem=String(doc.URL||'');
                     const ehConversa=conversa||/\/messaging-gadget\//i.test(origem);
-                    const texto=doc.body.innerText||'';
-                    if(texto.trim())fontes.push({texto,conversa:ehConversa});
+                    const selecionada=doc.querySelector?.('.interaction-content-wrapper, .interaction-content');
+                    const textoSelecionado=selecionada?.innerText||selecionada?.textContent||'';
+                    if(textoSelecionado.trim())fontes.push({texto:textoSelecionado,prioridade:3});
+                    const texto=doc.body.innerText||doc.body.textContent||'';
+                    if(texto.trim())fontes.push({texto,prioridade:ehConversa?2:0});
                     visitarRaiz(doc,ehConversa);
                 }
                 function visitarRaiz(raiz,conversa) {
@@ -2594,13 +2597,13 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                         catch{} // Quadros de outra origem não podem ser lidos pelo navegador.
                     }
                     for(const elemento of raiz.querySelectorAll('*'))if(elemento.shadowRoot){
-                        const texto=[...elemento.shadowRoot.children].map(filho=>filho.innerText||'').join(' ');
-                        if(texto.trim())fontes.push({texto,conversa});
+                        const texto=[...elemento.shadowRoot.children].map(filho=>filho.innerText||filho.textContent||'').join(' ');
+                        if(texto.trim())fontes.push({texto,prioridade:conversa?2:1});
                         visitarRaiz(elemento.shadowRoot,conversa);
                     }
                 }
                 visitarDocumento(document);
-                return fontes.sort((a,b)=>Number(b.conversa)-Number(a.conversa));
+                return fontes.sort((a,b)=>b.prioridade-a.prioridade);
             }
 
             // --- 2. VALIDADORES MATEMÁTICOS ---
@@ -2656,15 +2659,15 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
             // --- 3. SISTEMA DE BUSCA INTELIGENTE ---
             function buscarNoTexto(textoTotal) {
-                const regexDoc = /(?<!\d)(\d{3}\.?\d{3}\.?\d{3}-?\d{2})(?!\d)|(?<!\d)(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})(?!\d)/g;
-
-                const encontrados = textoTotal.match(regexDoc);
-                if (!encontrados) return null;
+                const regexDoc = /(?<!\d)(?:\d{2}[\s.]?\d{3}[\s.]?\d{3}[\s/]?\d{4}[\s-]?\d{2}|\d{3}[\s.]?\d{3}[\s.]?\d{3}[\s-]?\d{2})(?!\d)/g;
+                const encontrados = [...textoTotal.matchAll(regexDoc)];
+                if (!encontrados.length) return null;
 
                 let melhorCandidato = null;
                 let maiorPontuacao = -1000;
 
-                encontrados.forEach(rawDoc => {
+                encontrados.forEach(encontrado => {
+                    const rawDoc = encontrado[0];
                     const docLimpo = rawDoc.replace(/\D/g, '');
                     let ehValido = false;
 
@@ -2674,7 +2677,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     if (!ehValido) return;
 
                     let pontos = 0;
-                    const index = textoTotal.indexOf(rawDoc);
+                    const index = encontrado.index;
                     const contexto = textoTotal.substring(Math.max(0, index - 60), index + rawDoc.length + 60).toLowerCase();
 
                     if (contexto.includes('cpf') || contexto.includes('cnpj') || contexto.includes('documento')) pontos += 200;
@@ -2687,7 +2690,7 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
 
                     pontos += 5;
 
-                    if (pontos > maiorPontuacao) {
+                    if (pontos >= maiorPontuacao) {
                         maiorPontuacao = pontos;
                         melhorCandidato = docLimpo;
                     }
@@ -5979,14 +5982,16 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
             }
 
             // Expand only the command immediately before the caret.
-            document.addEventListener('keydown', (e) => {
+            function expandShortcut(e) {
                 if (e.key !== ' ' || e.isComposing || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
-                const active = (e.composedPath?.() || [e.target]).find(el => el?.matches?.('textarea, input, [contenteditable="true"], [contenteditable=""]'));
+                const active = (e.composedPath?.() || [e.target]).find(el =>
+                    el?.nodeType === 1 && (el.matches?.('textarea, input') || (el.hasAttribute?.('contenteditable') && el.isContentEditable)));
                 if (!active || active.disabled || active.readOnly || active.closest('#car-panel')) return;
                 if (active.tagName === 'INPUT' && !['text','search','url','tel'].includes(active.type)) return;
                 const doc = active.ownerDocument;
                 let before, selection, range;
-                if (active.isContentEditable) {
+                const editable = active.isContentEditable && active.tagName !== 'TEXTAREA' && active.tagName !== 'INPUT';
+                if (editable) {
                     selection = active.getRootNode().getSelection?.() || doc.getSelection();
                     if (!selection?.rangeCount || !selection.isCollapsed) return;
                     range = selection.getRangeAt(0);
@@ -6001,7 +6006,8 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                 // Bookmarklet storage is synchronous and shared by same-origin editor frames.
                 if (!isExtension) Storage.get(data => { scripts = data.scripts; });
                 if (!trigger || !Object.prototype.hasOwnProperty.call(scripts, trigger)) return;
-                if (active.isContentEditable) {
+                let insertionStart, insertionEnd;
+                if (editable) {
                     const start = before.length - trigger.length;
                     const walker = doc.createTreeWalker(active, 4);
                     let node, offset = 0, found = false;
@@ -6011,10 +6017,29 @@ window.AjaModular.register("car", ["compatibility"], function(ctx) {
                     }
                     if (!found) return;
                     selection.removeAllRanges(); selection.addRange(range);
-                } else active.setSelectionRange(active.selectionStart-trigger.length, active.selectionEnd);
+                } else {
+                    insertionStart = active.selectionStart-trigger.length;
+                    insertionEnd = active.selectionEnd;
+                    active.setSelectionRange(insertionStart, insertionEnd);
+                }
                 e.preventDefault();
-                doc.execCommand('insertText', false, scripts[trigger]);
-            }, true);
+                const replacement = scripts[trigger];
+                const previous = editable ? active.textContent : active.value;
+                doc.execCommand('insertText', false, replacement);
+                // Some Genesys editors ignore execCommand. Use their native editable surface then notify the framework.
+                if ((editable ? active.textContent : active.value) === previous) {
+                    if (editable) {
+                        range.deleteContents();
+                        const textNode = doc.createTextNode(replacement);
+                        range.insertNode(textNode);
+                        range.setStartAfter(textNode);
+                        range.collapse(true);
+                        selection.removeAllRanges(); selection.addRange(range);
+                    } else active.setRangeText(replacement, insertionStart, insertionEnd, 'end');
+                    active.dispatchEvent(new (doc.defaultView?.InputEvent || Event)('input', { bubbles: true, inputType: 'insertText', data: replacement }));
+                }
+            }
+            document.addEventListener('keydown', expandShortcut, true);
             if (isExtension) chrome.storage.onChanged?.addListener(loadData);
 
             window.toggleCAR = function () {
@@ -9065,7 +9090,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.45',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.46',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -9076,7 +9101,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.45',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.46',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9127,7 +9152,7 @@ window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
 
 
 
-// Opens the current ticket URL from the visible platform link.
+// Opens the existing platform action; never caches a customer's ticket link.
 window.AjaModular.register('chamado-yoda', [], function () {
     const normalize = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
     const visible = element => element.getClientRects().length > 0 && element.ownerDocument.defaultView.getComputedStyle(element).visibility !== 'hidden';
@@ -9161,13 +9186,8 @@ window.AjaModular.register('chamado-yoda', [], function () {
         }
         const link = unique[0];
         if (link.getAttribute('aria-disabled') === 'true') return;
-        let url;
-        try { url = new URL(link.getAttribute('href') || '', link.ownerDocument.baseURI); } catch { /* link inválido */ }
-        if (!url || url.protocol !== 'https:' || url.hostname !== 'revan-atendimento.brisanet.net.br' || !/^#\/yoda\/attendance\/\d+(?:[/?#]|$)/.test(url.hash)) {
-            window.AjaModularNotice?.('O link do Yoda não está disponível neste atendimento.', 'warn');
-            return;
-        }
-        window.open(url.href, '_blank', 'noopener,noreferrer');
+        // The Scripts link may use a platform handler instead of a plain href.
+        link.click();
     }
     return {open};
 });
@@ -9498,7 +9518,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.45)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.46)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9520,7 +9540,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.45';
+    const SCRIPT_VERSION = 'AjaModular_1.6.46';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
