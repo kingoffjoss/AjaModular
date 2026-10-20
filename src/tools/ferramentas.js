@@ -220,7 +220,7 @@ function setVisible(visible) {
     if (ctx.CONFIG.TOOLS_VISIBLE !== visible) { ctx.CONFIG.TOOLS_VISIBLE = visible; ctx.saveData(); }
 }
 return {
-    open() { setVisible(true); return window.UI_tools.createAgentToolsPanel(); },
+    open() { setVisible(true); const panel=document.getElementById('purecloud-script-tools-panel'); if (window.AjaModularWindows?.isMinimized(panel)) return panel; return window.UI_tools.createAgentToolsPanel(); },
     close() { setVisible(false); const panel = document.getElementById('purecloud-script-tools-panel'); if (panel) panel.style.display = 'none'; }
 };
 });

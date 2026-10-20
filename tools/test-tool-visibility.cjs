@@ -15,8 +15,12 @@ module.exports=function(){
  vm.runInContext(handler,sandbox);assert.equal(panel.style.display,'flex');assert.equal(context.CONFIG.TOOLS_VISIBLE,true);
  for(let i=0;i<30;i++)context.UI.createAgentToolsPanel();
  assert.equal(panel.style.display,'flex');assert.equal(panel.note,'Anotação preservada');assert.equal(panel.tab,'links');
+ let minimized=true;window.AjaModularWindows={isMinimized:node=>node===panel&&minimized};
+ panel.style.display='none';for(let i=0;i<30;i++)context.UI.createAgentToolsPanel();
+ assert.equal(panel.style.display,'none','timer refresh must not reopen a docked panel');
+ minimized=false;context.UI.createAgentToolsPanel();assert.equal(panel.style.display,'flex');
  vm.runInContext(handler,sandbox);assert.equal(panel.style.display,'none');assert.equal(context.CONFIG.TOOLS_VISIBLE,false);
  for(let i=0;i<30;i++)context.UI.createAgentToolsPanel();assert.equal(panel.style.display,'none');
  tool.open();assert.equal(panel.style.display,'flex');tool.close();assert.equal(panel.style.display,'none');assert.ok(saves<10);
- return ['Mini dashboard opens tools; repeated timer refresh preserves visibility, notes and tab; explicit close stays closed'];
+ return ['Mini dashboard opens tools; timer refresh respects the minimized dock; explicit close stays closed'];
 };

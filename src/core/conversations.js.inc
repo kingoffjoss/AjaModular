@@ -188,36 +188,38 @@
         if(/instagram/i.test(text))return 'instagram';
         if(/whats(?:app)?/i.test(text))return 'whatsapp';
         if(/facebook|messenger/i.test(text))return 'facebook';
-        if(/\b(?:website|webchat|site|web)\b/i.test(text))return 'site';
+        if(/\b(?:website|site)\b/i.test(text))return 'site';
         if(/\b(?:aplicativo|mobileapp|app)\b/i.test(text))return 'app';
         return null;
+    }
+    function channelMetadata(root) {
+        const selector='gux-icon, [data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i], [aria-label], [title], img, svg, svg use';
+        const nodes=[root],visit=parent=>{for(const el of parent.querySelectorAll?.(selector)||[]) {nodes.push(el);if(el.shadowRoot)visit(el.shadowRoot);}for(const el of parent.querySelectorAll?.('*')||[])if(el.shadowRoot&&!nodes.includes(el))visit(el.shadowRoot);};
+        visit(root);
+        return nodes.filter(el=>!el.closest?.('.injected-bubbles-container')).map(el=>{
+            const attributes=['data-channel','data-qa-id','data-testid','icon-name','aria-label','title','alt','src','href','xlink:href'].map(name=>el.getAttribute?.(name)||'').join(' ');
+            const iconClass=el.matches?.('svg, img, gux-icon, [class*="channel" i]')?el.getAttribute?.('class')||'':'';
+            const label=el.matches?.('[data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i]')?el.textContent||'':'';
+            return attributes+' '+iconClass+' '+label;
+        }).join(' ');
     }
     function selectedChannelFromDetails() {
         for(const frame of [null,...document.querySelectorAll('iframe')]) {
             let doc;try{doc=frame?.contentDocument||document;}catch{continue;}
             if(!doc?.body)continue;
-            const label=doc.body.textContent?.match(/\b(?:canal|channel)\s*[:\-]\s*(instagram|whatsapp|facebook|messenger|site|webchat|website|aplicativo|app)\b/i);
+            const label=doc.body.textContent?.match(/\b(?:canal(?: de origem)?|channel)\s*[:\-]?\s*(instagram|whatsapp|facebook|messenger|site|website|aplicativo|app)\b/i);
             if(label)return channelFromText(label[1]);
         }
         return null;
     }
     function interactionChannel(conv,isSelected=false) {
         if(conv.querySelector(CONFIG.PURECLOUD_SELECTORS.ICON_SELECTOR_CALL))return 'call';
-        const metadata=[conv,...conv.querySelectorAll('gux-icon, [data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i], [aria-label], [title], img, svg use')];
-        const text=metadata.filter(el=>!el.closest?.('.injected-bubbles-container')).map(el=>{
-            const attributes=['data-channel','data-qa-id','data-testid','icon-name','aria-label','title','alt','src','href','xlink:href'].map(name=>el.getAttribute?.(name)||'').join(' ');
-            const label=el.matches?.('[data-channel], [data-qa-id*="channel" i], [data-testid*="channel" i], [class*="channel" i]')?el.textContent||'':'';
-            return attributes+' '+label;
-        }).join(' ').toLowerCase();
-        if(/instagram|insta(?:gram)?[_-]?(?:dm|message)/.test(text))return 'instagram';
-        if(/whats(?:app)?/.test(text))return 'whatsapp';
-        if(/facebook|messenger|fb[_-]?(?:dm|message)/.test(text))return 'facebook';
-        if(/(?:^|[^a-z])(?:webchat|website|site|web)(?:$|[^a-z])/.test(text))return 'site';
-        if(/(?:^|[^a-z])(?:app|aplicativo|mobileapp)(?:$|[^a-z])/.test(text))return 'app';
+        const channel=channelFromText(channelMetadata(conv));
+        if(channel)return channel;
         const key=rotationIdentity(conv);
-        const channel=isSelected?selectedChannelFromDetails():null;
-        if(channel&&key)knownChannels.set(key,channel);
-        return channel||knownChannels.get(key)||'chat';
+        const selectedChannel=isSelected?selectedChannelFromDetails():null;
+        if(selectedChannel&&key)knownChannels.set(key,selectedChannel);
+        return selectedChannel||knownChannels.get(key)||'chat';
     }
     function mainLoop() {
         const toolbar = findEl(CONFIG.PURECLOUD_SELECTORS.TOOLBAR); if (toolbar) { createToolbarUI(toolbar); }

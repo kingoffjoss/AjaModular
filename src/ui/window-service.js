@@ -81,7 +81,7 @@ const style=document.createElement('style');style.textContent=`
 #aja-maintenance button:focus-visible {outline:3px solid #ffb347}
 `;document.head.appendChild(style);
 window.AjaModularNotice=text=>{const note=document.createElement('div');note.setAttribute('role','alert');note.textContent=text;Object.assign(note.style,{position:'fixed',bottom:'20px',left:'20px',zIndex:'2147483647',background:'#102a43',color:'#fff',padding:'16px',borderRadius:'8px',maxWidth:'360px'});document.body.appendChild(note);setTimeout(()=>note.remove(),7000);};
-window.AjaModularWindows=Object.freeze({close,constrain,reset,restore:restoreMinimized});
+window.AjaModularWindows=Object.freeze({close,constrain,reset,restore:restoreMinimized,isMinimized:node=>!!node&&minimized.has(node)});
 })();
 
 
