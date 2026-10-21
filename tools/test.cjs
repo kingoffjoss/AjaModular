@@ -92,6 +92,7 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...await require('./test-end-conversation.cjs')());
  checks.push(...require('./test-evaluations.cjs')());
  checks.push(...require('./test-extrator.cjs')());
+ checks.push(...await require('./test-espelho.cjs')());
  checks.push(...await require('./test-voice.cjs')());
  checks.push(...await require('./test-local-spell.cjs')());
  checks.push(...require('./test-loader.cjs')());

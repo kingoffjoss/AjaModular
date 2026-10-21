@@ -1,104 +1,93 @@
 // Shared dependencies: UI
-window.AjaModular.register("espelho", ["compatibility"], function(ctx) {
-    /* --- MÓDULO ANEXADO: ESPELHO.JS --- */
-    try {
-        // ==UserScript==
-        // @name         PureCloud - Copiar Chat Espelho (Módulo Extensão)
-        // @description  Copia o chat EXATAMENTE como na tela (Shadow DOM deep scan).
-        // ==/UserScript==
+window.AjaModular.register('espelho', ['compatibility'], function(ctx) {
+    const GROUP='[data-automation-id="message-group"]';
+    const TEXT='[data-automation-id="messaging-gadget-message-textbody"]';
+    const HEADER='[data-automation-id="message-group-header"]';
 
-        (function () {
-            'use strict';
+    function limparEmojis(texto) {
+        return texto.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D\u20E3]/gu,'')
+            .replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n')
+            .replace(/\n{3,}/g,'\n\n').trim();
+    }
 
-            const CONFIG = {
-                IFRAME_SELECTOR: 'iframe[src*="messaging-gadget.html"]'
-            };
+    function extrairMensagens(doc) {
+        const grupos=[...doc.querySelectorAll(GROUP)];
+        if(!grupos.length)return '';
+        const linhas=[];
+        for(const grupo of grupos) {
+            const mensagens=[...grupo.querySelectorAll(TEXT)]
+                .map(el=>limparEmojis(el.innerText||el.textContent||''))
+                .filter(Boolean);
+            if(!mensagens.length)continue;
+            const cabecalho=grupo.querySelector(HEADER);
+            const autor=(cabecalho?.innerText||cabecalho?.textContent||'')
+                .replace(/Copiar com contexto/gi,'').split('\n')[0]
+                .replace(/[|\s]+$/g,'').trim();
+            const outbound=/outbound/i.test(cabecalho?.className||'');
+            const nome=autor|| (outbound?'Atendente':'Cliente');
+            for(const mensagem of mensagens)linhas.push(`${nome}: ${mensagem}`);
+        }
+        return linhas.join('\n\n');
+    }
 
-            // --- 1. LÓGICA DE BUSCA (Shadow DOM) ---
-            function encontrarUltimoChat() {
-                let todosIframes = [];
-
-                // Função recursiva para mergulhar em Shadow Roots
-                const buscaRecursiva = (no) => {
-                    const iframesAqui = no.querySelectorAll(CONFIG.IFRAME_SELECTOR);
-                    iframesAqui.forEach(iframe => todosIframes.push(iframe));
-
-                    const elementos = no.querySelectorAll('*');
-                    for (let i = 0; i < elementos.length; i++) {
-                        if (elementos[i].shadowRoot) {
-                            buscaRecursiva(elementos[i].shadowRoot);
-                        }
-                    }
-                };
-
-                buscaRecursiva(document.body);
-
-                if (todosIframes.length > 0) {
-                    // Pega o último iframe (geralmente o chat mais recente)
-                    const alvo = todosIframes[todosIframes.length - 1];
-                    try {
-                        if (alvo.contentDocument && alvo.contentDocument.body) {
-                            return alvo.contentDocument.body.innerText;
-                        }
-                    } catch (e) { console.warn("[Espelho] Erro de segurança no Iframe (Cross-Origin)."); }
-                }
-                return null;
+    function quadroAtual() {
+        const quadros=[];
+        function visitar(raiz) {
+            for(const frame of raiz.querySelectorAll('iframe[src*="messaging-gadget"]')) {
+                if(frame.getClientRects().length)quadros.push(frame);
             }
+            for(const el of raiz.querySelectorAll('*'))if(el.shadowRoot)visitar(el.shadowRoot);
+        }
+        visitar(document);
+        return quadros[0]||null;
+    }
 
-            // --- 2. CÓPIA FIEL (SEM FILTROS) ---
-            function formatarEspelho(texto) {
-                if (!texto) return "";
-                // Remove excesso de quebras de linha (3 ou mais vira 2)
-                return texto.replace(/\n\s*\n\s*\n/g, '\n\n');
-            }
+    function pedirAoQuadro(frame) {
+        return new Promise(resolve=>{
+            const alvo=frame?.contentWindow;
+            if(!alvo)return resolve('');
+            const id='aja-chat-'+Math.random().toString(36).slice(2);
+            let encerrado=false;
+            const concluir=texto=>{if(encerrado)return;encerrado=true;clearTimeout(timer);window.removeEventListener('message',receber);resolve(texto||'');};
+            const receber=event=>{if(event.source===alvo&&event.origin===location.origin&&event.data?.tipo==='aja-chat-resposta'&&event.data.id===id)concluir(event.data.texto);};
+            window.addEventListener('message',receber);
+            const timer=setTimeout(()=>concluir(''),1200);
+            try {alvo.postMessage({tipo:'aja-chat-pedir',id},location.origin);} catch {concluir('');}
+        });
+    }
 
-            // --- 3. FUNÇÃO GLOBAL (Para ser chamada pelo Menu.js) ---
-            window.executarCopiaEspelho = async function () {
-                const textoOriginal = encontrarUltimoChat();
+    window.addEventListener('message',event=>{
+        if(event.origin!==location.origin||event.data?.tipo!=='aja-chat-pedir'||!event.data.id)return;
+        if(!/\/messaging-gadget\//i.test(location.pathname))return;
+        event.source?.postMessage({tipo:'aja-chat-resposta',id:event.data.id,texto:extrairMensagens(document)},event.origin);
+    });
 
-                if (textoOriginal && textoOriginal.length > 20) {
-                    const textoFinal = formatarEspelho(textoOriginal);
+    window.executarCopiaEspelho=async function() {
+        let texto='';
+        if(/\/messaging-gadget\//i.test(location.pathname))texto=extrairMensagens(document);
+        else {
+            const frame=quadroAtual();
+            if(frame)texto=await pedirAoQuadro(frame);
+        }
+        if(!texto) {
+            ctx.UI?.createNotification?.('Nenhuma mensagem da conversa aberta foi encontrada.','warn');
+            return false;
+        }
+        try {
+            await navigator.clipboard.writeText(texto);
+            ctx.UI?.createNotification?.('Conversa copiada sem emojis.','success');
+            return true;
+        } catch {
+            ctx.UI?.createNotification?.('Não foi possível copiar a conversa.','error');
+            return false;
+        }
+    };
 
-                    try {
-                        await navigator.clipboard.writeText(textoFinal);
-                        // Notificação visual simples usando a UI existente da extensão (se houver)
-                        if (typeof ctx.UI !== 'undefined' && ctx.UI.createNotification) {
-                            ctx.UI.createNotification("Chat copiado com sucesso! (Modo Espelho)", "success");
-                        } else {
-                            console.log("Chat copiado!"); // Fallback
-                        }
-                        return true;
-                    } catch (err) {
-                        console.error("Erro ao copiar:", err);
-                        if (typeof ctx.UI !== 'undefined') ctx.UI.createNotification("Erro ao acessar Clipboard.", "error");
-                        return false;
-                    }
-                } else {
-                    if (typeof ctx.UI !== 'undefined') {
-                        ctx.UI.createNotification("Não foi possível ler o chat. Clique na conversa primeiro.", "warn");
-                    } else {
-                        alert("Não foi possível ler o chat.\nClique na conversa para garantir que está ativa.");
-                    }
-                    return false;
-                }
-            };
-
-            // --- 4. ATALHO DE TECLADO (Ctrl + Shift + C) ---
-            document.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.executarCopiaEspelho();
-                }
-            });
-
-            console.log("[Módulo Espelho] Carregado. Use Ctrl+Shift+C ou o Menu.");
-
-        })();
-
-    } catch (e) { console.error('[BUILDER] Erro fatal no módulo espelho.js:', e); throw e; }
-
-
-
-return { open() { return window.executarCopiaEspelho(); } };
+    document.addEventListener('keydown',event=>{
+        if(event.ctrlKey&&event.shiftKey&&event.code==='KeyC') {
+            event.preventDefault();event.stopPropagation();
+            window.executarCopiaEspelho();
+        }
+    });
+    return {open(){return window.executarCopiaEspelho();}};
 });
