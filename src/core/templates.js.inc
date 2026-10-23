@@ -16,29 +16,6 @@
         return ajaStorage.getItem('purecloudScript_lastAgentName') || "Usuário Anônimo";
     }
 
-    // --- PROCESSADOR DE VARIÁVEIS (MÁGICAS) ---
-    const templateProcessor = {
-        process: (text) => {
-            if (!text.includes('{')) return text;
-            const selectedConvEl = findEl(CONFIG.PURECLOUD_SELECTORS.SELECTED_INTERACTION_GROUP);
-            let { participantName } = documentExtractor.getNameAndNumber(selectedConvEl);
-            if (!participantName || participantName === 'N/A') participantName = 'Cliente';
-            let primeiroNome = participantName.split(' ')[0];
-
-            const horaAtual = getBrazilTime(new Date()).getHours();
-            let saudacao = "Bom dia";
-            if (horaAtual >= 12 && horaAtual < 18) saudacao = "Boa tarde";
-            else if (horaAtual >= 18 || horaAtual < 5) saudacao = "Boa noite";
-
-            // Aplica escapeHTML para segurança caso os nomes sejam usados em HTML posteriormente. 
-            // Para o chat de texto puro, escapeHTML pode injetar entities ampersand, 
-            // então o processador de chat apenas troca.
-            return text.replace(/{nome}/gi, participantName)
-                .replace(/{primeiro_nome}/gi, primeiroNome)
-                .replace(/{saudacao}/gi, saudacao);
-        }
-    };
-
     const makeDraggable = (popup, header, popupName) => {
         if (!header) header = popup;
         let isDragging = false, dragOffsetX = 0, dragOffsetY = 0, startX = 0, startY = 0, moved = false;

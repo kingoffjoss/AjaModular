@@ -20,8 +20,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             // --- CSS DE SEGURANÇA ---
             const css = `
         /* 1. Oculta botões originais para não poluir */
-        #qr-trigger-button, #pr-trigger-button, #bau-trigger-button, 
-        #gemini-float-btn, #monitor-trigger-btn, #central-trigger-btn, #car-float-btn {
+        #bau-trigger-button, #central-trigger-btn, #car-float-btn {
             display: none !important; opacity: 0 !important; pointer-events: none !important;
         }
 
@@ -68,13 +67,9 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
         .uni-fab-btn:hover { transform: scale(1.15); z-index: 2; }
         
         /* Cores dos Botões */
-        #uni-btn-maintenance, #uni-btn-off { background:#334155; }
+        #uni-btn-off { background:#334155; }
         #uni-btn-id { background: linear-gradient(135deg, #667eea, #764ba2); }
         #uni-btn-bar { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
-        #uni-btn-pr { background: linear-gradient(135deg, #d4fc79, #96e6a1); color: #333; }
-        #uni-btn-qr { background: linear-gradient(135deg, #00f260, #0575e6); }
-        #uni-btn-ia { background: linear-gradient(135deg, #2563EB, #7C3AED); }
-        #uni-btn-mon { background: linear-gradient(135deg, #F59E0B, #D97706); }
         #uni-btn-central { background: linear-gradient(135deg, #06B6D4, #3B82F6); }
         #uni-btn-copy { background: linear-gradient(135deg, #FF00CC, #333399); }
         #uni-btn-car { background: linear-gradient(135deg, #10b981, #059669); } 
@@ -106,20 +101,15 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             const div = document.createElement('div'); div.id = 'uni-menu-container';
             div.innerHTML = `
         <div class="uni-fab-actions">
-            <button class="uni-fab-btn" id="uni-btn-maintenance" data-label="Manutenção" aria-label="Manutenção">⚙️</button>
             
             <button class="uni-fab-btn" id="uni-btn-calc" data-label="Calculadora"><span style="font-size:24px;">🧮</span></button>
             <button class="uni-fab-btn" id="uni-btn-off" data-label="Suporte" aria-label="Suporte"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10"></path><path d="M5.6 5.6a9 9 0 1 0 12.8 0"></path></svg></button>
-            <button class="uni-fab-btn" id="uni-btn-ia" data-label="Assistente IA"><span style="font-size:24px;">🧑‍💻</span></button>
             <button class="uni-fab-btn" id="uni-btn-central" data-label="Central de Ajuda"><span style="font-size:26px;">💠</span></button>
-            <button class="uni-fab-btn" id="uni-btn-mon" data-label="Monitor Filas"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></button>
             <button class="uni-fab-btn" id="uni-btn-copy" data-label="Copiar Chat"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></button>
             <button class="uni-fab-btn" id="uni-btn-car" data-label="Automação (CAR)"><span style="font-size:18px;">⌨️</span></button>
             <button class="uni-fab-btn" id="uni-btn-id" data-label="Copiar ID"><span style="font-size:20px;font-weight:800;">🆔</span></button>
             <button class="uni-fab-btn" id="uni-btn-bar" data-label="Ferramentas (Bar)"><svg class="uni-icon" viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg></button>
             <button class="uni-fab-btn" id="uni-btn-tools" data-label="Avaliações" aria-label="Avaliações"><svg class="uni-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 3v17h17M8 16v-5M13 16V7M18 16V4"></path></svg></button>
-            <button class="uni-fab-btn" id="uni-btn-pr" data-label="Protocolos"><svg class="uni-icon" viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></svg></button>
-            <button class="uni-fab-btn" id="uni-btn-qr" data-label="Respostas"><svg class="uni-icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6zm8 5H6v-2h8zm4-6H6V6h12z"/></svg></button>
         </div>
         <button class="uni-fab-main" id="uni-fab-trigger" title="Menu Genesys">
             <svg class="uni-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -166,7 +156,7 @@ window.AjaModular.register("menu", ["compatibility"], function(ctx) {
             try { const savedPos = ctx.ajaStorage.getItem('uniMenuPos'); if (savedPos) { const p = JSON.parse(savedPos); container.style.left = p.left; container.style.top = p.top; container.style.bottom = 'auto'; container.style.right = 'auto'; } } catch (e) { }
 
             // Navigation uses module contracts rather than private trigger identifiers.
-const routes = { 'uni-btn-maintenance':'manutencao', 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-qr':'respostas', 'uni-btn-pr':'protocolos', 'uni-btn-bar':'bar', 'uni-btn-ia':'ia', 'uni-btn-mon':'monitor', 'uni-btn-central':'central', 'uni-btn-tools':'avaliacoes', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
+const routes = { 'uni-btn-off':'simulacao-desligar', 'uni-btn-calc':'calculadora', 'uni-btn-bar':'bar', 'uni-btn-central':'central', 'uni-btn-tools':'avaliacoes', 'uni-btn-car':'car', 'uni-btn-id':'extrator', 'uni-btn-copy':'espelho' };
 for (const [buttonId, moduleId] of Object.entries(routes)) {
     document.getElementById(buttonId).onclick = () => {
         container.classList.remove('active');

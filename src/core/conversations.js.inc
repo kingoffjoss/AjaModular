@@ -155,22 +155,6 @@
         const handleOperatorActivity = (e) => {
             if (timerData.lastOperatorActivityTimestamp !== Date.now()) { timerData.lastOperatorActivityTimestamp = Date.now(); updateTimerDisplay(timerData); }
 
-            // --- LÓGICA DE SNIPPETS (AUTO-EXPANSÃO DE TEXTO) ---
-            if (e && e.type === 'input' && chatInputField) {
-                let val = chatInputField.value;
-                let replaced = false;
-                CONFIG.QUICK_REPLIES.forEach(qr => {
-                    // Verifica se o operador digitou o atalho com um espaço no final
-                    if (qr.shortcut && val.includes(qr.shortcut + ' ')) {
-                        val = val.replace(qr.shortcut + ' ', templateProcessor.process(qr.text) + ' ');
-                        replaced = true;
-                    }
-                });
-                if (replaced) {
-                    chatInputField.value = val;
-                    chatInputField.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            }
         };
 
         if (chatMessagesContainer) { if (chatMessagesContainer.dataset.observedByScript === 'true') { if (chatInputField && currentChatInputField !== chatInputField) { chatInputField.addEventListener('input', handleOperatorActivity); chatInputField.addEventListener('keypress', handleOperatorActivity); currentChatInputField = chatInputField; } return; } currentChatObserverInstance = new MutationObserver((mutations) => { for (const mutation of mutations) { if (mutation.type === 'childList' && mutation.addedNodes.length > 0) { const newClientMessages = Array.from(mutation.addedNodes).filter(node => node.nodeType === 1 && node.matches('.chat-message-group.remote')); if (newClientMessages.length > 0) { timerData.lastCustomerReplyTimestamp = Date.now(); updateTimerDisplay(timerData); } } } }); currentChatObserverInstance.observe(chatMessagesContainer, { childList: true, subtree: true }); chatMessagesContainer.dataset.observedByScript = 'true'; if (chatInputField) { chatInputField.addEventListener('input', handleOperatorActivity); chatInputField.addEventListener('keypress', handleOperatorActivity); currentChatInputField = chatInputField; } }
@@ -298,9 +282,8 @@
         });
         if (!selectedConvEl) { const pepperButton = document.getElementById('purecloud-script-btn-endCustomer'); if (pepperButton) pepperButton.title = 'Selecione uma conversa para encerrar'; }
         if (CONFIG.MINI_DASHBOARD_VISIBLE) { UI.createMiniDashboard(); }
-        if (CONFIG.TOOLS_VISIBLE) { UI.createAgentToolsPanel(); }
     }
 
     const getHotkeyCombo = (e) => { const pressedKeys = []; if (e.ctrlKey) pressedKeys.push('Control'); if (e.shiftKey) pressedKeys.push('Shift'); if (e.altKey) pressedKeys.push('Alt'); const key = e.key === ' ' ? 'Space' : (e.key.length === 1 ? e.key.toUpperCase() : e.key); if (!['Control', 'Shift', 'Alt', 'Meta'].includes(key)) { pressedKeys.push(key); } const primaryKey = pressedKeys.pop(); pressedKeys.sort(); if (primaryKey) pressedKeys.push(primaryKey); return pressedKeys.join('+'); };
-    const keyboardEventHandler = (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) { return; } const currentCombo = getHotkeyCombo(e); if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) { return; } for (const actionName in CONFIG.HOTKEYS) { if (CONFIG.HOTKEYS[actionName] === currentCombo) { e.preventDefault(); if (actions[actionName]) { actions[actionName](); UI.createNotification(featureDescriptions[actionName]?.title || actionName, 'info', 1000); return; } } } };
+    const keyboardEventHandler = (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) { return; } const currentCombo = getHotkeyCombo(e); if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) { return; } for (const actionName in CONFIG.HOTKEYS) { if (actions[actionName] && CONFIG.HOTKEYS[actionName] === currentCombo) { e.preventDefault(); actions[actionName](); UI.createNotification(featureDescriptions[actionName]?.title || actionName, 'info', 1000); return; } } };
 

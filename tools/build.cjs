@@ -5,10 +5,7 @@ const root = path.resolve(__dirname, '..');
 const order = JSON.parse(fs.readFileSync(path.join(root, 'build-order.json')));
 require('./check-modules.cjs')(order);
 const read = file => fs.readFileSync(path.join(root,file),'utf8');
-const catalogs = {
- protocolos: JSON.parse(read('protocolos_brisanet_v1_9.json')).protocols,
- respostas: JSON.parse(read('respostas_COMPLETAS.json'))
-};
+const catalogs = {};
 for (const [name, items] of Object.entries(catalogs)) {
  if (!Array.isArray(items) || !items.length || items.some(item => typeof item.title !== 'string' || typeof item.text !== 'string')) throw new Error('Invalid or empty catalog: '+name);
 }

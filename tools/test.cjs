@@ -21,7 +21,7 @@ function check(name,fn){fn();checks.push(name);}
  check('Conversation channel reads native icon inside shadow DOM',()=>{const source=read('src/core/conversations.js.inc');const code=source.slice(source.indexOf('    const channelIcon='),source.indexOf('    function mainLoop()'));const ctx={CONFIG:{PURECLOUD_SELECTORS:{ICON_SELECTOR_CALL:'call-icon'}},rotationIdentity:()=>''};vm.createContext(ctx);vm.runInContext(code,ctx);const icon={getAttribute:key=>key==='aria-label'?'Instagram':null,matches:()=>false,closest:()=>null};const shadow={querySelectorAll:selector=>selector==='*'?[]:[icon]};const host={shadowRoot:shadow,getAttribute:()=>null,matches:()=>false,closest:()=>null};const conv={querySelector:()=>null,querySelectorAll:selector=>selector==='*'?[host]:[host],getAttribute:()=>null,matches:()=>false,closest:()=>null};assert.equal(ctx.interactionChannel(conv),'instagram');assert.equal(ctx.channelFromText('Transferido - Webchat'),null);});
  check('Conversation channel uses explicit API metadata without guessing Webchat',()=>{const source=read('src/core/conversations.js.inc');const code=source.slice(source.indexOf('    const channelIcon='),source.indexOf('    function mainLoop()'));const ctx={CONFIG:{PURECLOUD_SELECTORS:{ICON_SELECTOR_CALL:'call-icon'}},rotationIdentity:()=>''};vm.createContext(ctx);vm.runInContext(code,ctx);assert.equal(ctx.channelFromConversationEntity({participants:[{messages:[{messageType:'whatsapp'}]}]}),'whatsapp');assert.equal(ctx.channelFromConversationEntity({participants:[{messageType:'webchat'}]}),null);});
  check('Queue action is idempotent and only records a successful platform action',()=>{const source=read('src/tools/pausas.js');assert.ok(source.includes("clickableSlider.getAttribute('aria-checked') === 'true'"));assert.ok(source.includes('if (!jaEstaNaFila) clickableSlider.click()'));assert.ok(source.includes('if (executarLogicaNaFila(false)) registrarPausa(status)'));});
- check('Quick reply shortcut markup is valid',()=>assert.ok(!read('src/tools/respostas.js').includes('class"reply-hotkey-display"')));
+ check('Removed tools are absent from the active bundle and menu',()=>{const order=JSON.parse(read('build-order.json'));const inactive=new Set(order.inactiveModules.map(x=>x.id));for(const id of ['ui-createAgentToolsPanel','lembretes','links-uteis','historico-documentos','notepad','ferramentas','monitor','respostas','protocolos','ia','manutencao'])assert.ok(inactive.has(id)&&!order.modules.some(x=>x.id===id),id);const menu=read('src/tools/menu.js');for(const id of ['uni-btn-maintenance','uni-btn-ia','uni-btn-mon','uni-btn-pr','uni-btn-qr'])assert.ok(!menu.includes(id),id);const dashboard=read('src/ui/components/createMiniDashboard.js');assert.ok(!dashboard.includes('mini-dashboard-tools-btn'));const bundle=read('runtime/content.bundle.js');for(const id of ['"monitor"','"respostas"','"protocolos"','"ia"','"ferramentas"','"manutencao"'])assert.ok(!bundle.includes('register('+id),id);});
  const catalogWindow={};const catalogEnv={window:catalogWindow,JSON,Error,Boolean,String,Array};vm.createContext(catalogEnv);vm.runInContext(read('src/core/catalog-store.js'),catalogEnv);const catalog=catalogWindow.AjaModularCatalogStore;
  check('Shared catalog store normalizes and rejects malformed records',()=>{const normalized=catalog.normalize([{title:'Teste',text:'Conteúdo'}]);assert.equal(normalized[0].isFavorite,false);assert.equal(normalized[0].hotkey,null);assert.throws(()=>catalog.normalize([{title:'Sem texto'}]));assert.equal(catalog.escapeHTML('<b>'), '&lt;b&gt;');});
 
@@ -47,12 +47,6 @@ function check(name,fn){fn();checks.push(name);}
  check('Storage isolation',()=>{values.set('pcs_spell_dict','["legacy"]');values.set('ajamodular:pcs_spell_dict','["Brisanet","brisanet"]');assert.equal(api.readDictionary().length,1);assert.equal(api.readDictionary()[0],'brisanet');assert.equal(values.get('pcs_spell_dict'),'["legacy"]');});
  check('Personal dictionary suppresses spelling only',()=>{const matches=[{offset:0,length:8,rule:{issueType:'misspelling'}},{offset:0,length:8,rule:{issueType:'grammar'}}];assert.equal(api.filterMatches(matches,'BRISANET',['brisanet']).length,1);assert.equal(api.filterMatches(matches,'BRISANET',[]).length,2);});
 
- const historyFactories={};let notifications=0;
- const historyEnvironment={window:{AjaModular:{register:(id,deps,fn)=>historyFactories[id]=fn}},document:{dispatchEvent:()=>notifications++},Event:class Event{},Date,JSON};
- vm.createContext(historyEnvironment);vm.runInContext(read('src/tools/historico-documentos.js'),historyEnvironment);
- const history=historyFactories['historico-documentos']({ajaStorage:storage});
- values.set('purecloudScript_idHistory','{}');history.record('00000000000');
- check('Document history recovers malformed data and limits records',()=>{for(let i=0;i<35;i++)history.record('00000000000');assert.equal(JSON.parse(values.get('purecloudScript_idHistory')).length,30);assert.equal(notifications,36);});
  const response=(status,data)=>({ok:status>=200&&status<300,status,json:async()=>data});
  values.set('ajamodular:aja_voice_gemini_api_key','fixture-only');
  responses=[response(200,{models:[{name:'models/embedding',supportedGenerationMethods:['embedContent']},{name:'models/test-flash',supportedGenerationMethods:['generateContent']}]}),response(200,{candidates:[{finishReason:'STOP',content:{parts:[{text:'OK'}]}}]})];
@@ -99,7 +93,6 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...require('./test-loader.cjs')());
  checks.push(...require('./test-clock.cjs')());
  checks.push(...await require('./test-maintenance.cjs')());
- checks.push(...await require('./test-catalogs.cjs')());
  checks.push(...require('./test-bau.cjs')());
  checks.push(...require('./test-productivity.cjs')());
  checks.push(...require('./test-auto-rotation.cjs')());
@@ -107,7 +100,6 @@ function check(name,fn){fn();checks.push(name);}
  checks.push(...require('./test-car-editor.cjs')());
  checks.push(...await require('./test-copy-link.cjs')());
 checks.push(...require('./test-module-audit.cjs')());
- checks.push(...require('./test-tool-visibility.cjs')());
  const report={passed:true,checks,sourceCommit:JSON.parse(read('source-inventory.json')).commit,liveGenesysTest:false,liveGeminiTest:false};fs.writeFileSync(path.join(root,'validation.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1;});
 

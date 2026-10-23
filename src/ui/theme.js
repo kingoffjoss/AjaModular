@@ -132,19 +132,11 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
             #uni-menu-container .uni-fab-main,
             #uni-menu-container .uni-fab-btn,
-            #qr-trigger-button,
-            #pr-trigger-button,
             #bau-trigger-button,
-            #gemini-float-btn,
-            #monitor-trigger-btn,
             #central-trigger-btn,
             #car-float-btn,
             #uni-btn-id,
             #uni-btn-bar,
-            #uni-btn-pr,
-            #uni-btn-qr,
-            #uni-btn-ia,
-            #uni-btn-mon,
             #uni-btn-central,
             #uni-btn-copy,
             #uni-btn-car,
@@ -754,7 +746,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         const calculator = document.getElementById('calc-ultimate-host');
         if (calculator) calculator.dataset.ajaTheme = activeTheme;
         const menuIcons = {
-            'uni-btn-maintenance':'⚙','uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-ia':'✦','uni-btn-central':'?','uni-btn-mon':'▤','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-tools':'▥','uni-btn-pr':'≡','uni-btn-qr':'✉','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷','uni-btn-spell':'✓'
+            'uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-central':'?','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷','uni-btn-spell':'✓'
         };
         document.querySelectorAll('#uni-menu-container .uni-fab-btn').forEach(button => {
             if (activeTheme === 'brisanet') button.removeAttribute('data-aja-theme-icon');

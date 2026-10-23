@@ -11,17 +11,9 @@
 
     const isMainFrame = (window.self === window.top);
 
-    const initialize = () => {
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.get(['SHOW_AGENT_TOOLS'], function (result) {
-                iniciarScript(result.SHOW_AGENT_TOOLS !== false);
-            });
-        } else {
-            iniciarScript(true);
-        }
-    };
+    const initialize = () => iniciarScript();
 
-    function iniciarScript(mostrarFerramentas) {
+    function iniciarScript() {
         // Inicialização em TODOS OS FRAMES (CAR e Corretor)
         // Corretor único inicializado pelo módulo tools/corretor.
         
@@ -56,7 +48,7 @@
             setTimeout(sincronizarDadosComPlanilha, 15000); // Sincroniza mais cedo ao iniciar
             setInterval(sincronizarDadosComPlanilha, 5 * 60 * 1000); // Sincroniza a cada 5 min em vez de 10
 
-            if (mostrarFerramentas) {
+            {
                 initializeDailyCounters();
                 saveData();
                 injectCss();
@@ -71,7 +63,6 @@
                 if (CONFIG.MINI_DASHBOARD_VISIBLE) {
                     setTimeout(() => {
                         UI.createMiniDashboard();
-                        if (CONFIG.TOOLS_VISIBLE) UI.createAgentToolsPanel();
                     }, 4000);
                 }
             }

@@ -1,5 +1,5 @@
 // Shared dependencies: none
-window.AjaModular.register("extrator", ["compatibility","historico-documentos"], function(ctx) {
+window.AjaModular.register("extrator", ["compatibility"], function(ctx) {
     /* --- MÓDULO ANEXADO: EXTRATOR.JS --- */
     try {
         // ==UserScript==
@@ -245,7 +245,6 @@ window.AjaModular.register("extrator", ["compatibility","historico-documentos"],
                     const feedbackText = documento.length === 11 ? `CPF: ${documento}` : `CNPJ: ${documento}`;
 
                     if(await copiarDocumento(documento)) {
-                        window.AjaModular.get('historico-documentos').record(documento);
                         mostrarFeedback(`Copiado! ${feedbackText}`, 'sucesso');
                     } else mostrarFeedback("Erro de Clipboard.", 'erro');
                 } else {

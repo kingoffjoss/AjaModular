@@ -105,15 +105,6 @@
       ]
     },
     {
-      "id": "ui-createAgentToolsPanel",
-      "file": "src/ui/components/createAgentToolsPanel.js",
-      "after": [],
-      "shared": [
-        "CONFIG",
-        "UI"
-      ]
-    },
-    {
       "id": "ui-createMiniDashboard",
       "file": "src/ui/components/createMiniDashboard.js",
       "after": [],
@@ -124,34 +115,6 @@
         "analyticsManager",
         "makeDraggable",
         "saveData"
-      ]
-    },
-    {
-      "id": "lembretes",
-      "file": "src/tools/lembretes.js",
-      "after": [],
-      "shared": []
-    },
-    {
-      "id": "links-uteis",
-      "file": "src/tools/links-uteis.js",
-      "after": [],
-      "shared": []
-    },
-    {
-      "id": "historico-documentos",
-      "file": "src/tools/historico-documentos.js",
-      "after": [],
-      "shared": [
-        "ajaStorage"
-      ]
-    },
-    {
-      "id": "notepad",
-      "file": "src/tools/notepad.js",
-      "after": [],
-      "shared": [
-        "ajaStorage"
       ]
     },
     {
@@ -191,8 +154,7 @@
       "id": "extrator",
       "file": "src/tools/extrator.js",
       "after": [
-        "compatibility",
-        "historico-documentos"
+        "compatibility"
       ],
       "shared": []
     },
@@ -204,30 +166,6 @@
       ],
       "shared": [
         "UI"
-      ]
-    },
-    {
-      "id": "protocolos",
-      "file": "src/tools/protocolos.js",
-      "after": [
-        "compatibility"
-      ],
-      "shared": [
-        "ajaSessionStorage",
-        "ajaStorage",
-        "safeFetch"
-      ]
-    },
-    {
-      "id": "respostas",
-      "file": "src/tools/respostas.js",
-      "after": [
-        "compatibility"
-      ],
-      "shared": [
-        "ajaSessionStorage",
-        "ajaStorage",
-        "safeFetch"
       ]
     },
     {
@@ -252,25 +190,6 @@
       ]
     },
     {
-      "id": "ia",
-      "file": "src/tools/ia.js",
-      "after": [
-        "compatibility"
-      ],
-      "shared": [
-        "ajaStorage",
-        "escapeHTML"
-      ]
-    },
-    {
-      "id": "monitor",
-      "file": "src/tools/monitor.js",
-      "after": [
-        "compatibility"
-      ],
-      "shared": []
-    },
-    {
       "id": "corretor",
       "file": "src/tools/corretor.js",
       "after": [
@@ -280,23 +199,6 @@
         "ajaStorage",
         "buildSpellOverlayHTML",
         "safeFetch"
-      ]
-    },
-    {
-      "id": "ferramentas",
-      "file": "src/tools/ferramentas.js",
-      "after": [
-        "compatibility",
-        "notepad",
-        "extrator",
-        "historico-documentos",
-        "links-uteis",
-        "lembretes"
-      ],
-      "shared": [
-        "CONFIG",
-        "ajaStorage",
-        "saveData"
       ]
     },
     {
@@ -351,12 +253,6 @@
       "shared": []
     },
     {
-      "id": "manutencao",
-      "file": "src/tools/manutencao.js",
-      "after": [],
-      "shared": []
-    },
-    {
       "id": "menu-preferencias",
       "file": "src/tools/menu-preferencias.js",
       "after": [
@@ -380,6 +276,63 @@
       "file": "src/tools/avaliacoes.js",
       "after": [],
       "shared": []
+    }
+  ],
+  "inactiveModules": [
+    {
+      "id": "ui-createAgentToolsPanel",
+      "file": "src/ui/components/createAgentToolsPanel.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "lembretes",
+      "file": "src/tools/lembretes.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "links-uteis",
+      "file": "src/tools/links-uteis.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "historico-documentos",
+      "file": "src/tools/historico-documentos.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "notepad",
+      "file": "src/tools/notepad.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "protocolos",
+      "file": "src/tools/protocolos.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "respostas",
+      "file": "src/tools/respostas.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "ia",
+      "file": "src/tools/ia.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "monitor",
+      "file": "src/tools/monitor.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "ferramentas",
+      "file": "src/tools/ferramentas.js",
+      "reason": "Removido do carregamento a pedido do usuário"
+    },
+    {
+      "id": "manutencao",
+      "file": "src/tools/manutencao.js",
+      "reason": "Removido do carregamento a pedido do usuário"
     }
   ]
 }

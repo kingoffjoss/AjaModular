@@ -11,14 +11,12 @@ const implementation = {createMiniDashboard() {
                 const iconZap = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon" style="width: 14px; height: 14px; color: var(--purecloud-script-accent-color);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
                 const iconBaloon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-icon" style="width: 14px; height: 14px; color: var(--purecloud-script-accent-color);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
                 const iconTarget = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; color: var(--purecloud-script-accent-color);"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>`;
-                const iconTools = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`;
 
                 dashboard.innerHTML = `
                     <div class="mini-dashboard-header">
                         <div class="counter-display">${iconTarget}<span class="counter-text">--/--</span><button id="mini-dashboard-auto-rotate-btn" class="compact-btn" type="button" aria-label="Troca automática de conversas" aria-pressed="false" title="Ligar troca automática de conversas após 1:10">⇄</button><div class="progress-bar-container-compact"><div class="progress-bar-compact"></div></div></div>
                         <div class="mini-dashboard-controls">
                             <button id="mini-dashboard-btn-theme" class="compact-btn" title="Mudar tema do sistema" aria-label="Mudar tema do sistema" style="font-size: 14px; background: none; border: none; color: inherit; padding: 0 4px; cursor: pointer;">🎨</button>
-                            <button id="mini-dashboard-tools-btn" class="compact-btn" title="Ferramentas do Agente">${iconTools}</button>
                             <button id="mini-dashboard-adjust-attended-btn" class="compact-btn adjust-btn" title="Ajustar Contagem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                             <button class="compact-btn toggle-expand-btn" title="Expandir/Recolher"><svg class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg><svg class="collapse-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; display: none;"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg></button>
                             <button class="compact-btn close-btn" id="closeMiniDashboardBtn" title="Fechar">X</button>
@@ -35,7 +33,6 @@ const implementation = {createMiniDashboard() {
                             <button type="button" data-quick-action="menu">Menu</button>
                             <button type="button" data-quick-action="timers">Cronômetros</button>
                             <button type="button" data-quick-action="reviews">Avaliações</button>
-                            <button type="button" data-quick-action="tools">Ferramentas</button>
                         </nav>
                     </div>
                 `;
@@ -44,7 +41,6 @@ const implementation = {createMiniDashboard() {
                     if (!action) return;
                     event.stopPropagation();
                     if (action.dataset.quickAction === 'timers') ctx.UI.createSettingsPanel();
-                    else if (action.dataset.quickAction === 'tools') dashboard.querySelector('#mini-dashboard-tools-btn')?.click();
                     else if (action.dataset.quickAction === 'reviews') document.getElementById('uni-btn-tools')?.click();
                     else if (action.dataset.quickAction === 'menu') document.getElementById('uni-fab-trigger')?.click();
                 };
@@ -135,9 +131,6 @@ const implementation = {createMiniDashboard() {
                 toggleButton.onclick = (e) => { e.stopPropagation(); toggleFloatingDashboard(); };
                 dashboard.querySelector('.close-btn').onclick = () => { clearInterval(dashboard._updateInterval); dashboard.remove(); ctx.CONFIG.MINI_DASHBOARD_VISIBLE = false; ctx.saveData(); };
 
-                dashboard.querySelector('#mini-dashboard-tools-btn').onclick = (e) => {
-                    e.stopPropagation(); ctx.CONFIG.TOOLS_VISIBLE = !ctx.CONFIG.TOOLS_VISIBLE; ctx.saveData(); ctx.UI.createAgentToolsPanel();
-                };
 
                 dashboard.querySelector('#mini-dashboard-adjust-attended-btn').onclick = (e) => {
                     e.stopPropagation(); const currentAttendedCount = ctx.analyticsManager.calculateStats().count; const newCount = prompt("Insira o novo número de conversas atendidas:", currentAttendedCount);
