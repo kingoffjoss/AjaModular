@@ -746,7 +746,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         const calculator = document.getElementById('calc-ultimate-host');
         if (calculator) calculator.dataset.ajaTheme = activeTheme;
         const menuIcons = {
-            'uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-central':'?','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷','uni-btn-spell':'✓'
+            'uni-btn-calc':'⌗','uni-btn-off':'☏','uni-btn-central':'?','uni-btn-copy':'▣','uni-btn-car':'↗','uni-btn-id':'#','uni-btn-bar':'▦','uni-btn-pingo':'♥','uni-btn-preferences':'☷','uni-btn-timer-settings':'◷','uni-btn-spell':'✓'
         };
         document.querySelectorAll('#uni-menu-container .uni-fab-btn').forEach(button => {
             if (activeTheme === 'brisanet') button.removeAttribute('data-aja-theme-icon');

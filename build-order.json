@@ -276,6 +276,14 @@
       "file": "src/tools/avaliacoes.js",
       "after": [],
       "shared": []
+    },
+    {
+      "id": "pingo",
+      "file": "src/tools/pingo.js",
+      "after": [
+        "menu"
+      ],
+      "shared": []
     }
   ],
   "inactiveModules": [

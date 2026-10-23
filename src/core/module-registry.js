@@ -41,7 +41,7 @@ function start(shared) {
         catch (error) { console.error('[AjaModular] Falha no módulo ' + id, error); }
     }
     document.documentElement.dataset.ajaModules = JSON.stringify(status());
-    if(failures.size)window.AjaModularNotice?.('Há módulos com falha. Abra Manutenção no menu para conferir.');
+    if(failures.size)window.AjaModularNotice?.('Há módulos com falha. Verifique o console do navegador.');
 }
 function get(id) {
     if (!instances.has(id)) throw new Error('Módulo indisponível: ' + id);
@@ -53,7 +53,7 @@ function open(id) {
         const instance = get(id);
         if (typeof instance.open !== 'function') throw new Error('Módulo sem ação de abertura: ' + id);
         return instance.open();
-    } catch (error) { console.error('[AjaModular] ' + id, error); window.AjaModularNotice?.('Não foi possível abrir '+id+'. Consulte Manutenção no menu.'); }
+    } catch (error) { console.error('[AjaModular] ' + id, error); window.AjaModularNotice?.('Não foi possível abrir '+id+'. Verifique o console do navegador.'); }
 }
 function scopeStyle(id,style){if(!style||!document.querySelectorAll)return;delete style.dataset.ajaScoped;isolateStyles(id,new Set([...document.querySelectorAll('style')].filter(x=>x!==style)));}
 function retry() {

@@ -16,5 +16,6 @@ const readModule = item => read(item.file).replace(/\/\* bundled-defaults:(\w+) 
 const code = '(function(){ if(window.__AJA_MODULAR_RUNTIME__) return; window.__AJA_MODULAR_RUNTIME__=true;\n' + read('src/core/data-safety.js') + '\n' + read('src/core/module-registry.js') + '\n' + read('src/core/dom-watch.js') + '\n' + read('src/core/catalog-store.js') + '\n' + read('src/corretor/local.js') + '\n' + read('src/core/avaliacoes-model.js') + '\n' + read('src/corretor/services.js') + '\n' + order.modules.map(readModule).join('\n') + '\n' + order.core.map(read).join('\n') + '\n' + order.enhancements.map(read).join('\n') + '\n' + read('src/ui/layout.js') + '\n' + read('src/ui/window-service.js') + '\n})();';
 fs.mkdirSync(path.join(root,'runtime'),{recursive:true});
 fs.writeFileSync(path.join(root,'runtime/content.bundle.js'),code);
+fs.copyFileSync(path.join(root,'src/vendor/pingo-flutuante.js'),path.join(root,'runtime/pingo-flutuante.js'));
 console.log('Bundle built:', Buffer.byteLength(code), 'bytes');
 
