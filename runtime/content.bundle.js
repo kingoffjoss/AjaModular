@@ -478,7 +478,7 @@ ctx.UI.renderAnalyticsContent = implementation.renderAnalyticsContent;
 // Shared dependencies: CONFIG, actions, analyticsManager, escapeHTML, formatTime, getBrazilTime
 window.AjaModular.register("ui-renderDetailsContent", [], function(ctx) {
 const implementation = {renderDetailsContent(container) {
-            const stats = ctx.analyticsManager.calculateStats(); const conversations = stats.allConversations.filter(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS).sort((a, b) => b.timestamp - a.timestamp);
+            const stats = ctx.analyticsManager.calculateStats(); const conversations = stats.allConversations.filter(c => ctx.analyticsManager.isQualifiedConversation(c)).sort((a, b) => b.timestamp - a.timestamp);
             let detailsList = container.querySelector('#details-list'); if (!detailsList) { detailsList = document.createElement('div'); detailsList.id = 'details-list'; container.appendChild(detailsList); }
             if (conversations.length === 0) { detailsList.innerHTML = '<p>Nenhum atendimento completo registrado hoje.</p>'; return; }
             const conversationsAsc = conversations.reverse(); const totalCount = conversationsAsc.length; const recurrenceCount = stats.recurrenceCount;
@@ -609,14 +609,14 @@ const implementation = {createSettingsPanel() {
                 const targetSeconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
                 
                 let data = ctx.analyticsManager.getData();
-                let completedConvos = data.conversations.filter(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS);
+                let completedConvos = data.conversations.filter(c => ctx.analyticsManager.isQualifiedConversation(c));
                 if (completedConvos.length === 0) { ctx.UI.createNotification("Você precisa ter pelo menos 1 atendimento para ajustar o TMA.", "error"); return; }
                 
                 const currentTotalMs = completedConvos.reduce((sum, conv) => sum + conv.duration, 0);
                 const targetTotalMs = (targetSeconds * completedConvos.length) * 1000;
                 const diffMs = targetTotalMs - currentTotalMs;
                 
-                let firstCompletedIndex = data.conversations.findIndex(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS);
+                let firstCompletedIndex = data.conversations.findIndex(c => ctx.analyticsManager.isQualifiedConversation(c));
                 if (firstCompletedIndex !== -1) {
                     data.conversations[firstCompletedIndex].duration += diffMs;
                     if (data.conversations[firstCompletedIndex].duration < 1000) data.conversations[firstCompletedIndex].duration = 1000;
@@ -9157,7 +9157,7 @@ window.AjaModular.register('manutencao', [], function(){
  input.onchange=()=>run(async()=>{const file=input.files[0];input.value='';if(!file)return;if(file.size>10*1024*1024)throw Error('Arquivo maior que 10 MB');const data=window.AjaModularData.validate(JSON.parse(await file.text()));await window.AjaModularData.apply(data);message('Backup importado. Recarregue a página.');});
  panel.querySelector('#aja-recover').onclick=()=>run(async()=>{await window.AjaModularData.restore();message('Configurações recuperadas. Recarregue a página.');});
  panel.querySelector('#aja-retry').onclick=()=>run(async()=>{window.AjaModular.retry();render();message('Diagnóstico atualizado.');});
- panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.50',modules:window.AjaModular.status(),date:new Date().toISOString()});
+ panel.querySelector('#aja-diagnostic').onclick=()=>download('AjaModular-diagnostico.json',{version:'1.6.51',modules:window.AjaModular.status(),date:new Date().toISOString()});
  panel.querySelector('#aja-invalid').onclick=()=>{const data={};for(const storage of [localStorage,sessionStorage])for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key.startsWith('ajamodular:maintenance:invalid:'))data[key]=storage.getItem(key);}download('AjaModular-dados-preservados.json',data);};
  panel.showModal();render();
  }
@@ -9168,7 +9168,7 @@ window.AjaModular.register('manutencao', [], function(){
 
 window.AjaModular.register('menu-preferencias',['menu'],function(ctx){
  'use strict';
- const version='1.6.50',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
+ const version='1.6.51',root=document.getElementById('uni-menu-container'),actions=root?.querySelector('.uni-fab-actions');
  if(!actions)return {};
  const load=key=>{try{const v=JSON.parse(ctx.ajaStorage.getItem(key)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}};
  let favorites=load('menu_favorites_v1'),order=load('menu_order_v1'),panel,checking=false,lastCheck=0;
@@ -9585,7 +9585,7 @@ window.AjaModular.register('avaliacoes', [], function () {
 
 
 // ==UserScript==
-// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.50)
+// @name         Gerenciador de Contagem e Produtividade (vAjaModular_1.6.51)
 // @namespace    http://tampermonkey.net/
 // @version      1.0.28.9
 // @description  Script focado em Analytics. [Modo Foco + Anti-Caps Lock + Lembretes + Links]
@@ -9607,7 +9607,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
 
     // --- URL DO CEREBRO (GOOGLE SCRIPT) ---
     const GOOGLE_SCRIPT_URL = ""; // Configure um backend exclusivo para esta versão.
-    const SCRIPT_VERSION = 'AjaModular_1.6.50';
+    const SCRIPT_VERSION = 'AjaModular_1.6.51';
 
     async function safeFetch(url, options = {}) {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -10080,13 +10080,14 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
     };
 
     const analyticsManager = {
+        isQualifiedConversation(conv) { return Number(conv?.activeDuration) >= CONFIG.CHECKMARK_THRESHOLD_MS; },
         getData() { const today = getBrazilTime(new Date()).toLocaleDateString('pt-BR'); const storedData = JSON.parse(ajaStorage.getItem('dailyAnalytics_v2_data') || '{}'); if (storedData.date !== today) { return { date: today, conversations: [], docCopies: 0, hotkeysUsed: [], baloonClicks: 0, transferClicks: 0, evaluatedClicks: 0, diagnosticRepliesUsed: 0 }; } storedData.conversations = (storedData.conversations || []).map(conv => ({ ...conv, activeDuration: conv.activeDuration || 0, isRecurrence: conv.isRecurrence || false, participantName: conv.participantName || 'N/A', phoneNumber: conv.phoneNumber || 'N/A', endedByAgent: conv.endedByAgent || 'HIBERNADO', interactionUrl: conv.interactionUrl || 'N/A', timestamp: typeof conv.timestamp === 'string' ? (new Date(conv.timestamp).getTime() || Date.now()) : conv.timestamp, interactionType: conv.interactionType || 'unknown' })); return storedData; },
         saveData(data) { try { ajaStorage.setItem('dailyAnalytics_v2_data', JSON.stringify(data)); } catch (e) { log("Erro ao salvar dados:", e); } },
         getAchievements() { return JSON.parse(ajaStorage.getItem('achievements_v2') || '{}'); },
         logConversation(duration, activeDuration, participantName, phoneNumber, interactionUrl, classification, interactionType) {
             const previousStats = this.calculateStats();
             const data = this.getData();
-            const isRecurrence = phoneNumber !== 'N/A' && data.conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
+            const isRecurrence = phoneNumber !== 'N/A' && data.conversations.some(conv => conv.phoneNumber === phoneNumber && this.isQualifiedConversation(conv));
             data.conversations.push({ timestamp: Date.now(), duration: duration, activeDuration: activeDuration, participantName: participantName, phoneNumber: phoneNumber, isRecurrence: isRecurrence, endedByAgent: classification, interactionUrl: interactionUrl, interactionType: interactionType });
             this.saveData(data); this._updateDashboard();
 
@@ -10102,7 +10103,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
         logTransferClick() { const data = this.getData(); data.transferClicks = (data.transferClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
         logEvaluatedClick() { const data = this.getData(); data.evaluatedClicks = (data.evaluatedClicks || 0) + 1; this.saveData(data); this._updateDashboard(); },
         _updateDashboard() { if (document.getElementById('purecloud-script-mini-dashboard')) { document.getElementById('purecloud-script-mini-dashboard')._updateStatsInternal(); } },
-        calculateStats() { const data = this.getData(); const conversations = data.conversations; let completedConvos = conversations.filter(c => c.duration >= CONFIG.CHECKMARK_THRESHOLD_MS); const consolidatedConvos = completedConvos.filter(conv => !conv.isRecurrence); const uniqueCount = consolidatedConvos.length; const recurrenceCount = completedConvos.filter(conv => conv.isRecurrence).length; const baloonClicksCount = v4_counters.balao.length; if (completedConvos.length === 0) { return { count: 0, tma: '00:00', tme: '00:00', perHour: {}, first: 'N/A', last: 'N/A', docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, allConversations: conversations, endedByAgentCount: 0, recurrenceCount: 0, tmaSeconds: 0, tmeSeconds: 0 }; } const divisor = completedConvos.length > 0 ? completedConvos.length : 1; const totalDuration = completedConvos.reduce((sum, conv) => sum + conv.duration, 0); const tmaSeconds = Math.floor((totalDuration / divisor) / 1000); const totalActiveDuration = completedConvos.reduce((sum, conv) => sum + (conv.activeDuration || 0), 0); const tmeSeconds = Math.floor((totalActiveDuration / divisor) / 1000); const tma = `${formatTime(Math.floor(tmaSeconds / 60))}:${formatTime(tmaSeconds % 60)}`; const tme = `${formatTime(Math.floor(tmeSeconds / 60))}:${formatTime(tmeSeconds % 60)}`; const perHour = {}; for (let hour = 0; hour < 24; hour++) { perHour[hour] = 0; } completedConvos.forEach(conv => { const convDate = getBrazilTime(new Date(conv.timestamp)); const hour = convDate.getHours(); perHour[hour] = (perHour[hour] || 0) + 1; }); const sortedByTimestamp = [...completedConvos].sort((a, b) => b.timestamp - a.timestamp); const first = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[0].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; const last = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[sortedByTimestamp.length - 1].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; return { count: uniqueCount, tma, tme, perHour, first, last, docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, endedByAgentCount: 0, recurrenceCount: recurrenceCount, allConversations: conversations, tmaSeconds: tmaSeconds, tmeSeconds: tmeSeconds }; },
+        calculateStats() { const data = this.getData(); const conversations = data.conversations; let completedConvos = conversations.filter(c => this.isQualifiedConversation(c)); const consolidatedConvos = completedConvos.filter(conv => !conv.isRecurrence); const uniqueCount = consolidatedConvos.length; const recurrenceCount = completedConvos.filter(conv => conv.isRecurrence).length; const baloonClicksCount = v4_counters.balao.length; if (completedConvos.length === 0) { return { count: 0, tma: '00:00', tme: '00:00', perHour: {}, first: 'N/A', last: 'N/A', docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, allConversations: conversations, endedByAgentCount: 0, recurrenceCount: 0, tmaSeconds: 0, tmeSeconds: 0 }; } const divisor = completedConvos.length > 0 ? completedConvos.length : 1; const totalDuration = completedConvos.reduce((sum, conv) => sum + conv.duration, 0); const tmaSeconds = Math.floor((totalDuration / divisor) / 1000); const totalActiveDuration = completedConvos.reduce((sum, conv) => sum + (conv.activeDuration || 0), 0); const tmeSeconds = Math.floor((totalActiveDuration / divisor) / 1000); const tma = `${formatTime(Math.floor(tmaSeconds / 60))}:${formatTime(tmaSeconds % 60)}`; const tme = `${formatTime(Math.floor(tmeSeconds / 60))}:${formatTime(tmeSeconds % 60)}`; const perHour = {}; for (let hour = 0; hour < 24; hour++) { perHour[hour] = 0; } completedConvos.forEach(conv => { const convDate = getBrazilTime(new Date(conv.timestamp)); const hour = convDate.getHours(); perHour[hour] = (perHour[hour] || 0) + 1; }); const sortedByTimestamp = [...completedConvos].sort((a, b) => b.timestamp - a.timestamp); const first = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[0].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; const last = sortedByTimestamp.length > 0 ? getBrazilTime(new Date(sortedByTimestamp[sortedByTimestamp.length - 1].timestamp)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; return { count: uniqueCount, tma, tme, perHour, first, last, docCopies: data.docCopies, hotkeysUsed: (data.hotkeysUsed || []).length, baloonClicks: baloonClicksCount, transferClicks: data.transferClicks, evaluatedClicks: data.evaluatedClicks, endedByAgentCount: 0, recurrenceCount: recurrenceCount, allConversations: conversations, tmaSeconds: tmaSeconds, tmeSeconds: tmeSeconds }; },
         clearAllData() { ajaStorage.removeItem('dailyAnalytics_v2_data'); ajaStorage.removeItem('achievements_v2'); v4_counters = { balao: [] }; saveV4Counters(); UI.createMiniDashboard(); }
     };
 
@@ -10321,7 +10322,7 @@ const ajaSessionStorage = window.AjaModularData.adapter(window.sessionStorage);
                 if (!bubblesContainer) { bubblesContainer = document.createElement('div'); bubblesContainer.className = 'injected-bubbles-container'; nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.appendChild(nDiv); iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '💬'; bubblesContainer.appendChild(iconDiv); tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); let contentWrapper = findEl(CONFIG.PURECLOUD_SELECTORS.CONVERSATION_CONTENT_WRAPPER, convEl); if (contentWrapper) { contentWrapper.appendChild(bubblesContainer); } else { convEl.appendChild(bubblesContainer); } setTimeout(() => { if (contentWrapper && !contentWrapper.contains(bubblesContainer)) { contentWrapper.appendChild(bubblesContainer); } else if (!convEl.contains(bubblesContainer)) { convEl.appendChild(bubblesContainer); } }, 100); } else { if (!nDiv) { nDiv = document.createElement('div'); nDiv.className = 'injected-element injected-conversation-number'; bubblesContainer.prepend(nDiv); } if (!iconDiv) { iconDiv = document.createElement('div'); iconDiv.className = 'injected-element injected-interaction-icon'; iconDiv.innerHTML = '💬'; if (nDiv && nDiv.nextSibling) { bubblesContainer.insertBefore(iconDiv, nDiv.nextSibling); } else { bubblesContainer.appendChild(iconDiv); } } if (!tDiv) { tDiv = document.createElement('div'); tDiv.className = 'injected-element injected-conversation-timer'; bubblesContainer.appendChild(tDiv); } }
                 bubblesContainer.classList.toggle('gcp-tema-escuro', CONFIG.DARK_MODE);
                 const { participantName, phoneNumber } = documentExtractor.getNameAndNumber(convEl); const interactionId = documentExtractor.getInteractionId(convEl);
-                const isRecurrence = phoneNumber !== 'N/A' && analyticsManager.getData().conversations.some(conv => conv.phoneNumber === phoneNumber && conv.duration >= CONFIG.CHECKMARK_THRESHOLD_MS);
+                const isRecurrence = phoneNumber !== 'N/A' && analyticsManager.getData().conversations.some(conv => conv.phoneNumber === phoneNumber && analyticsManager.isQualifiedConversation(conv));
                 if (isRecurrence) { if (!recurrenceDiv) { recurrenceDiv = document.createElement('div'); recurrenceDiv.className = 'injected-element injected-recurrence-icon'; recurrenceDiv.innerHTML = '🔁'; recurrenceDiv.title = 'Cliente recorrente hoje'; bubblesContainer.appendChild(recurrenceDiv); } recurrenceDiv.style.display = 'flex'; } else if (recurrenceDiv) { recurrenceDiv.style.display = 'none'; }
                 tData = { div: tDiv, numDiv: nDiv, iconDiv: iconDiv, checkmarkDiv: checkmarkDiv, recurrenceDiv: recurrenceDiv, bubblesContainer: bubblesContainer, element: convEl, creationTime: Date.now(), startTime: Date.now(), pausedAt: Date.now(), isPaused: true, completedVisual: false, tmaLogged: false, activeDuration: 0, activeSessionStart: null, lastOperatorActivityTimestamp: Date.now(), lastCustomerReplyTimestamp: Date.now(), longConvoNotified: false, operatorAlertPlayed: false, clientAlertPlayed: false, participantName: participantName, phoneNumber: phoneNumber, interactionUrl: 'N/A', interactionId: interactionId, isRecurrence: isRecurrence, interactionType: 'chat' };
                 conversationTimers.set(convEl, tData);
