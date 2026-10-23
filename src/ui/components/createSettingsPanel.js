@@ -93,14 +93,14 @@ const implementation = {createSettingsPanel() {
                 const targetSeconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
                 
                 let data = ctx.analyticsManager.getData();
-                let completedConvos = data.conversations.filter(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS);
+                let completedConvos = data.conversations.filter(c => ctx.analyticsManager.isQualifiedConversation(c));
                 if (completedConvos.length === 0) { ctx.UI.createNotification("Você precisa ter pelo menos 1 atendimento para ajustar o TMA.", "error"); return; }
                 
                 const currentTotalMs = completedConvos.reduce((sum, conv) => sum + conv.duration, 0);
                 const targetTotalMs = (targetSeconds * completedConvos.length) * 1000;
                 const diffMs = targetTotalMs - currentTotalMs;
                 
-                let firstCompletedIndex = data.conversations.findIndex(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS);
+                let firstCompletedIndex = data.conversations.findIndex(c => ctx.analyticsManager.isQualifiedConversation(c));
                 if (firstCompletedIndex !== -1) {
                     data.conversations[firstCompletedIndex].duration += diffMs;
                     if (data.conversations[firstCompletedIndex].duration < 1000) data.conversations[firstCompletedIndex].duration = 1000;

@@ -1,7 +1,7 @@
 // Shared dependencies: CONFIG, actions, analyticsManager, escapeHTML, formatTime, getBrazilTime
 window.AjaModular.register("ui-renderDetailsContent", [], function(ctx) {
 const implementation = {renderDetailsContent(container) {
-            const stats = ctx.analyticsManager.calculateStats(); const conversations = stats.allConversations.filter(c => c.duration >= ctx.CONFIG.CHECKMARK_THRESHOLD_MS).sort((a, b) => b.timestamp - a.timestamp);
+            const stats = ctx.analyticsManager.calculateStats(); const conversations = stats.allConversations.filter(c => ctx.analyticsManager.isQualifiedConversation(c)).sort((a, b) => b.timestamp - a.timestamp);
             let detailsList = container.querySelector('#details-list'); if (!detailsList) { detailsList = document.createElement('div'); detailsList.id = 'details-list'; container.appendChild(detailsList); }
             if (conversations.length === 0) { detailsList.innerHTML = '<p>Nenhum atendimento completo registrado hoje.</p>'; return; }
             const conversationsAsc = conversations.reverse(); const totalCount = conversationsAsc.length; const recurrenceCount = stats.recurrenceCount;
